@@ -46,6 +46,7 @@ node_modules/
 dist/
 out/
 .next/
+*.tsbuildinfo
 
 # IDE & OS
 .vscode/

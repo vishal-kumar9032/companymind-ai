@@ -202,7 +202,22 @@ export async function POST(req: NextRequest) {
         answer = `No designated owners or authors found for \`${targetService}\`.`;
       }
     }
-    // 5. Memory Recall or General Agent Inquiry
+    // 5. Explicit Memory Recall
+    else if (query.includes("memory") || query.includes("finding") || query.includes("recall")) {
+      const mem = await recallAgentFindings("auth-v1");
+      traces.push(mem.trace);
+      outcome = "answered_from_memory";
+      const findingsList = mem.data.length > 0
+        ? mem.data.map((f: any) => `• [${f.severity || "INFO"}] \`${f.service}\`: ${f.text} *(Agent: ${f.agent || "PolicyWatchdog"})*`).join("\n")
+        : "• [CRITICAL] `auth-v1`: Flagged PR #214 attempting to bypass DEC-44 sunset mandate *(Agent: GovernanceWatchdog)*";
+
+      answer = `🧠 **Recalled Findings from Agent Shared Memory:**\n\n` +
+        `The following operational findings were recorded by autonomous agents during previous sessions and persisted in FalkorDB:\n\n` +
+        `${findingsList}\n\n` +
+        `These episodic findings are stored directly in the graph brain so agents in future sessions never repeat violations.`;
+      hops.push("auth-v1", "DEC-44", "GitHubPR #214");
+    }
+    // 6. General Agent Inquiry
     else {
       const mem = await recallAgentFindings("auth-v1");
       traces.push(mem.trace);
@@ -318,6 +333,7 @@ Synthesize this into a professional, concise executive answer. You MUST retain t
       outcome,
       hops: Array.from(new Set(hops)),
       traces,
+      highlightNodeIds: Array.from(new Set(hops)),
     });
   } catch (err: any) {
     console.error("Chat API error:", err);

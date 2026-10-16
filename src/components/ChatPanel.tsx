@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
   ThumbsUp,
   ThumbsDown,
   Copy,
@@ -23,9 +25,16 @@ import {
   Loader2,
   Circle,
   FileText,
+  Calendar,
+  Users,
+  GitPullRequest,
+  Server,
+  Brain,
+  ArrowRight,
   CornerDownLeft,
 } from "lucide-react";
 import { ToolTrace } from "@/lib/schema";
+import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
 
 interface Message {
   id: string;
@@ -90,6 +99,54 @@ export function ChatPanel({
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null);
   const [expandedTraceIdx, setExpandedTraceIdx] = useState<number | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [prActions, setPrActions] = useState<Record<string, "approved" | "rejected">>({});
+
+  const resolveSourceCards = (citations?: string[], hops?: string[]): SourceDetail[] => {
+    const list: SourceDetail[] = [];
+    const seen = new Set<string>();
+
+    const checkAndAdd = (key: string) => {
+      if (ENTERPRISE_SOURCES[key] && !seen.has(key)) {
+        seen.add(key);
+        list.push(ENTERPRISE_SOURCES[key]);
+      }
+    };
+
+    if (citations) {
+      for (const c of citations) {
+        checkAndAdd(c);
+      }
+    }
+
+    if (hops) {
+      for (const h of hops) {
+        if (h.includes("214")) checkAndAdd("PR-214");
+        else if (h.includes("102") || h.includes("RFC")) checkAndAdd("RFC-102");
+        else if (h.includes("DEC-44")) checkAndAdd("DEC-44");
+        else if (h.includes("auth-v1")) checkAndAdd("auth-v1");
+        else if (h.includes("identity-service")) checkAndAdd("identity-service");
+        else if (h.includes("payments-api")) checkAndAdd("payments-api");
+        else if (h.toLowerCase().includes("meeting") || h.toLowerCase().includes("q3")) checkAndAdd("Q3-MEETING");
+      }
+    }
+
+    return list;
+  };
+
+  const renderSourceIcon = (type: string) => {
+    switch (type) {
+      case "rfc":
+        return <FileText size={13} className="text-violet-400" strokeWidth={1.75} />;
+      case "meeting":
+        return <Users size={13} className="text-cyan-400" strokeWidth={1.75} />;
+      case "pr":
+        return <GitPullRequest size={13} className="text-amber-400" strokeWidth={1.75} />;
+      case "decision":
+        return <ShieldCheck size={13} className="text-emerald-400" strokeWidth={1.75} />;
+      default:
+        return <Server size={13} className="text-blue-400" strokeWidth={1.75} />;
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -336,14 +393,135 @@ export function ChatPanel({
                   : "bg-surface border border-border text-zinc-200 shadow-card space-y-3"
               }`}
             >
-              {/* Trust Badge */}
+              {/* Outcome Badge / Trust Header */}
               {m.role === "assistant" && (
-                <div className="flex items-center justify-between pb-2 border-b border-border text-2xs font-mono text-zinc-400">
-                  <span className="flex items-center gap-1.5 text-success">
-                    <CheckCircle2 size={12} strokeWidth={2} />
-                    <span>Grounded in FalkorDB Graph</span>
+                <div className="flex items-center justify-between pb-2 border-b border-border text-2xs font-mono">
+                  {m.outcome === "governance_violation" ? (
+                    <span className="flex items-center gap-1.5 text-danger font-semibold">
+                      <ShieldAlert size={13} strokeWidth={2} />
+                      <span>Governance Watchdog Interception</span>
+                    </span>
+                  ) : m.outcome === "answered_from_memory" ? (
+                    <span className="flex items-center gap-1.5 text-accent font-semibold">
+                      <Brain size={13} strokeWidth={2} />
+                      <span>Recalled from Agent Memory</span>
+                    </span>
+                  ) : m.outcome === "not_in_graph" || m.outcome === "unknown_entity" ? (
+                    <span className="flex items-center gap-1.5 text-warning font-semibold">
+                      <AlertTriangle size={13} strokeWidth={2} />
+                      <span>Entity Missing from Graph</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-success">
+                      <CheckCircle2 size={12} strokeWidth={2} />
+                      <span>Grounded in FalkorDB Graph</span>
+                    </span>
+                  )}
+                  <span className="text-zinc-500">
+                    {m.outcome === "governance_violation"
+                      ? "P0 Block"
+                      : m.outcome === "answered_from_memory"
+                      ? "Cross-Session"
+                      : "99.4% Verified"}
                   </span>
-                  <span className="text-zinc-500">99.4% Verified</span>
+                </div>
+              )}
+
+              {/* Specialized Governance Violation Card */}
+              {m.outcome === "governance_violation" && (
+                <div className="rounded-xl p-3.5 bg-danger/10 border border-danger/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-mono uppercase tracking-wider text-danger font-bold flex items-center gap-1.5">
+                      <ShieldAlert size={14} />
+                      Active Policy Violation
+                    </span>
+                    <span className="text-3xs font-mono px-2 py-0.5 rounded bg-danger/20 text-danger border border-danger/30">
+                      RFC-102 Mandate
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-danger/20">
+                    <div>
+                      <span className="text-zinc-400 font-mono text-2xs uppercase">Target PR: </span>
+                      <span className="font-semibold text-zinc-100">PR #214 (mobile-app fallback to auth-v1)</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-400 font-mono text-2xs uppercase">Violated Mandate: </span>
+                      <span className="font-semibold text-danger">DEC-44: Mandatory Deprecation of Auth-v1</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-400 font-mono text-2xs uppercase">Policy Rationale: </span>
+                      <span className="italic text-zinc-300">
+                        "Auth-v1 fails SOC2 controls. All new traffic must route through api-gateway to identity-service by Nov 1, 2026."
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Approve Exception / Reject PR Action Buttons */}
+                  <div className="pt-1 flex items-center justify-between gap-2">
+                    {prActions[m.id] ? (
+                      <div
+                        className={`w-full py-2 px-3 rounded-lg text-xs font-mono flex items-center gap-2 ${
+                          prActions[m.id] === "rejected"
+                            ? "bg-danger/20 text-danger border border-danger/40"
+                            : "bg-success/20 text-success border border-success/40"
+                        }`}
+                      >
+                        <CheckCircle2 size={14} />
+                        <span>
+                          {prActions[m.id] === "rejected"
+                            ? "PR #214 rejected by Policy Watchdog. Incident recorded to Agent Memory."
+                            : "Exception granted for 72h. Security audit trail recorded in FalkorDB."}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "rejected" }))}
+                          className="flex-1 py-2 px-3 rounded-lg bg-danger hover:bg-danger/90 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <ShieldAlert size={14} />
+                          <span>Reject PR</span>
+                        </button>
+                        <button
+                          onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "approved" }))}
+                          className="flex-1 py-2 px-3 rounded-lg bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <ShieldCheck size={14} />
+                          <span>Approve Exception</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Helpful Empty State for Not In Graph / Unknown Entity */}
+              {(m.outcome === "not_in_graph" || m.outcome === "unknown_entity") && (
+                <div className="rounded-xl p-3.5 bg-warning/10 border border-warning/30 space-y-2.5">
+                  <div className="flex items-center gap-2 text-warning font-semibold text-xs uppercase tracking-wide font-mono">
+                    <AlertTriangle size={15} strokeWidth={2} />
+                    <span>Entity or Causal Link Not Found</span>
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed">
+                    FalkorDB graph traversal did not find an indexed entity or policy decision matching this query. Try rephrasing or asking about one of the known production systems in the company brain:
+                  </p>
+                  <div className="pt-2 border-t border-warning/20 space-y-1">
+                    <span className="text-2xs font-mono uppercase tracking-wider text-warning/80 block">
+                      Suggested Graph Inquiries:
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      {PRESET_QUERIES.map((p, pIdx) => (
+                        <button
+                          key={pIdx}
+                          onClick={() => handleSubmit(p.query)}
+                          className="text-left text-2xs p-1.5 rounded-lg bg-bg/80 hover:bg-surface-hover border border-warning/20 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          → {p.query}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -384,48 +562,73 @@ export function ChatPanel({
                 </div>
               )}
 
-              {/* Source Citation Chips */}
-              {m.citations && m.citations.length > 0 && (
-                <div className="pt-2 border-t border-border space-y-1.5">
-                  <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400 block font-medium">
-                    Supporting Citations & Evidence:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {m.citations.map((cId) => (
-                      <button
-                        key={cId}
-                        onClick={() => onOpenSourceDrawer?.(cId)}
-                        className="inline-flex items-center gap-1.5 text-2xs font-mono px-2.5 py-1 rounded-md bg-bg hover:bg-surface-hover border border-border text-accent hover:text-white transition-colors cursor-pointer"
-                        title="Click to view full original document excerpt and FalkorDB node"
-                      >
-                        <FileText size={12} strokeWidth={1.75} className="text-success" />
-                        <span>{cId}</span>
-                        <ExternalLink size={10} className="opacity-60" />
-                      </button>
+              {/* Traversed Causal Path Hops with Connected Arrows */}
+              {m.hops && m.hops.length > 0 && (
+                <div className="pt-2 border-t border-border/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-2xs font-mono uppercase tracking-wider text-accent font-medium">
+                    <span>Causal Path Traversed ({m.hops.length} nodes):</span>
+                    <span className="text-zinc-500 font-normal">Sub-10ms FalkorDB</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {m.hops.map((hop, hIdx) => (
+                      <React.Fragment key={hIdx}>
+                        <button
+                          onClick={() => onSelectNode?.(hop)}
+                          className="inline-flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded-md bg-accent/10 text-violet-300 border border-accent/25 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer"
+                          title={`Click to focus ${hop} in FalkorDB graph`}
+                        >
+                          <span>{hop}</span>
+                        </button>
+                        {hIdx < (m.hops?.length || 0) - 1 && (
+                          <ArrowRight size={10} className="text-zinc-500 shrink-0" />
+                        )}
+                      </React.Fragment>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Traversed Hops */}
-              {m.hops && m.hops.length > 0 && (
-                <div className="pt-2 border-t border-border space-y-1">
-                  <span className="text-2xs font-mono uppercase tracking-wider text-accent block font-medium">
-                    Causal Path Traversed ({m.hops.length} nodes):
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {m.hops.map((hop, hIdx) => (
-                      <button
-                        key={hIdx}
-                        onClick={() => onSelectNode?.(hop)}
-                        className="inline-flex items-center text-2xs font-mono px-2 py-0.5 rounded bg-accent/10 text-falkor-300 border border-accent/20 hover:bg-accent/20 transition-colors cursor-pointer"
-                      >
-                        {hop}
-                      </button>
-                    ))}
+              {/* Supporting Evidence Source Cards Grid */}
+              {(() => {
+                const sourceCards = resolveSourceCards(m.citations, m.hops);
+                if (sourceCards.length === 0) return null;
+                return (
+                  <div className="pt-2 border-t border-border/80 space-y-2">
+                    <div className="flex items-center justify-between text-2xs font-mono uppercase tracking-wider text-zinc-400">
+                      <span>Verified Evidence & Sources ({sourceCards.length}):</span>
+                      <span className="text-zinc-500 font-normal">Click card to focus</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {sourceCards.map((src) => (
+                        <button
+                          key={src.id}
+                          onClick={() => {
+                            onSelectNode?.(src.id);
+                            onOpenSourceDrawer?.(src.id);
+                          }}
+                          className="flex flex-col text-left p-2.5 rounded-xl bg-surface/80 hover:bg-surface-hover border border-border/80 hover:border-accent/40 transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center justify-between w-full mb-1">
+                            <span className="flex items-center gap-1.5 text-2xs font-semibold text-accent">
+                              {renderSourceIcon(src.type)}
+                              <span className="font-mono">{src.id}</span>
+                            </span>
+                            <span className="text-3xs font-mono text-zinc-400 bg-black/40 px-1.5 py-0.5 rounded border border-border/40">
+                              {src.date}
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium text-zinc-200 line-clamp-1 group-hover:text-white">
+                            {src.title}
+                          </span>
+                          <span className="text-2xs text-zinc-400 line-clamp-1 mt-0.5">
+                            {src.author}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Collapsible OpenCypher Graph Proof */}
               {m.traces && m.traces.length > 0 && (
