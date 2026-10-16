@@ -12,20 +12,17 @@ import { AnalyticsModal } from "@/components/AnalyticsModal";
 import { GraphData, ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
 import {
+  Activity,
   Network,
-  Sparkles,
-  Bot,
   Brain,
-  ShieldAlert,
-  Search,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 export default function Home() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [highlightHops, setHighlightHops] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeRightTab, setActiveRightTab] = useState<"oracle" | "agents" | "memory">("oracle");
-  const [mobileTab, setMobileTab] = useState<"graph" | "oracle" | "agents" | "memory">("graph");
   const [selectedQuery, setSelectedQuery] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<SourceDetail | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -35,6 +32,11 @@ export default function Home() {
   const [lastQuery, setLastQuery] = useState("What services break if auth-v1 is shut down?");
   const [lastOutcome, setLastOutcome] = useState("answered_with_path");
   const [memoryRefreshTrigger, setMemoryRefreshTrigger] = useState(0);
+
+  // Small slide-over panels state
+  const [isProcessOpen, setIsProcessOpen] = useState(false);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 
   const fetchGraph = async () => {
     try {
@@ -64,8 +66,6 @@ export default function Home() {
 
   const handleSelectQueryFromPalette = (query: string) => {
     setSelectedQuery(query);
-    setActiveRightTab("oracle");
-    setMobileTab("oracle");
   };
 
   const handleResponseUpdate = (data: {
@@ -80,6 +80,11 @@ export default function Home() {
     if (data.outcome) setLastOutcome(data.outcome);
     if (data.latencyMs) setLatencyMs(data.latencyMs);
     if (data.hops) setHighlightHops(data.hops);
+
+    // If an approval is required, gently offer the process drawer
+    if (data.outcome === "governance_violation") {
+      setIsProcessOpen(true);
+    }
   };
 
   return (
@@ -92,200 +97,152 @@ export default function Home() {
         latencyMs={latencyMs}
       />
 
-      {/* Main Stage: Two Floating Rounded Cards with 16px Gaps */}
-      <main className="flex-1 min-h-0 p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
-        {/* LEFT FLOATING CARD: Graph Canvas (7 cols on lg, full width when mobileTab === 'graph') */}
-        <section
-          className={`h-full min-h-0 flex flex-col rounded-card border border-border bg-surface/30 backdrop-blur-md overflow-hidden relative shadow-card ${
-            mobileTab === "graph" ? "flex lg:col-span-7" : "hidden lg:flex lg:col-span-7"
-          }`}
-          aria-label="FalkorDB Graph Visualization"
-        >
-          {loading ? (
-            <div className="w-full h-full flex items-center justify-center bg-bg/50 text-xs font-mono text-zinc-400 gap-2">
-              <span className="size-2 rounded-full bg-accent animate-ping" />
-              <span>Hydrating FalkorDB graph topology...</span>
-            </div>
-          ) : (
-            <GraphCanvas
-              data={graphData}
-              highlightHops={highlightHops}
-              onSelectNode={(nodeId: string) => {
-                const src = ENTERPRISE_SOURCES[nodeId];
-                if (src) setActiveSource(src);
-              }}
-            />
-          )}
-        </section>
-
-        {/* RIGHT FLOATING CARD: Tabbed Panel (5 cols on lg, full width when mobileTab !== 'graph') */}
-        <section
-          className={`h-full min-h-0 flex flex-col rounded-card border border-border bg-surface/30 backdrop-blur-md overflow-hidden shadow-card ${
-            mobileTab !== "graph" ? "flex lg:col-span-5" : "hidden lg:flex lg:col-span-5"
-          }`}
-          aria-label="Agent Workstation and Intelligence Tabs"
-        >
-          {/* Tab Bar Header */}
-          <div className="p-2.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-border/60">
-              <button
-                onClick={() => {
-                  setActiveRightTab("oracle");
-                  setMobileTab("oracle");
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeRightTab === "oracle"
-                    ? "bg-accent text-white shadow-sm font-semibold"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Sparkles size={13} strokeWidth={1.75} />
-                <span>Oracle</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveRightTab("agents");
-                  setMobileTab("agents");
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeRightTab === "agents"
-                    ? "bg-accent text-white shadow-sm font-semibold"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Bot size={13} strokeWidth={1.75} />
-                <span>Agents</span>
-                {lastOutcome === "governance_violation" && (
-                  <span className="size-1.5 rounded-full bg-danger animate-pulse" />
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveRightTab("memory");
-                  setMobileTab("memory");
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeRightTab === "memory"
-                    ? "bg-accent text-white shadow-sm font-semibold"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Brain size={13} strokeWidth={1.75} />
-                <span>Memory</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsCommandPaletteOpen(true)}
-                className="flex items-center gap-1.5 text-2xs font-mono text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded bg-surface hover:bg-surface-hover border border-border transition-colors cursor-pointer"
-                title="Search graph & commands (Cmd+K)"
-              >
-                <Search size={11} />
-                <span className="hidden sm:inline">Cmd+K</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Active Tab View */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {activeRightTab === "oracle" && (
-              <ChatPanel
-                onHopsChange={setHighlightHops}
-                externalTriggerQuery={selectedQuery}
-                onClearExternalTrigger={() => setSelectedQuery(null)}
-                onOpenSourceDrawer={handleOpenSource}
-                onSelectNode={(nodeId) => {
-                  setHighlightHops([nodeId]);
-                  handleOpenSource(nodeId);
-                }}
-                onResponseUpdate={handleResponseUpdate}
-              />
-            )}
-
-            {activeRightTab === "agents" && (
-              <AgentsTab
-                traces={lastTraces}
-                lastQuery={lastQuery}
-                outcome={lastOutcome}
-                sessionId="session-1"
-                onSelectNode={(nodeId) => {
-                  setHighlightHops([nodeId]);
-                  handleOpenSource(nodeId);
-                }}
-                onFindingSaved={() => setMemoryRefreshTrigger((prev) => prev + 1)}
-              />
-            )}
-
-            {activeRightTab === "memory" && (
-              <MemoryTab
-                onSelectNode={(nodeId) => {
-                  setHighlightHops([nodeId]);
-                  handleOpenSource(nodeId);
-                }}
-                refreshTrigger={memoryRefreshTrigger}
-              />
-            )}
-          </div>
-        </section>
+      {/* Main Agent Workspace (Centered, elegant, TrueForge UI) */}
+      <main className="flex-1 min-h-0 relative flex flex-col p-2 sm:p-4 overflow-hidden max-w-5xl mx-auto w-full">
+        <div className="flex-1 min-h-0 flex flex-col rounded-card border border-border bg-surface/30 backdrop-blur-md overflow-hidden shadow-card relative">
+          <ChatPanel
+            onHopsChange={setHighlightHops}
+            externalTriggerQuery={selectedQuery}
+            onClearExternalTrigger={() => setSelectedQuery(null)}
+            onOpenSourceDrawer={handleOpenSource}
+            onSelectNode={(nodeId: string) => {
+              setHighlightHops([nodeId]);
+              handleOpenSource(nodeId);
+            }}
+            onResponseUpdate={handleResponseUpdate}
+            onToggleProcess={() => {
+              setIsProcessOpen(!isProcessOpen);
+              setIsGraphOpen(false);
+              setIsMemoryOpen(false);
+            }}
+            isProcessOpen={isProcessOpen}
+            onToggleGraph={() => {
+              setIsGraphOpen(!isGraphOpen);
+              setIsProcessOpen(false);
+              setIsMemoryOpen(false);
+            }}
+            isGraphOpen={isGraphOpen}
+            onToggleMemory={() => {
+              setIsMemoryOpen(!isMemoryOpen);
+              setIsProcessOpen(false);
+              setIsGraphOpen(false);
+            }}
+            isMemoryOpen={isMemoryOpen}
+            activeOutcome={lastOutcome}
+          />
+        </div>
       </main>
 
-      {/* Responsive Bottom Tabs (Rendered below lg) */}
-      <nav
-        className="lg:hidden shrink-0 border-t border-border bg-surface/90 backdrop-blur-md px-3 py-2 flex items-center justify-around text-xs font-mono"
-        aria-label="Mobile Navigation"
-      >
-        <button
-          onClick={() => setMobileTab("graph")}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg transition-colors cursor-pointer ${
-            mobileTab === "graph" ? "text-accent font-semibold" : "text-zinc-400 hover:text-zinc-200"
-          }`}
+      {/* Small Slide-over Process Panel */}
+      {isProcessOpen && (
+        <aside
+          className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-50 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+          aria-label="TrueForge Agent Process Telemetry"
         >
-          <Network size={16} strokeWidth={1.75} />
-          <span className="text-3xs">Graph</span>
-        </button>
+          <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <Activity size={15} className="text-accent" />
+              <h3 className="text-xs font-semibold text-zinc-100 font-mono uppercase tracking-wider">
+                TrueForge Process Telemetry
+              </h3>
+            </div>
+            <button
+              onClick={() => setIsProcessOpen(false)}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer"
+              title="Close panel"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <AgentsTab
+              traces={lastTraces}
+              lastQuery={lastQuery}
+              outcome={lastOutcome}
+              sessionId="session-1"
+              onSelectNode={(nodeId) => {
+                setHighlightHops([nodeId]);
+                handleOpenSource(nodeId);
+              }}
+              onFindingSaved={() => setMemoryRefreshTrigger((prev) => prev + 1)}
+            />
+          </div>
+        </aside>
+      )}
 
-        <button
-          onClick={() => {
-            setMobileTab("oracle");
-            setActiveRightTab("oracle");
-          }}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg transition-colors cursor-pointer ${
-            mobileTab === "oracle" ? "text-accent font-semibold" : "text-zinc-400 hover:text-zinc-200"
-          }`}
+      {/* Small Slide-over Graph Panel */}
+      {isGraphOpen && (
+        <aside
+          className="fixed inset-y-0 right-0 w-full sm:w-[560px] md:w-[640px] z-50 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+          aria-label="FalkorDB Graph Topology"
         >
-          <Sparkles size={16} strokeWidth={1.75} />
-          <span className="text-3xs">Ask</span>
-        </button>
+          <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <Network size={15} className="text-cyan-400" />
+              <h3 className="text-xs font-semibold text-zinc-100 font-mono uppercase tracking-wider">
+                FalkorDB Topology ({graphData.nodes.length} nodes · {graphData.edges.length} edges)
+              </h3>
+            </div>
+            <button
+              onClick={() => setIsGraphOpen(false)}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer"
+              title="Close panel"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 relative">
+            {loading ? (
+              <div className="w-full h-full flex items-center justify-center bg-bg/50 text-xs font-mono text-zinc-400 gap-2">
+                <span className="size-2 rounded-full bg-accent animate-ping" />
+                <span>Hydrating FalkorDB topology...</span>
+              </div>
+            ) : (
+              <GraphCanvas
+                data={graphData}
+                highlightHops={highlightHops}
+                onSelectNode={(nodeId: string) => {
+                  const src = ENTERPRISE_SOURCES[nodeId];
+                  if (src) setActiveSource(src);
+                }}
+              />
+            )}
+          </div>
+        </aside>
+      )}
 
-        <button
-          onClick={() => {
-            setMobileTab("agents");
-            setActiveRightTab("agents");
-          }}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg transition-colors cursor-pointer ${
-            mobileTab === "agents" ? "text-accent font-semibold" : "text-zinc-400 hover:text-zinc-200"
-          }`}
+      {/* Small Slide-over Memory Panel */}
+      {isMemoryOpen && (
+        <aside
+          className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-50 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+          aria-label="Agent Shared Memory"
         >
-          <Bot size={16} strokeWidth={1.75} />
-          <span className="text-3xs">Agents</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setMobileTab("memory");
-            setActiveRightTab("memory");
-          }}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg transition-colors cursor-pointer ${
-            mobileTab === "memory" ? "text-accent font-semibold" : "text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          <Brain size={16} strokeWidth={1.75} />
-          <span className="text-3xs">Memory</span>
-        </button>
-      </nav>
+          <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <Brain size={15} className="text-purple-400" />
+              <h3 className="text-xs font-semibold text-zinc-100 font-mono uppercase tracking-wider">
+                Cross-Session Memory Ledger
+              </h3>
+            </div>
+            <button
+              onClick={() => setIsMemoryOpen(false)}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer"
+              title="Close panel"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <MemoryTab
+              onSelectNode={(nodeId: string) => {
+                setHighlightHops([nodeId]);
+                handleOpenSource(nodeId);
+              }}
+              refreshTrigger={memoryRefreshTrigger}
+            />
+          </div>
+        </aside>
+      )}
 
       {/* Slide-in Source Inspector Drawer */}
       <SourceDrawer

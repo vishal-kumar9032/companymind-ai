@@ -35,6 +35,9 @@ import {
   Play,
   Zap,
   GitBranch,
+  Activity,
+  Network,
+  X,
 } from "lucide-react";
 import { ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
@@ -65,6 +68,13 @@ interface ChatPanelProps {
     hops: string[];
     latencyMs?: number;
   }) => void;
+  onToggleProcess?: () => void;
+  isProcessOpen?: boolean;
+  onToggleGraph?: () => void;
+  isGraphOpen?: boolean;
+  onToggleMemory?: () => void;
+  isMemoryOpen?: boolean;
+  activeOutcome?: string;
 }
 
 const PRESET_CARDS = [
@@ -104,6 +114,13 @@ export function ChatPanel({
   onSelectNode,
   role = "new_hire",
   onResponseUpdate,
+  onToggleProcess,
+  isProcessOpen = false,
+  onToggleGraph,
+  isGraphOpen = false,
+  onToggleMemory,
+  isMemoryOpen = false,
+  activeOutcome,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -416,22 +433,88 @@ export function ChatPanel({
   return (
     <div className="flex flex-col h-full bg-surface/30 backdrop-blur-md rounded-card border border-border overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-surface/40 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bot size={16} strokeWidth={1.75} className="text-accent" />
-          <h2 className="text-sm font-semibold text-zinc-100">CompanyMind Oracle</h2>
+      <div className="p-3 sm:p-4 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="size-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
+            <Bot size={15} strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs sm:text-sm font-semibold text-zinc-100">
+                TrueForge Autonomous Agent
+              </h2>
+              <span className="hidden sm:inline text-3xs font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
+                FalkorDB Brain
+              </span>
+            </div>
+            <p className="text-3xs text-zinc-400 font-mono hidden sm:block">
+              Institutional intelligence & multi-hop causal reasoning
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-2xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
-            FalkorDB Provenance
-          </span>
+
+        {/* Small Toggles for Process, Graph, and Memory */}
+        <div className="flex items-center gap-1.5">
           {streamingMsgId && (
             <button
               onClick={handleStopStreaming}
-              className="flex items-center gap-1 text-2xs font-mono px-2 py-0.5 rounded bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-colors cursor-pointer mr-1"
             >
               <Square size={10} />
               <span>Stop</span>
+            </button>
+          )}
+
+          {onToggleProcess && (
+            <button
+              onClick={onToggleProcess}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
+                isProcessOpen
+                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
+                  : activeOutcome === "governance_violation"
+                  ? "bg-danger/20 border-danger/40 text-danger animate-pulse font-semibold"
+                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
+              }`}
+              title="Toggle Live Agent Process & Telemetry"
+            >
+              <Activity
+                size={12}
+                className={activeOutcome === "governance_violation" ? "text-danger" : "text-accent"}
+              />
+              <span>Process</span>
+              {activeOutcome === "governance_violation" && (
+                <span className="size-1.5 rounded-full bg-danger animate-ping" />
+              )}
+            </button>
+          )}
+
+          {onToggleGraph && (
+            <button
+              onClick={onToggleGraph}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
+                isGraphOpen
+                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
+                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
+              }`}
+              title="Toggle FalkorDB Graph Topology"
+            >
+              <Network size={12} className="text-cyan-400" />
+              <span>Graph</span>
+            </button>
+          )}
+
+          {onToggleMemory && (
+            <button
+              onClick={onToggleMemory}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
+                isMemoryOpen
+                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
+                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
+              }`}
+              title="Toggle Cross-Session Agent Memory"
+            >
+              <Brain size={12} className="text-purple-400" />
+              <span>Memory</span>
             </button>
           )}
         </div>
