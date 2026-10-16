@@ -3,32 +3,71 @@
 @tailwind utilities;
 
 :root {
-  --background: #070709;
-  --foreground: #f4f4f5;
+  --bg: #08080c;
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --danger: #f43f5e;
+  --success: #34d399;
+  --warning: #f59e0b;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  overflow: hidden;
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle 700px at 0% 0%, rgba(139, 92, 246, 0.12), transparent 70%),
+    radial-gradient(circle 700px at 100% 0%, rgba(6, 182, 212, 0.08), transparent 70%);
+  background-attachment: fixed;
+  color: #f4f4f5;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
+/* Glass Card with 1px inner top highlight */
+.glass-panel {
+  background: rgba(15, 15, 22, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  border-radius: 14px;
+}
+
+/* Subtle dot grid for graph background */
+.dot-grid {
+  background-color: #08080c;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+/* Custom minimal scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Focus-visible ring */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #08080c, 0 0 0 4px #8b5cf6;
+}
+
+/* Typography baseline */
+p, span, div {
+  text-rendering: optimizeLegibility;
 }

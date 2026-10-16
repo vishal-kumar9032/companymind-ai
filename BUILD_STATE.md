@@ -64,4 +64,6 @@
 - `2026-10-16`: Live public verification completed via HTTPS POST to `/api/chat` and `/api/graph`.
 - `2026-10-16`: Enhanced UI architecture with dedicated Overview Landing Page (`OverviewTab.tsx`), Enterprise Registry (`RegistryTab.tsx`), segmented view switcher, category filtering pills on Cytoscape canvas, and technical trace abstraction ("OpenCypher Graph Proof" drawer). PM2 reloaded cleanly.
 - `2026-10-16`: Implemented 7-point Hackathon UX overhaul: 3-part layout (Sidebar with synced data sources, Main Stage with Graph/Chat, Collapsible Source Inspector Drawer), interactive source citation chips (`[RFC-102]`, `[DEC-44]`, `[PR-214]`), visible AI stepping state (`FalkorDB → RFC Correlation → TrueFoundry Synthesis`), skeleton loaders, thumbs up/down feedback buttons, suggested follow-ups row, role-based viewing switcher (`Engineering Lead`, `VP Eng`, `New Hire`, `Compliance`), Command Palette (`⌘K`), Knowledge Gaps Analytics modal, and 90-second Alex Mercer onboarding demo walkthrough. Verified on live HTTPS.
+- `2026-10-16` (Branch `feat/ui-rebuild` - Step 1): Design tokens, typography (Inter + JetBrains Mono), radial gradient background, surface tokens (1px inner highlight, box-shadow), tailwindcss-animate integration, and slim Navbar with real latency chip ("Connected · 4 ms") and Track chips. Verified with `next build`.
+
 

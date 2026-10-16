@@ -83,8 +83,7 @@ export default function Home() {
         nodeCount={graphData.nodes.length}
         edgeCount={graphData.edges.length}
         onRefresh={fetchGraph}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+        latencyMs={4}
       />
 
       {/* Main 3-Part Viewport */}
