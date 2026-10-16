@@ -15,6 +15,7 @@ import {
   FileText,
   GitPullRequest,
   Sparkles,
+  X,
 } from "lucide-react";
 
 export interface FindingItem {
@@ -33,6 +34,7 @@ interface MemoryTabProps {
   recalledFindingToast?: string | null;
   onClearToast?: () => void;
   refreshTrigger?: number;
+  onClose?: () => void;
 }
 
 export function MemoryTab({
@@ -40,6 +42,7 @@ export function MemoryTab({
   recalledFindingToast,
   onClearToast,
   refreshTrigger = 0,
+  onClose,
 }: MemoryTabProps) {
   const [findings, setFindings] = useState<FindingItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -187,10 +190,10 @@ export function MemoryTab({
   });
 
   return (
-    <div className="flex flex-col h-full bg-surface/30 backdrop-blur-md rounded-card border border-border overflow-hidden">
+    <div className="flex flex-col h-full bg-transparent overflow-hidden">
       {/* Toast Alert when a finding is recalled */}
       {recalledFindingToast && (
-        <div className="p-3 bg-accent/20 border-b border-accent/40 flex items-center justify-between text-xs text-zinc-100 font-mono animate-in fade-in">
+        <div className="p-3 bg-accent/20 border-b border-accent/40 flex items-center justify-between text-xs text-zinc-100 font-mono animate-in fade-in shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-accent" />
             <span>
@@ -207,33 +210,42 @@ export function MemoryTab({
       )}
 
       {/* Header */}
-      <div className="p-4 border-b border-border bg-surface/40 flex items-center justify-between">
+      <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Brain size={16} strokeWidth={1.75} className="text-accent" />
-          <h2 className="text-sm font-semibold text-zinc-100">
-            FalkorDB Cross-Session Memory
+          <Brain size={15} strokeWidth={1.75} className="text-purple-400" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-100 font-mono">
+            Memory Ledger
           </h2>
-          <span className="text-2xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
+          <span className="text-3xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
             {findings.length} findings
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-1 text-2xs font-mono px-2.5 py-1 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white transition-colors cursor-pointer"
           >
             <Plus size={11} />
-            <span>Record Finding</span>
+            <span>Record</span>
           </button>
           <button
             onClick={fetchFindings}
             disabled={loading}
-            className="p-1.5 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="p-1 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
             title="Refresh memory store from FalkorDB"
           >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer ml-1"
+              title="Close panel"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
       </div>
 

@@ -22,6 +22,7 @@ import {
   Sparkles,
   Lock,
   Radio,
+  X,
 } from "lucide-react";
 
 interface AgentsTabProps {
@@ -31,6 +32,7 @@ interface AgentsTabProps {
   sessionId?: string;
   onSelectNode?: (nodeId: string) => void;
   onFindingSaved?: () => void;
+  onClose?: () => void;
 }
 
 export function AgentsTab({
@@ -40,6 +42,7 @@ export function AgentsTab({
   sessionId = "session-1",
   onSelectNode,
   onFindingSaved,
+  onClose,
 }: AgentsTabProps) {
   const runner = getAgentRunner();
   const [events, setEvents] = useState<AgentEvent[]>([]);
@@ -143,32 +146,34 @@ export function AgentsTab({
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface/30 backdrop-blur-md rounded-card border border-border overflow-hidden">
+    <div className="flex flex-col h-full bg-transparent overflow-hidden">
       {/* Header Bar */}
-      <div className="p-4 border-b border-border bg-surface/40 flex items-center justify-between">
+      <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Bot size={16} strokeWidth={1.75} className="text-accent" />
-          <h2 className="text-sm font-semibold text-zinc-100">TrueForge Agent Telemetry</h2>
+          <Bot size={15} strokeWidth={1.75} className="text-accent" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-100 font-mono">
+            Process Telemetry
+          </h2>
           {runner.isSimulated ? (
             <span className="text-3xs font-mono px-2 py-0.5 rounded bg-warning/15 text-warning border border-warning/30">
               Simulated
             </span>
           ) : (
-            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-success/15 text-success border border-success/30 flex items-center gap-1">
-              <Radio size={10} className="animate-pulse" />
+            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-success/15 text-success border border-success/30 flex items-center gap-1 font-medium">
+              <Radio size={9} className="animate-pulse" />
               Live Harness
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-2xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
+          <span className="text-3xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
             {sessionId}
           </span>
           <button
             onClick={handleSimulateRun}
             disabled={isRunning}
-            className="flex items-center gap-1 text-2xs font-mono px-2.5 py-1 rounded bg-accent hover:bg-accent-hover text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-accent hover:bg-accent-hover text-white transition-colors cursor-pointer disabled:opacity-50"
             title="Re-run agent autonomous pipeline"
           >
             {isRunning ? (
@@ -176,8 +181,17 @@ export function AgentsTab({
             ) : (
               <Play size={11} />
             )}
-            <span>{isRunning ? "Running..." : "Run Pipeline"}</span>
+            <span>{isRunning ? "Running..." : "Run"}</span>
           </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer ml-1"
+              title="Close panel"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
       </div>
 
