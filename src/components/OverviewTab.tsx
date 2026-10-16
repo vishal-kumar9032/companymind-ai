@@ -227,8 +227,8 @@ export function OverviewTab({ onSelectScenario, onOpenStudio }: OverviewTabProps
             <p className="text-[11px] text-zinc-400">Ultra-fast Redis-based graph database for sub-10ms OpenCypher traversals.</p>
           </div>
           <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 space-y-1">
-            <div className="text-xs font-semibold text-zinc-200">TrueFoundry Gateway</div>
-            <p className="text-[11px] text-zinc-400">Autonomous LLM agent function-calling with Gemini 2.5 Flash Lite.</p>
+            <div className="text-xs font-semibold text-zinc-200">Enterprise AI Gateway</div>
+            <p className="text-[11px] text-zinc-400">High-throughput multi-model router with Groq Qwen 27B and Gemini.</p>
           </div>
           <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 space-y-1">
             <div className="text-xs font-semibold text-zinc-200">Cytoscape.js</div>

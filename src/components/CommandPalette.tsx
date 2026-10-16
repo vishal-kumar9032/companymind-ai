@@ -69,7 +69,7 @@ export function CommandPalette({
         ...(onOpenProcess
           ? [
               {
-                title: "Open TrueForge Process Telemetry & Agent Timeline",
+                title: "Open Agent Workforce Telemetry & MCP Timeline",
                 type: "action" as const,
                 icon: Activity,
                 action: onOpenProcess,

@@ -508,7 +508,7 @@ export function ChatPanel({
               <div className="text-center space-y-3 max-w-2xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-mono mb-1 font-medium shadow-xs">
                   <Sparkles size={12} className="text-indigo-600" />
-                  <span>TrueForge Autonomous Agent · FalkorDB Causal Engine</span>
+                  <span>Autonomous Agent Workforce · FalkorDB Causal Engine</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
                   What can CompanyMind investigate for you?
@@ -600,26 +600,26 @@ export function ChatPanel({
                         {m.gatewayStatus?.status === "fallback_active" ? (
                           <span
                             className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium"
-                            title={`TrueFoundry Gateway (${m.gatewayStatus.model || "gemini-2.5-flash-lite"}): ${m.gatewayStatus.reason || "Quota Exceeded (429)"}. Autonomous FalkorDB Graph Fallback Active.`}
+                            title={`AI Gateway (${m.gatewayStatus.model || "groq/qwen-qwen3.8-27b"}): ${m.gatewayStatus.reason || "High demand"}. Autonomous FalkorDB Fallback Active.`}
                           >
                             <span className="size-1 rounded-full bg-amber-500 animate-pulse" />
-                            <span>Gateway Fallback (429)</span>
+                            <span>Gateway Fallback</span>
                           </span>
                         ) : (
                           <span
                             className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium"
-                            title="Synthesized through TrueFoundry LLM Gateway"
+                            title="Synthesized through Enterprise AI Gateway"
                           >
                             <span className="size-1 rounded-full bg-emerald-500" />
-                            <span>TrueFoundry LLM Gateway</span>
+                            <span>Enterprise AI Gateway</span>
                           </span>
                         )}
 
-                        {/* TrueForge MCP Tool Pill */}
+                        {/* MCP Tool Pill */}
                         {m.mcpTools?.invoked && m.mcpTools.invoked.length > 0 && (
                           <span
                             className="hidden sm:inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium"
-                            title={`TrueForge MCP Tool executed: ${m.mcpTools.invoked.join(", ")}`}
+                            title={`MCP Tool executed: ${m.mcpTools.invoked.join(", ")}`}
                           >
                             <span className="size-1 rounded-full bg-indigo-500" />
                             <span>MCP: {m.mcpTools.invoked[0]}</span>

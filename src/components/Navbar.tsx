@@ -226,7 +226,7 @@ export function Navbar({
             {modelDropdownOpen && (
               <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white border border-slate-200 shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                 <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  TrueFoundry Gateway Models
+                  Enterprise AI Models
                 </div>
                 {AVAILABLE_MODELS.map((m) => (
                   <button

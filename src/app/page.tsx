@@ -41,7 +41,7 @@ export default function Home() {
   const [lastOutcome, setLastOutcome] = useState("answered_with_path");
   const [memoryRefreshTrigger, setMemoryRefreshTrigger] = useState(0);
   const [gatewayStatus, setGatewayStatus] = useState<any>({
-    provider: "TrueFoundry LLM Gateway",
+    provider: "Enterprise AI Gateway",
     status: "online",
     reason: "",
     fallbackEngine: "Autonomous FalkorDB Graph Engine",
@@ -264,7 +264,7 @@ export default function Home() {
           />
           <aside
             className="fixed inset-y-0 right-0 w-full sm:w-[500px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
-            aria-label="TrueForge Agent Process Telemetry"
+            aria-label="Agent Workforce Process Telemetry"
           >
             <AgentsTab
               traces={lastTraces}

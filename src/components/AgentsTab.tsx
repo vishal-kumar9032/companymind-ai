@@ -226,13 +226,13 @@ export function AgentsTab({
         </div>
       </div>
 
-      {/* TrueForge MCP Tools & Multi-Agent Architecture Overview */}
+      {/* Enterprise MCP Tools & Multi-Agent Architecture Overview */}
       <div className="p-3 bg-white border-b border-slate-200 space-y-2.5 shrink-0 text-xs shadow-xs">
         {/* Gateway & Fallback Banner */}
         <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
           <div className="flex items-center gap-1.5 font-mono text-2xs">
             <span className="size-2 rounded-full bg-emerald-500" />
-            <span className="font-semibold text-slate-800">TrueForge Agent Harness:</span>
+            <span className="font-semibold text-slate-800">Autonomous Agent Harness:</span>
             <span className="text-slate-600">Online</span>
           </div>
 
@@ -240,21 +240,21 @@ export function AgentsTab({
             {gatewayStatus?.status === "fallback_active" ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
                 <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span>LLM Gateway: Fallback Active (Quota 429)</span>
+                <span>AI Gateway: Fallback Engine Active</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
                 <span className="size-1.5 rounded-full bg-emerald-500" />
-                <span>LLM Gateway: TrueFoundry (Online)</span>
+                <span>Enterprise AI Gateway: Online</span>
               </span>
             )}
           </div>
         </div>
 
-        {/* Registered TrueForge MCP Tools */}
+        {/* Registered Enterprise MCP Tools */}
         <div className="space-y-1">
           <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-slate-500 font-semibold">
-            <span>Registered TrueForge MCP Tools (5)</span>
+            <span>Registered Enterprise MCP Tools (5)</span>
             <span className="text-indigo-600 font-medium">Zero-Shot OpenCypher</span>
           </div>
           <div className="flex flex-wrap gap-1">

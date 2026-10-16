@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     // Gateway Status Tracker
     let gatewayStatus = {
-      provider: "TrueFoundry LLM Gateway",
+      provider: "Enterprise AI Gateway",
       status: "online" as "online" | "fallback_active",
       model: requestedModel,
       fallbackEngine: "Autonomous FalkorDB Graph Engine",
@@ -230,11 +230,11 @@ export async function POST(req: NextRequest) {
               if (synth && synth.length > 20) {
                 answer = synth;
                 traces.push({
-                  tool: "truefoundry_llm_gateway",
+                  tool: "enterprise_ai_gateway",
                   args: { model: requestedModel, tool_calls_count: toolCalls.length },
                   durationMs: Date.now() - gwStart,
                   resultCount: 1,
-                  cypher: `TRUEFOUNDRY_LLM_GATEWAY: synthesized from ${mcpToolsInvoked.join(", ")}`,
+                  cypher: `ENTERPRISE_AI_GATEWAY: synthesized from ${mcpToolsInvoked.join(", ")}`,
                   path: hops,
                 });
               }
@@ -243,11 +243,11 @@ export async function POST(req: NextRequest) {
             // Direct generation from Groq / Gemini model
             answer = choice.message.content;
             traces.push({
-              tool: "truefoundry_llm_gateway",
+              tool: "enterprise_ai_gateway",
               args: { model: requestedModel, type: "direct_generation" },
               durationMs: Date.now() - gwStart,
               resultCount: 1,
-              cypher: `TRUEFOUNDRY_LLM_GATEWAY [${requestedModel}]: direct inference`,
+              cypher: `ENTERPRISE_AI_GATEWAY [${requestedModel}]: direct inference`,
               path: hops,
             });
           }
@@ -787,17 +787,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Record turn in TrueForge agent harness if available
+    // Record turn in agent harness if available
     if (isTrueForgeEnabled()) {
       try {
         const tf = getTrueForgeClient();
         if (tf) {
           traces.push({
-            tool: "trueforge_agent_harness",
+            tool: "agent_workforce_harness",
             args: { sessionId, agentRole: agent.name },
             durationMs: 4,
             resultCount: 1,
-            cypher: `TRUEFORGE_SESSION: ${sessionId}`,
+            cypher: `AGENT_WORKFORCE_SESSION: ${sessionId}`,
             path: hops,
           });
         }
@@ -841,7 +841,7 @@ export async function POST(req: NextRequest) {
       {
         error: err?.message || "Internal server error",
         gatewayStatus: {
-          provider: "TrueFoundry LLM Gateway",
+          provider: "Enterprise AI Gateway",
           status: "fallback_active",
           reason: err?.message || "Internal server error",
           fallbackEngine: "Autonomous FalkorDB Graph Engine",

@@ -98,7 +98,7 @@ export function DashboardView({
             </h1>
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
               In a company, critical knowledge is scattered across meeting notes, project reports, task records, and employee documents. 
-              <strong> CompanyMind AI</strong> uses <strong>FalkorDB</strong> to map interconnected relationships between people, decisions, and tasks, using <strong>TrueFoundry LLM Gateway</strong> to synthesize answers with verifiable supporting document proofs.
+              <strong> CompanyMind AI</strong> uses <strong>FalkorDB</strong> to map interconnected relationships between people, decisions, and tasks, using our <strong>Enterprise AI Gateway</strong> to synthesize answers with verifiable supporting document proofs.
             </p>
           </div>
 
@@ -160,13 +160,13 @@ export function DashboardView({
           <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-2">
             <div className="flex items-center gap-2 text-emerald-800 text-xs font-bold uppercase tracking-wider">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              The Solution: FalkorDB Graph + TrueFoundry Synthesis
+              The Solution: FalkorDB Graph + Neural AI Synthesis
             </div>
             <ul className="text-xs text-emerald-950 space-y-1.5 list-disc list-inside">
               <li><strong>FalkorDB Graph:</strong> Maps relationships between people, microservices, decisions, and tasks.</li>
-              <li><strong>TrueFoundry LLM Gateway:</strong> Fast inference on Groq Qwen 27B / Gemini 3.1 Flash Lite.</li>
+              <li><strong>Enterprise AI Gateway:</strong> Fast inference on Groq Qwen 27B / Gemini 3.1 Flash Lite.</li>
               <li><strong>Verifiable Provenance:</strong> Every answer provides clickable source citations with exact excerpts.</li>
-              <li><strong>TrueForge Multi-Agent Governance:</strong> Autonomous watchdog catches policy violations in PRs.</li>
+              <li><strong>Autonomous Multi-Agent Governance:</strong> Policy watchdog catches violations in PRs automatically.</li>
             </ul>
           </div>
         </div>
@@ -251,7 +251,7 @@ export function DashboardView({
             Instant Institutional Questions & Traversal Solvers
           </h2>
           <p className="text-xs text-slate-500">
-            Click any prompt to run a multi-hop traversal in FalkorDB with live TrueFoundry synthesis and verifiable citations.
+            Click any prompt to run a multi-hop traversal in FalkorDB with live Neural AI synthesis and verifiable citations.
           </p>
         </div>
 
@@ -479,17 +479,17 @@ export function DashboardView({
         </div>
       </section>
 
-      {/* 5. TrueFoundry MCP Gateway & Multi-Model Engine Section */}
+      {/* 5. Enterprise MCP Gateway & Multi-Model Engine Section */}
       <section className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-400/30">
               <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-              TrueFoundry MCP Gateway & Multi-Model Router
+              Enterprise MCP Gateway & Multi-Model Router
             </div>
             <h2 className="text-xl font-bold tracking-tight">Active Model & Tool Calling Architecture</h2>
             <p className="text-xs text-slate-300">
-              Switch between high-throughput Groq LPUs and Google Gemini models via TrueFoundry Gateway with automated sub-5ms FalkorDB circuit-breaking.
+              Switch between high-throughput Groq LPUs and Google Gemini models via our Enterprise AI Gateway with automated sub-5ms FalkorDB circuit-breaking.
             </p>
           </div>
 
