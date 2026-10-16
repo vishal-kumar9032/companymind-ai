@@ -70,6 +70,7 @@
 - `2026-10-16` (Branch `feat/ui-rebuild` - Step 4): Specialized outcome cards (`governance_violation` with Accept/Reject PR buttons and FalkorDB policy interception, `answered_with_path` with clickable source cards and arrow hops, `not_in_graph` amber helpful empty state with preset rephrasings, `answered_from_memory` badge). Verified with `next build` and live API tests.
 - `2026-10-16` (Branch `feat/ui-rebuild` - Step 5): TrueForge agent telemetry timeline (`AgentsTab.tsx`) with typed adapter (`src/lib/agentEvents.ts`), `ApprovalCard` human-in-the-loop blocking flow with Allow/Deny buttons, FalkorDB cross-session memory timeline (`MemoryTab.tsx`), and persistent `/api/findings` API. Verified with `next build` and live FalkorDB queries.
 - `2026-10-16` (Branch `feat/ui-rebuild` - Step 6): Two floating rounded cards layout (7 cols left graph, 5 cols right tabs: Oracle, Agents, Memory), responsive mobile bottom navigation ("Graph | Ask | Agents | Memory"), first-load Hero strip ("Ask why a decision was made, what breaks, or who owns it"), 4 large preset scenario cards, "Play Demo (4-Hop)" with live step-by-step captions, and app icon + favicon assets. Production verified and live at `https://companymind.135-235-136-6.sslip.io`.
+- `2026-10-16` (Branch `feat/ui-rebuild` - TrueForge UI Centering): Centered the TrueForge Agent Workbench as the primary view, eliminated the permanent 7-column graph canvas, and added small header toggle buttons ("Process", "Graph", "Memory") that slide out small inspector panels on demand. Verified live on HTTPS.
 
 
 
