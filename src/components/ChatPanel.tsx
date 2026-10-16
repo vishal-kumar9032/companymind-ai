@@ -47,6 +47,23 @@ interface Message {
   citations?: string[];
   feedback?: "up" | "down" | null;
   isStreaming?: boolean;
+  gatewayStatus?: {
+    provider: string;
+    status: "online" | "fallback_active";
+    reason?: string;
+    fallbackEngine?: string;
+    model?: string;
+    latencyMs?: number;
+  };
+  agent?: {
+    name: string;
+    role: string;
+    status?: string;
+  };
+  mcpTools?: {
+    invoked: string[];
+    available: string[];
+  };
 }
 
 interface ChatPanelProps {
@@ -62,6 +79,9 @@ interface ChatPanelProps {
     outcome: string;
     hops: string[];
     latencyMs?: number;
+    gatewayStatus?: any;
+    agent?: any;
+    mcpTools?: any;
   }) => void;
   onToggleProcess?: () => void;
   isProcessOpen?: boolean;
@@ -372,6 +392,9 @@ export function ChatPanel({
         citations,
         feedback: null,
         isStreaming: true,
+        gatewayStatus: data.gatewayStatus,
+        agent: data.agent,
+        mcpTools: data.mcpTools,
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -381,13 +404,18 @@ export function ChatPanel({
       }
 
       const latency =
-        (data.traces || []).reduce((acc: number, t: any) => acc + (t.durationMs || 0), 0) || 4;
+        data.latencyMs ||
+        (data.traces || []).reduce((acc: number, t: any) => acc + (t.durationMs || 0), 0) ||
+        4;
       onResponseUpdate?.({
         traces: data.traces || [],
         query: text,
         outcome: data.outcome || "answered_with_path",
         hops: data.hops || [],
         latencyMs: latency,
+        gatewayStatus: data.gatewayStatus,
+        agent: data.agent,
+        mcpTools: data.mcpTools,
       });
 
       setLoading(false);
@@ -545,38 +573,89 @@ export function ChatPanel({
                     : "bg-white border border-slate-200 text-slate-800 shadow-xs space-y-3.5"
                 }`}
               >
-                {/* Outcome Badge / Trust Header */}
+                {/* Outcome Badge / Trust & Execution Telemetry Header */}
                 {m.role === "assistant" && (
-                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 text-2xs font-mono">
-                    {m.outcome === "governance_violation" ? (
-                      <span className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">
-                        <ShieldAlert size={13} strokeWidth={2} />
-                        <span>Architecture Governance Watchdog</span>
-                      </span>
-                    ) : m.outcome === "answered_from_memory" ? (
-                      <span className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 font-semibold">
-                        <Brain size={13} strokeWidth={2} />
-                        <span>Recalled from Agent Memory Ledger</span>
-                      </span>
-                    ) : m.outcome === "not_in_graph" || m.outcome === "unknown_entity" ? (
-                      <span className="flex items-center gap-1.5 text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-semibold">
-                        <AlertTriangle size={13} strokeWidth={2} />
-                        <span>Entity Missing from Graph</span>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
-                        <CheckCircle2 size={12} strokeWidth={2} />
-                        <span>Grounded in FalkorDB Graph</span>
-                      </span>
-                    )}
+                  <div className="pb-3 border-b border-slate-200 space-y-2">
+                    {/* Top Row: Multi-Agent & Gateway Telemetry */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 text-2xs font-mono">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Agent Pill */}
+                        <span
+                          className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold"
+                          title={m.agent?.role || "Enterprise Knowledge & Provenance Orchestrator"}
+                        >
+                          <Bot size={10} />
+                          <span>{m.agent?.name || "ArchitectureOracle"}</span>
+                        </span>
 
-                    <span className="text-slate-400 font-normal">
-                      {m.outcome === "governance_violation"
-                        ? "P0 Block"
-                        : m.outcome === "answered_from_memory"
-                        ? "Cross-Session"
-                        : "Sub-10ms Cypher"}
-                    </span>
+                        {/* LLM Gateway / Fallback Status Pill */}
+                        {m.gatewayStatus?.status === "fallback_active" ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium"
+                            title={`TrueFoundry Gateway (${m.gatewayStatus.model || "gemini-2.5-flash-lite"}): ${m.gatewayStatus.reason || "Quota Exceeded (429)"}. Autonomous FalkorDB Graph Fallback Active.`}
+                          >
+                            <span className="size-1 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Gateway Fallback (429)</span>
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium"
+                            title="Synthesized through TrueFoundry LLM Gateway"
+                          >
+                            <span className="size-1 rounded-full bg-emerald-500" />
+                            <span>TrueFoundry LLM Gateway</span>
+                          </span>
+                        )}
+
+                        {/* TrueForge MCP Tool Pill */}
+                        {m.mcpTools?.invoked && m.mcpTools.invoked.length > 0 && (
+                          <span
+                            className="hidden sm:inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium"
+                            title={`TrueForge MCP Tool executed: ${m.mcpTools.invoked.join(", ")}`}
+                          >
+                            <span className="size-1 rounded-full bg-indigo-500" />
+                            <span>MCP: {m.mcpTools.invoked[0]}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-3xs text-slate-400 font-normal">
+                        {m.outcome === "governance_violation"
+                          ? "P0 Block"
+                          : m.outcome === "answered_from_memory"
+                          ? "Cross-Session"
+                          : "Sub-10ms Cypher"}
+                      </span>
+                    </div>
+
+                    {/* Bottom Row: Outcome Verification Badge */}
+                    <div className="flex items-center justify-between text-2xs font-mono">
+                      {m.outcome === "governance_violation" ? (
+                        <span className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-semibold">
+                          <ShieldAlert size={12} strokeWidth={2} />
+                          <span>Architecture Governance Watchdog</span>
+                        </span>
+                      ) : m.outcome === "answered_from_memory" ? (
+                        <span className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 font-semibold">
+                          <Brain size={12} strokeWidth={2} />
+                          <span>Recalled from Agent Memory Ledger</span>
+                        </span>
+                      ) : m.outcome === "not_in_graph" || m.outcome === "unknown_entity" ? (
+                        <span className="flex items-center gap-1.5 text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-semibold">
+                          <AlertTriangle size={12} strokeWidth={2} />
+                          <span>Entity Missing from Graph</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
+                          <CheckCircle2 size={12} strokeWidth={2} />
+                          <span>Grounded in FalkorDB Graph Brain</span>
+                        </span>
+                      )}
+
+                      <span className="text-3xs text-slate-500 font-mono">
+                        {m.hops?.length ? `${m.hops.length} hops verified` : "Verified"}
+                      </span>
+                    </div>
                   </div>
                 )}
 

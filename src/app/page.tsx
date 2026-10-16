@@ -32,6 +32,17 @@ export default function Home() {
   const [lastQuery, setLastQuery] = useState("What services break if auth-v1 is shut down?");
   const [lastOutcome, setLastOutcome] = useState("answered_with_path");
   const [memoryRefreshTrigger, setMemoryRefreshTrigger] = useState(0);
+  const [gatewayStatus, setGatewayStatus] = useState<any>({
+    provider: "TrueFoundry LLM Gateway",
+    status: "fallback_active",
+    reason: "Quota Exceeded (429)",
+    fallbackEngine: "Autonomous FalkorDB Graph Engine",
+    model: "google-gemini/gemini-2.5-flash-lite",
+  });
+  const [activeAgent, setActiveAgent] = useState<any>({
+    name: "ArchitectureOracle",
+    role: "Enterprise Knowledge & Provenance Orchestrator",
+  });
 
   // Small slide-over panels state
   const [isProcessOpen, setIsProcessOpen] = useState(false);
@@ -94,12 +105,17 @@ export default function Home() {
     outcome: string;
     hops: string[];
     latencyMs?: number;
+    gatewayStatus?: any;
+    agent?: any;
+    mcpTools?: any;
   }) => {
     if (data.traces) setLastTraces(data.traces);
     if (data.query) setLastQuery(data.query);
     if (data.outcome) setLastOutcome(data.outcome);
     if (data.latencyMs) setLatencyMs(data.latencyMs);
     if (data.hops) setHighlightHops(data.hops);
+    if (data.gatewayStatus) setGatewayStatus(data.gatewayStatus);
+    if (data.agent) setActiveAgent(data.agent);
 
     // If an approval is required, gently offer the process drawer
     if (data.outcome === "governance_violation") {
@@ -136,6 +152,8 @@ export default function Home() {
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         activeOutcome={lastOutcome}
+        gatewayStatus={gatewayStatus}
+        agent={activeAgent}
       />
 
       {/* Main Agent Workspace (Full Screen TrueForge UI) */}
@@ -197,6 +215,7 @@ export default function Home() {
               }}
               onFindingSaved={() => setMemoryRefreshTrigger((prev) => prev + 1)}
               onClose={() => setIsProcessOpen(false)}
+              gatewayStatus={gatewayStatus}
             />
           </aside>
         </div>

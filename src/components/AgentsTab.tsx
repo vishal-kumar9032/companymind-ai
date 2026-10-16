@@ -33,6 +33,13 @@ interface AgentsTabProps {
   onSelectNode?: (nodeId: string) => void;
   onFindingSaved?: () => void;
   onClose?: () => void;
+  gatewayStatus?: {
+    provider: string;
+    status: "online" | "fallback_active";
+    reason?: string;
+    fallbackEngine?: string;
+    model?: string;
+  };
 }
 
 export function AgentsTab({
@@ -43,6 +50,7 @@ export function AgentsTab({
   onSelectNode,
   onFindingSaved,
   onClose,
+  gatewayStatus,
 }: AgentsTabProps) {
   const runner = getAgentRunner();
   const [events, setEvents] = useState<AgentEvent[]>([]);
@@ -192,6 +200,70 @@ export function AgentsTab({
               <X size={15} />
             </button>
           )}
+        </div>
+      </div>
+
+      {/* TrueForge MCP Tools & Multi-Agent Architecture Overview */}
+      <div className="p-3 bg-white border-b border-slate-200 space-y-2.5 shrink-0 text-xs shadow-xs">
+        {/* Gateway & Fallback Banner */}
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+          <div className="flex items-center gap-1.5 font-mono text-2xs">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className="font-semibold text-slate-800">TrueForge Agent Harness:</span>
+            <span className="text-slate-600">Online</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-mono text-2xs">
+            {gatewayStatus?.status === "fallback_active" ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span>LLM Gateway: Fallback Active (Quota 429)</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span>LLM Gateway: TrueFoundry (Online)</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Registered TrueForge MCP Tools */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-slate-500 font-semibold">
+            <span>Registered TrueForge MCP Tools (5)</span>
+            <span className="text-indigo-600 font-medium">Zero-Shot OpenCypher</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {[
+              { name: "service_blast_radius", desc: "Downstream call dependencies" },
+              { name: "trace_decision_provenance", desc: "RFC, meeting & sign-off trace" },
+              { name: "audit_pr_governance", desc: "PR compliance interceptor" },
+              { name: "find_subject_matter_experts", desc: "SME & authorship ranker" },
+              { name: "recall_agent_findings", desc: "Episodic cross-session memory" },
+            ].map((tool) => (
+              <span
+                key={tool.name}
+                className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700"
+                title={`${tool.name}: ${tool.desc}`}
+              >
+                <span className="size-1 rounded-full bg-indigo-500" />
+                <span>{tool.name}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Coordinated Multi-Agent Roster */}
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-3xs font-mono text-slate-500">
+          <span className="uppercase font-semibold text-slate-400">Roster:</span>
+          <span className="text-rose-700 font-medium">🛡️ PolicyWatchdog</span>
+          <span>·</span>
+          <span className="text-indigo-700 font-medium">🔮 ArchitectureOracle</span>
+          <span>·</span>
+          <span className="text-sky-700 font-medium">💥 BlastRadiusMapper</span>
+          <span>·</span>
+          <span className="text-purple-700 font-medium">🧠 IncidentMemory</span>
         </div>
       </div>
 

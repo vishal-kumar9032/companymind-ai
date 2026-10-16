@@ -27,6 +27,18 @@ interface NavbarProps {
   onOpenCommandPalette?: () => void;
   onOpenAnalytics?: () => void;
   activeOutcome?: string;
+  gatewayStatus?: {
+    provider: string;
+    status: "online" | "fallback_active";
+    reason?: string;
+    fallbackEngine?: string;
+    model?: string;
+  };
+  agent?: {
+    name: string;
+    role: string;
+    status?: string;
+  };
 }
 
 export function Navbar({
@@ -43,6 +55,8 @@ export function Navbar({
   onOpenCommandPalette,
   onOpenAnalytics,
   activeOutcome,
+  gatewayStatus,
+  agent,
 }: NavbarProps) {
   const [seeding, setSeeding] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -177,10 +191,40 @@ export function Navbar({
           </span>
         )}
 
+        {/* LLM Gateway Status Pill */}
+        {gatewayStatus?.status === "fallback_active" ? (
+          <div
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-2xs font-mono text-amber-800 shadow-xs"
+            title={`TrueFoundry LLM Gateway (${gatewayStatus.model || "gemini-2.5-flash-lite"}): ${gatewayStatus.reason || "Quota Exceeded (429)"}. Autonomous FalkorDB Graph Fallback Active.`}
+          >
+            <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="font-semibold">Gateway:</span>
+            <span>Fallback (429)</span>
+          </div>
+        ) : (
+          <div
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-2xs font-mono text-emerald-800 shadow-xs"
+            title="TrueFoundry LLM Gateway: Online"
+          >
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span className="font-semibold">Gateway:</span>
+            <span>TrueFoundry</span>
+          </div>
+        )}
+
+        {/* TrueForge MCP Badge */}
+        <div
+          className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-2xs font-mono text-indigo-700 font-medium shadow-xs"
+          title="5 TrueForge MCP tools registered for zero-shot OpenCypher graph traversals"
+        >
+          <span className="size-1.5 rounded-full bg-indigo-500" />
+          <span>TrueForge MCPs (5)</span>
+        </div>
+
         {/* Live Latency Chip */}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-2xs font-mono text-slate-600 shadow-xs">
           <span className="size-1.5 rounded-full bg-emerald-500" />
-          <span className="text-slate-700 hidden sm:inline">Connected</span>
+          <span className="text-slate-700 hidden sm:inline">FalkorDB</span>
           <span className="text-slate-300 hidden sm:inline">·</span>
           <span className="text-indigo-600 font-semibold">{latencyMs}ms</span>
           <span className="text-slate-300 hidden xl:inline">·</span>
