@@ -21,6 +21,7 @@ interface GraphCanvasProps {
   highlightHops: string[];
   highlightNodeIds?: string[];
   onAskAboutNode?: (question: string) => void;
+  onSelectNode?: (nodeId: string) => void;
 }
 
 const LABEL_COLORS: Record<string, string> = {
@@ -54,6 +55,7 @@ export function GraphCanvas({
   highlightHops,
   highlightNodeIds,
   onAskAboutNode,
+  onSelectNode,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -248,6 +250,7 @@ export function GraphCanvas({
         category: n.data("category"),
       }));
       setSelectedNode({ ...data, connected });
+      onSelectNode?.(data.label || node.id());
     });
 
     // Tap background handler

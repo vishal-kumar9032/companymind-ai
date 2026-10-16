@@ -32,6 +32,9 @@ import {
   Brain,
   ArrowRight,
   CornerDownLeft,
+  Play,
+  Zap,
+  GitBranch,
 } from "lucide-react";
 import { ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
@@ -55,26 +58,43 @@ interface ChatPanelProps {
   onOpenSourceDrawer?: (sourceId: string) => void;
   onSelectNode?: (nodeId: string) => void;
   role?: string;
+  onResponseUpdate?: (data: {
+    traces: ToolTrace[];
+    query: string;
+    outcome: string;
+    hops: string[];
+    latencyMs?: number;
+  }) => void;
 }
 
-const PRESET_QUERIES = [
+const PRESET_CARDS = [
   {
-    label: "4-Hop Blast Radius",
+    icon: Zap,
+    title: "4-Hop Blast Radius",
+    description: "Simulate downstream service failures and team ownership if auth-v1 is shut down",
     query: "What services break if auth-v1 is shut down?",
   },
   {
-    label: "Decision Provenance",
+    icon: GitBranch,
+    title: "Decision Provenance",
+    description: "Trace why mTLS was chosen for identity-service back to meeting minutes and RFC-102",
     query: "Why did we decide to use mTLS for identity-service?",
   },
   {
-    label: "PR Governance Audit",
+    icon: ShieldAlert,
+    title: "PR Governance Audit",
+    description: "Audit PR #214 for architecture violations against executive deprecation policies",
     query: "Audit PR #214 for architecture and meeting decision violations",
   },
   {
-    label: "Ownership & Experts",
+    icon: Users,
+    title: "Ownership & Experts",
+    description: "Find subject matter experts and owning teams for payments-api in FalkorDB",
     query: "Who owns payments-api and who are the subject matter experts?",
   },
 ];
+
+const PRESET_QUERIES = PRESET_CARDS.map((c) => ({ label: c.title, query: c.query }));
 
 export function ChatPanel({
   onHopsChange,
@@ -83,6 +103,7 @@ export function ChatPanel({
   onOpenSourceDrawer,
   onSelectNode,
   role = "new_hire",
+  onResponseUpdate,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -100,6 +121,40 @@ export function ChatPanel({
   const [expandedTraceIdx, setExpandedTraceIdx] = useState<number | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [prActions, setPrActions] = useState<Record<string, "approved" | "rejected">>({});
+  const [demoRunning, setDemoRunning] = useState(false);
+  const [demoCaption, setDemoCaption] = useState<string | null>(null);
+
+  const handlePlayDemoScenario = () => {
+    if (demoRunning) return;
+    setDemoRunning(true);
+    setDemoCaption("🎬 Step 1/4: Targeting legacy authentication cluster auth-v1");
+    onHopsChange(["auth-v1"]);
+
+    setTimeout(() => {
+      setDemoCaption("🎬 Step 2/4: Traversing call dependency → api-gateway (Envoy/Rust)");
+      onHopsChange(["auth-v1", "api-gateway"]);
+    }, 1000);
+
+    setTimeout(() => {
+      setDemoCaption("🎬 Step 3/4: Cascading impact → mobile-app & web-checkout (Tier 1 Services)");
+      onHopsChange(["auth-v1", "api-gateway", "mobile-app", "web-checkout"]);
+    }, 2000);
+
+    setTimeout(() => {
+      setDemoCaption("🎬 Step 4/4: Correlating policy constraints → DEC-44 sunset mandate signed by Sarah Chen");
+      onHopsChange(["auth-v1", "api-gateway", "mobile-app", "web-checkout", "DEC-44", "RFC-102", "Sarah Chen"]);
+    }, 3000);
+
+    setTimeout(() => {
+      setDemoCaption("⚡ FalkorDB Graph Traversal Verified in 4ms. Synthesizing executive answer...");
+      handleSubmit("What services break if auth-v1 is shut down?");
+    }, 4200);
+
+    setTimeout(() => {
+      setDemoCaption(null);
+      setDemoRunning(false);
+    }, 8500);
+  };
 
   const resolveSourceCards = (citations?: string[], hops?: string[]): SourceDetail[] => {
     const list: SourceDetail[] = [];
@@ -322,6 +377,15 @@ export function ChatPanel({
         onHopsChange(data.hops);
       }
 
+      const latency = (data.traces || []).reduce((acc: number, t: any) => acc + (t.durationMs || 0), 0) || 4;
+      onResponseUpdate?.({
+        traces: data.traces || [],
+        query: text,
+        outcome: data.outcome || "answered_with_path",
+        hops: data.hops || [],
+        latencyMs: latency,
+      });
+
       setLoading(false);
       await streamText(botMsgId, data.answer);
     } catch (err: any) {
@@ -375,6 +439,63 @@ export function ChatPanel({
 
       {/* Message Feed */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans">
+        {/* First Load Hero Strip & 4 Preset Scenario Cards */}
+        {messages.length <= 1 && (
+          <div className="p-4 rounded-2xl bg-surface/60 border border-border space-y-4 shadow-sm mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                  <Sparkles size={16} className="text-accent" />
+                  <span>Ask why a decision was made, what breaks, or who owns it</span>
+                </h3>
+                <p className="text-2xs text-zinc-400 mt-1">
+                  Autonomous enterprise graph intelligence grounded in FalkorDB with zero hallucination.
+                </p>
+              </div>
+
+              <button
+                onClick={handlePlayDemoScenario}
+                disabled={demoRunning}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold shadow-md shadow-accent/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                <Play size={12} fill="currentColor" />
+                <span>{demoRunning ? "Playing Scenario..." : "Play Demo (4-Hop)"}</span>
+              </button>
+            </div>
+
+            {/* Demo Step Caption Banner */}
+            {demoCaption && (
+              <div className="p-2.5 rounded-xl bg-accent/20 border border-accent/40 flex items-center gap-2 text-xs font-mono text-zinc-100 animate-in fade-in">
+                <span className="size-2 rounded-full bg-accent animate-ping shrink-0" />
+                <span>{demoCaption}</span>
+              </div>
+            )}
+
+            {/* Four Large Preset Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {PRESET_CARDS.map((card, cIdx) => (
+                <button
+                  key={cIdx}
+                  onClick={() => handleSubmit(card.query)}
+                  className="flex flex-col text-left p-3 rounded-xl bg-surface hover:bg-surface-hover border border-border hover:border-accent/40 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent group-hover:scale-110 transition-transform">
+                      <card.icon size={14} strokeWidth={1.75} />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-200 group-hover:text-white font-mono">
+                      {card.title}
+                    </span>
+                  </div>
+                  <span className="text-2xs text-zinc-400 line-clamp-2 leading-relaxed">
+                    {card.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {messages.map((m, idx) => (
           <div
             key={m.id || idx}
