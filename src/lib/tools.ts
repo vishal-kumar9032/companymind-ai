@@ -259,6 +259,21 @@ export async function recallAgentFindings(targetName: string): Promise<{
   };
 }
 
+export async function getAllAgentFindings(): Promise<any[]> {
+  const graph = await getGraph();
+  const cypher = `
+    MATCH (f:AgentFinding)
+    OPTIONAL MATCH (f)-[:ABOUT]->(target)
+    RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS created_at, f.session_id AS session_id,
+           coalesce(target.name, target.title, toString(target.number), target.id, 'auth-v1') AS target_name,
+           labels(target)[0] AS target_type
+    ORDER BY f.at DESC
+    LIMIT 50
+  `;
+  const res = await graph.query(cypher);
+  return res.data || [];
+}
+
 /**
  * Full Graph Snapshot for Cytoscape.js Canvas
  */
