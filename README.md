@@ -8,10 +8,12 @@
 [![Tracks](https://img.shields.io/badge/Tracks-Company%20Brain%20%7C%20Agent%20Memory-00B4D8?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)]()
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-HTTPS%20Online-00C853?style=for-the-badge)](https://companymind.135-235-136-6.sslip.io)
+
 **Give your AI agents real company context.**  
 CompanyMind AI connects Google Workspace meeting notes & RFC docs with GitHub PRs, issues, and microservice infrastructure into an ultra-fast, queryable graph brain powered by **FalkorDB**.
 
-[Architecture Specification](docs/ARCHITECTURE.md) • [Getting Started](#-quickstart) • [Graph Model](#-graph-data-model) • [Demo Scenarios](#-demo-scenarios)
+**🚀 [Launch Live App (HTTPS)](https://companymind.135-235-136-6.sslip.io)** • [Architecture Specification](docs/ARCHITECTURE.md) • [Getting Started](#-quickstart) • [Graph Model](#-graph-data-model) • [Demo Scenarios](#-demo-scenarios)
 
 </div>
 
