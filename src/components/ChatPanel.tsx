@@ -19,25 +19,20 @@ import {
   Copy,
   Check,
   RefreshCw,
-  ExternalLink,
   Square,
   CheckCircle2,
   Loader2,
   Circle,
   FileText,
-  Calendar,
   Users,
   GitPullRequest,
   Server,
   Brain,
   ArrowRight,
-  CornerDownLeft,
   Play,
   Zap,
   GitBranch,
-  Activity,
-  Network,
-  X,
+  Plus,
 } from "lucide-react";
 import { ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
@@ -114,51 +109,95 @@ export function ChatPanel({
   onSelectNode,
   role = "new_hire",
   onResponseUpdate,
-  onToggleProcess,
-  isProcessOpen = false,
-  onToggleGraph,
-  isGraphOpen = false,
-  onToggleMemory,
-  isMemoryOpen = false,
   activeOutcome,
 }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "initial-oracle",
-      role: "assistant",
-      content:
-        "Welcome to **CompanyMind AI**. I map causal relationships across meeting notes, RFCs, GitHub PRs, and microservices in **FalkorDB**.\n\nAsk why an architectural decision was made, what services break if a system goes down, or who owns a service.",
-      citations: ["RFC-102", "DEC-44"],
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null);
   const [expandedTraceIdx, setExpandedTraceIdx] = useState<number | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [copiedCypherIdx, setCopiedCypherIdx] = useState<string | null>(null);
   const [prActions, setPrActions] = useState<Record<string, "approved" | "rejected">>({});
   const [demoRunning, setDemoRunning] = useState(false);
   const [demoCaption, setDemoCaption] = useState<string | null>(null);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortStreamRef = useRef(false);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading, loadingStep]);
+
+  // Keyboard shortcut listener: "/" focuses input, "Escape" clears highlights
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement !== inputRef.current &&
+        !(document.activeElement instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === "Escape") {
+        onHopsChange([]);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onHopsChange]);
+
+  // Handle external queries from command palette or presets
+  useEffect(() => {
+    if (externalTriggerQuery) {
+      handleSubmit(externalTriggerQuery);
+      onClearExternalTrigger?.();
+    }
+  }, [externalTriggerQuery]);
+
+  // Stepped progress ticks while loading
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStep(1);
+      return;
+    }
+    const t1 = setTimeout(() => setLoadingStep(2), 300);
+    const t2 = setTimeout(() => setLoadingStep(3), 650);
+    const t3 = setTimeout(() => setLoadingStep(4), 1050);
+    const t4 = setTimeout(() => setLoadingStep(5), 1450);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [loading]);
+
   const handlePlayDemoScenario = () => {
     if (demoRunning) return;
     setDemoRunning(true);
-    setDemoCaption("🎬 Step 1/4: Targeting legacy authentication cluster auth-v1");
+    setDemoCaption("Step 1/4: Targeting legacy authentication cluster auth-v1");
     onHopsChange(["auth-v1"]);
 
     setTimeout(() => {
-      setDemoCaption("🎬 Step 2/4: Traversing call dependency → api-gateway (Envoy/Rust)");
+      setDemoCaption("Step 2/4: Traversing call dependency → api-gateway (Envoy/Rust)");
       onHopsChange(["auth-v1", "api-gateway"]);
     }, 1000);
 
     setTimeout(() => {
-      setDemoCaption("🎬 Step 3/4: Cascading impact → mobile-app & web-checkout (Tier 1 Services)");
+      setDemoCaption("Step 3/4: Cascading impact → mobile-app & web-checkout (Tier 1 Services)");
       onHopsChange(["auth-v1", "api-gateway", "mobile-app", "web-checkout"]);
     }, 2000);
 
     setTimeout(() => {
-      setDemoCaption("🎬 Step 4/4: Correlating policy constraints → DEC-44 sunset mandate signed by Sarah Chen");
+      setDemoCaption("Step 4/4: Correlating policy constraints → DEC-44 sunset mandate signed by Sarah Chen");
       onHopsChange(["auth-v1", "api-gateway", "mobile-app", "web-checkout", "DEC-44", "RFC-102", "Sarah Chen"]);
     }, 3000);
 
@@ -208,70 +247,17 @@ export function ChatPanel({
   const renderSourceIcon = (type: string) => {
     switch (type) {
       case "rfc":
-        return <FileText size={13} className="text-violet-400" strokeWidth={1.75} />;
+        return <FileText size={12} className="text-violet-400" strokeWidth={1.75} />;
       case "meeting":
-        return <Users size={13} className="text-cyan-400" strokeWidth={1.75} />;
+        return <Users size={12} className="text-cyan-400" strokeWidth={1.75} />;
       case "pr":
-        return <GitPullRequest size={13} className="text-amber-400" strokeWidth={1.75} />;
+        return <GitPullRequest size={12} className="text-amber-400" strokeWidth={1.75} />;
       case "decision":
-        return <ShieldCheck size={13} className="text-emerald-400" strokeWidth={1.75} />;
+        return <ShieldCheck size={12} className="text-emerald-400" strokeWidth={1.75} />;
       default:
-        return <Server size={13} className="text-blue-400" strokeWidth={1.75} />;
+        return <Server size={12} className="text-blue-400" strokeWidth={1.75} />;
     }
   };
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const abortStreamRef = useRef(false);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading, loadingStep]);
-
-  // Keyboard shortcut listener: "/" focuses input, "Escape" clears highlights
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement !== inputRef.current && !(document.activeElement instanceof HTMLTextAreaElement)) {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-      if (e.key === "Escape") {
-        onHopsChange([]);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onHopsChange]);
-
-  // Handle external queries
-  useEffect(() => {
-    if (externalTriggerQuery) {
-      handleSubmit(externalTriggerQuery);
-      onClearExternalTrigger?.();
-    }
-  }, [externalTriggerQuery]);
-
-  // Stepped progress ticks while loading
-  useEffect(() => {
-    if (!loading) {
-      setLoadingStep(1);
-      return;
-    }
-    const t1 = setTimeout(() => setLoadingStep(2), 300);
-    const t2 = setTimeout(() => setLoadingStep(3), 600);
-    const t3 = setTimeout(() => setLoadingStep(4), 1000);
-    const t4 = setTimeout(() => setLoadingStep(5), 1400);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-    };
-  }, [loading]);
 
   const extractCitations = (text: string, query: string): string[] => {
     const citations: string[] = [];
@@ -336,7 +322,7 @@ export function ChatPanel({
       setMessages((prev) =>
         prev.map((m) => (m.id === msgId ? { ...m, content: current, isStreaming: true } : m))
       );
-      await new Promise((resolve) => setTimeout(resolve, 16));
+      await new Promise((resolve) => setTimeout(resolve, 14));
     }
 
     setMessages((prev) =>
@@ -394,7 +380,8 @@ export function ChatPanel({
         onHopsChange(data.hops);
       }
 
-      const latency = (data.traces || []).reduce((acc: number, t: any) => acc + (t.durationMs || 0), 0) || 4;
+      const latency =
+        (data.traces || []).reduce((acc: number, t: any) => acc + (t.durationMs || 0), 0) || 4;
       onResponseUpdate?.({
         traces: data.traces || [],
         query: text,
@@ -424,118 +411,74 @@ export function ChatPanel({
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
+  const handleCopyCypher = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCypherIdx(key);
+    setTimeout(() => setCopiedCypherIdx(null), 2000);
+  };
+
   const handleFeedback = (idx: number, type: "up" | "down") => {
     setMessages((prev) =>
       prev.map((m, i) => (i === idx ? { ...m, feedback: type } : m))
     );
   };
 
+  const handleResetChat = () => {
+    setMessages([]);
+    onHopsChange([]);
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-[#08080c] overflow-hidden">
-      {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="size-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-            <Bot size={15} strokeWidth={1.75} />
+      {/* Sub-Header Toolbar when thread is active */}
+      {messages.length > 0 && (
+        <div className="px-4 py-2.5 border-b border-border/80 bg-surface/30 backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 text-2xs font-mono text-zinc-400">
+            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="font-semibold text-zinc-200">Active Investigation</span>
+            <span className="text-zinc-600">·</span>
+            <span>{messages.length} exchanges</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xs sm:text-sm font-semibold text-zinc-100">
-                TrueForge Autonomous Agent
-              </h2>
-              <span className="hidden sm:inline text-3xs font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
-                FalkorDB Brain
-              </span>
-            </div>
-            <p className="text-3xs text-zinc-400 font-mono hidden sm:block">
-              Institutional intelligence & multi-hop causal reasoning
-            </p>
+
+          <div className="flex items-center gap-2">
+            {streamingMsgId && (
+              <button
+                onClick={handleStopStreaming}
+                className="flex items-center gap-1.5 text-2xs font-mono px-2.5 py-1 rounded-lg bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-colors cursor-pointer"
+              >
+                <Square size={10} />
+                <span>Stop Generation</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleResetChat}
+              className="flex items-center gap-1.5 text-2xs font-mono px-2.5 py-1 rounded-lg bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              title="Start a new investigation"
+            >
+              <Plus size={11} />
+              <span>New Inquiry</span>
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Small Toggles for Process, Graph, and Memory */}
-        <div className="flex items-center gap-1.5">
-          {streamingMsgId && (
-            <button
-              onClick={handleStopStreaming}
-              className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-colors cursor-pointer mr-1"
-            >
-              <Square size={10} />
-              <span>Stop</span>
-            </button>
-          )}
-
-          {onToggleProcess && (
-            <button
-              onClick={onToggleProcess}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
-                isProcessOpen
-                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
-                  : activeOutcome === "governance_violation"
-                  ? "bg-danger/20 border-danger/40 text-danger animate-pulse font-semibold"
-                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
-              }`}
-              title="Toggle Live Agent Process & Telemetry"
-            >
-              <Activity
-                size={12}
-                className={activeOutcome === "governance_violation" ? "text-danger" : "text-accent"}
-              />
-              <span>Process</span>
-              {activeOutcome === "governance_violation" && (
-                <span className="size-1.5 rounded-full bg-danger animate-ping" />
-              )}
-            </button>
-          )}
-
-          {onToggleGraph && (
-            <button
-              onClick={onToggleGraph}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
-                isGraphOpen
-                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
-                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
-              }`}
-              title="Toggle FalkorDB Graph Topology"
-            >
-              <Network size={12} className="text-cyan-400" />
-              <span>Graph</span>
-            </button>
-          )}
-
-          {onToggleMemory && (
-            <button
-              onClick={onToggleMemory}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono border transition-all cursor-pointer ${
-                isMemoryOpen
-                  ? "bg-accent/25 border-accent text-accent font-semibold shadow-sm"
-                  : "bg-surface hover:bg-surface-hover border-border text-zinc-300 hover:text-white"
-              }`}
-              title="Toggle Cross-Session Agent Memory"
-            >
-              <Brain size={12} className="text-purple-400" />
-              <span>Memory</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Message Feed */}
+      {/* Main Message Stream or Centered Hero */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 font-sans">
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          {/* First Load Hero Experience (TrueForge Style) */}
-          {messages.length <= 1 && (
-            <div className="py-4 sm:py-6 space-y-6">
-              <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent text-xs font-mono mb-1">
-                  <Sparkles size={13} />
-                  <span>TrueForge Autonomous Agent · FalkorDB Brain</span>
+        <div className="max-w-3xl mx-auto w-full space-y-6">
+          {/* Centered Hero View (Only shown when conversation is empty) */}
+          {messages.length === 0 && (
+            <div className="py-6 sm:py-10 space-y-6 animate-in fade-in duration-200">
+              <div className="text-center space-y-3 max-w-2xl mx-auto">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs font-mono mb-1">
+                  <Sparkles size={12} />
+                  <span>TrueForge Autonomous Agent · FalkorDB Causal Engine</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                   What can CompanyMind investigate for you?
                 </h1>
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Autonomous causal reasoning across meeting notes, RFC documents, GitHub PRs, and microservices with zero hallucination.
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-lg mx-auto">
+                  Autonomous causal reasoning across meeting notes, RFCs, GitHub PRs, and microservices with zero hallucination.
                 </p>
 
                 <div className="pt-2">
@@ -544,31 +487,31 @@ export function ChatPanel({
                     disabled={demoRunning}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold shadow-lg shadow-accent/25 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <Play size={13} fill="currentColor" />
-                    <span>{demoRunning ? "Playing Scenario..." : "Play 4-Hop Walkthrough (90s)"}</span>
+                    <Play size={12} fill="currentColor" />
+                    <span>{demoRunning ? "Playing Scenario..." : "Play 4-Hop Blast Radius Demo (90s)"}</span>
                   </button>
                 </div>
               </div>
 
               {/* Demo Step Caption Banner */}
               {demoCaption && (
-                <div className="p-3 rounded-xl bg-accent/20 border border-accent/40 flex items-center gap-2.5 text-xs font-mono text-zinc-100 animate-in fade-in shadow-md">
+                <div className="p-3 rounded-xl bg-accent/15 border border-accent/35 flex items-center gap-2.5 text-xs font-mono text-zinc-100 animate-in fade-in shadow-md">
                   <span className="size-2 rounded-full bg-accent animate-ping shrink-0" />
                   <span>{demoCaption}</span>
                 </div>
               )}
 
-              {/* Four Large Preset Scenario Cards */}
+              {/* Four Preset Scenario Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 {PRESET_CARDS.map((card, cIdx) => (
                   <button
                     key={cIdx}
                     onClick={() => handleSubmit(card.query)}
-                    className="flex flex-col text-left p-4 rounded-xl bg-[#0f0f16] hover:bg-[#151520] border border-border hover:border-accent/50 transition-all cursor-pointer group shadow-sm"
+                    className="flex flex-col text-left p-4 rounded-xl bg-surface/40 hover:bg-surface border border-border hover:border-accent/40 transition-all cursor-pointer group shadow-sm"
                   >
                     <div className="flex items-center gap-2.5 mb-2">
-                      <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 text-accent group-hover:scale-110 transition-transform">
-                        <card.icon size={16} strokeWidth={1.75} />
+                      <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 text-accent group-hover:scale-110 transition-transform shrink-0">
+                        <card.icon size={15} strokeWidth={1.75} />
                       </div>
                       <span className="text-sm font-semibold text-zinc-100 group-hover:text-white font-mono">
                         {card.title}
@@ -583,480 +526,489 @@ export function ChatPanel({
             </div>
           )}
 
-        {messages.map((m, idx) => (
-          <div
-            key={m.id || idx}
-            className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {m.role === "assistant" && (
-              <div className="size-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5 text-accent">
-                <Sparkles size={14} strokeWidth={1.75} />
-              </div>
-            )}
-
+          {/* Messages Feed */}
+          {messages.map((m, idx) => (
             <div
-              className={`rounded-2xl p-4 max-w-[92%] sm:max-w-[85%] leading-relaxed ${
-                m.role === "user"
-                  ? "bg-accent text-white shadow-md shadow-accent/20"
-                  : "bg-surface border border-border text-zinc-200 shadow-card space-y-3"
-              }`}
+              key={m.id || idx}
+              className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {/* Outcome Badge / Trust Header */}
               {m.role === "assistant" && (
-                <div className="flex items-center justify-between pb-2 border-b border-border text-2xs font-mono">
-                  {m.outcome === "governance_violation" ? (
-                    <span className="flex items-center gap-1.5 text-danger font-semibold">
-                      <ShieldAlert size={13} strokeWidth={2} />
-                      <span>Governance Watchdog Interception</span>
-                    </span>
-                  ) : m.outcome === "answered_from_memory" ? (
-                    <span className="flex items-center gap-1.5 text-accent font-semibold">
-                      <Brain size={13} strokeWidth={2} />
-                      <span>Recalled from Agent Memory</span>
-                    </span>
-                  ) : m.outcome === "not_in_graph" || m.outcome === "unknown_entity" ? (
-                    <span className="flex items-center gap-1.5 text-warning font-semibold">
-                      <AlertTriangle size={13} strokeWidth={2} />
-                      <span>Entity Missing from Graph</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-success">
-                      <CheckCircle2 size={12} strokeWidth={2} />
-                      <span>Grounded in FalkorDB Graph</span>
-                    </span>
-                  )}
-                  <span className="text-zinc-500">
-                    {m.outcome === "governance_violation"
-                      ? "P0 Block"
-                      : m.outcome === "answered_from_memory"
-                      ? "Cross-Session"
-                      : "99.4% Verified"}
-                  </span>
+                <div className="size-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5 text-accent shadow-sm">
+                  <Sparkles size={13} strokeWidth={1.75} />
                 </div>
               )}
 
-              {/* Specialized Governance Violation Card */}
-              {m.outcome === "governance_violation" && (
-                <div className="rounded-xl p-3.5 bg-danger/10 border border-danger/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xs font-mono uppercase tracking-wider text-danger font-bold flex items-center gap-1.5">
-                      <ShieldAlert size={14} />
-                      Active Policy Violation
-                    </span>
-                    <span className="text-3xs font-mono px-2 py-0.5 rounded bg-danger/20 text-danger border border-danger/30">
-                      RFC-102 Mandate
+              <div
+                className={`rounded-2xl p-4 sm:p-5 max-w-[92%] sm:max-w-[85%] leading-relaxed ${
+                  m.role === "user"
+                    ? "bg-accent text-white shadow-md shadow-accent/20"
+                    : "bg-surface/80 border border-border text-zinc-200 shadow-card space-y-3.5"
+                }`}
+              >
+                {/* Outcome Badge / Trust Header */}
+                {m.role === "assistant" && (
+                  <div className="flex items-center justify-between pb-2.5 border-b border-border/70 text-2xs font-mono">
+                    {m.outcome === "governance_violation" ? (
+                      <span className="flex items-center gap-1.5 text-danger font-semibold">
+                        <ShieldAlert size={13} strokeWidth={2} />
+                        <span>Architecture Governance Watchdog</span>
+                      </span>
+                    ) : m.outcome === "answered_from_memory" ? (
+                      <span className="flex items-center gap-1.5 text-accent font-semibold">
+                        <Brain size={13} strokeWidth={2} />
+                        <span>Recalled from Agent Memory Ledger</span>
+                      </span>
+                    ) : m.outcome === "not_in_graph" || m.outcome === "unknown_entity" ? (
+                      <span className="flex items-center gap-1.5 text-warning font-semibold">
+                        <AlertTriangle size={13} strokeWidth={2} />
+                        <span>Entity Missing from Graph</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-success font-medium">
+                        <CheckCircle2 size={12} strokeWidth={2} />
+                        <span>Grounded in FalkorDB Graph</span>
+                      </span>
+                    )}
+
+                    <span className="text-zinc-500 font-normal">
+                      {m.outcome === "governance_violation"
+                        ? "P0 Block"
+                        : m.outcome === "answered_from_memory"
+                        ? "Cross-Session"
+                        : "Sub-10ms Cypher"}
                     </span>
                   </div>
+                )}
 
-                  <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-danger/20">
-                    <div>
-                      <span className="text-zinc-400 font-mono text-2xs uppercase">Target PR: </span>
-                      <span className="font-semibold text-zinc-100">PR #214 (mobile-app fallback to auth-v1)</span>
-                    </div>
-                    <div>
-                      <span className="text-zinc-400 font-mono text-2xs uppercase">Violated Mandate: </span>
-                      <span className="font-semibold text-danger">DEC-44: Mandatory Deprecation of Auth-v1</span>
-                    </div>
-                    <div>
-                      <span className="text-zinc-400 font-mono text-2xs uppercase">Policy Rationale: </span>
-                      <span className="italic text-zinc-300">
-                        "Auth-v1 fails SOC2 controls. All new traffic must route through api-gateway to identity-service by Nov 1, 2026."
+                {/* Specialized Governance Violation Card */}
+                {m.outcome === "governance_violation" && (
+                  <div className="rounded-xl p-3.5 bg-danger/10 border border-danger/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xs font-mono uppercase tracking-wider text-danger font-bold flex items-center gap-1.5">
+                        <ShieldAlert size={14} />
+                        Policy Violation Interception
+                      </span>
+                      <span className="text-3xs font-mono px-2 py-0.5 rounded bg-danger/20 text-danger border border-danger/30">
+                        RFC-102 Mandate
                       </span>
                     </div>
-                  </div>
 
-                  {/* Approve Exception / Reject PR Action Buttons */}
-                  <div className="pt-1 flex items-center justify-between gap-2">
-                    {prActions[m.id] ? (
-                      <div
-                        className={`w-full py-2 px-3 rounded-lg text-xs font-mono flex items-center gap-2 ${
-                          prActions[m.id] === "rejected"
-                            ? "bg-danger/20 text-danger border border-danger/40"
-                            : "bg-success/20 text-success border border-success/40"
-                        }`}
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>
-                          {prActions[m.id] === "rejected"
-                            ? "PR #214 rejected by Policy Watchdog. Incident recorded to Agent Memory."
-                            : "Exception granted for 72h. Security audit trail recorded in FalkorDB."}
+                    <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-danger/20">
+                      <div>
+                        <span className="text-zinc-400 font-mono text-2xs uppercase">Target PR: </span>
+                        <span className="font-semibold text-zinc-100">PR #214 (mobile-app fallback to auth-v1)</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400 font-mono text-2xs uppercase">Violated Mandate: </span>
+                        <span className="font-semibold text-danger">DEC-44: Mandatory Deprecation of Auth-v1</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400 font-mono text-2xs uppercase">Policy Rationale: </span>
+                        <span className="italic text-zinc-300">
+                          "Auth-v1 fails SOC2 controls. All new traffic must route through api-gateway to identity-service by Nov 1, 2026."
                         </span>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2 w-full">
-                        <button
-                          onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "rejected" }))}
-                          className="flex-1 py-2 px-3 rounded-lg bg-danger hover:bg-danger/90 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                    </div>
+
+                    {/* Approve Exception / Reject PR Action Buttons */}
+                    <div className="pt-1 flex items-center justify-between gap-2">
+                      {prActions[m.id] ? (
+                        <div
+                          className={`w-full py-2 px-3 rounded-lg text-xs font-mono flex items-center gap-2 ${
+                            prActions[m.id] === "rejected"
+                              ? "bg-danger/20 text-danger border border-danger/40"
+                              : "bg-success/20 text-success border border-success/40"
+                          }`}
                         >
-                          <ShieldAlert size={14} />
-                          <span>Reject PR</span>
-                        </button>
-                        <button
-                          onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "approved" }))}
-                          className="flex-1 py-2 px-3 rounded-lg bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <ShieldCheck size={14} />
-                          <span>Approve Exception</span>
-                        </button>
+                          <CheckCircle2 size={13} />
+                          <span>
+                            {prActions[m.id] === "rejected"
+                              ? "PR #214 rejected by Policy Watchdog. Incident recorded to Agent Memory."
+                              : "Exception granted for 72h. Security audit trail recorded in FalkorDB."}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 w-full">
+                          <button
+                            onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "rejected" }))}
+                            className="flex-1 py-2 px-3 rounded-xl bg-danger hover:bg-danger/90 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                          >
+                            <ShieldAlert size={13} />
+                            <span>Reject PR</span>
+                          </button>
+                          <button
+                            onClick={() => setPrActions((prev) => ({ ...prev, [m.id]: "approved" }))}
+                            className="flex-1 py-2 px-3 rounded-xl bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <ShieldCheck size={13} />
+                            <span>Approve Exception</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Helpful Empty State for Not In Graph / Unknown Entity */}
+                {(m.outcome === "not_in_graph" || m.outcome === "unknown_entity") && (
+                  <div className="rounded-xl p-3.5 bg-warning/10 border border-warning/30 space-y-2.5">
+                    <div className="flex items-center gap-2 text-warning font-semibold text-xs uppercase tracking-wide font-mono">
+                      <AlertTriangle size={14} strokeWidth={2} />
+                      <span>Entity or Causal Link Not Found</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 leading-relaxed">
+                      FalkorDB graph traversal did not find an indexed entity or policy decision matching this query. Try asking about one of the indexed production systems:
+                    </p>
+                    <div className="pt-2 border-t border-warning/20 space-y-1">
+                      <span className="text-3xs font-mono uppercase tracking-wider text-warning/80 block">
+                        Suggested Inquiries:
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        {PRESET_QUERIES.map((p, pIdx) => (
+                          <button
+                            key={pIdx}
+                            onClick={() => handleSubmit(p.query)}
+                            className="text-left text-2xs p-1.5 rounded-lg bg-bg/80 hover:bg-surface border border-warning/20 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                          >
+                            → {p.query}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Message Body with react-markdown rendering */}
+                {m.role === "assistant" ? (
+                  <div className="prose prose-invert max-w-none text-sm leading-relaxed text-zinc-200 space-y-2">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed text-sm text-zinc-200">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-zinc-100">{children}</strong>,
+                        code: ({ children, className }) => {
+                          const isBlock = Boolean(className);
+                          return isBlock ? (
+                            <pre className="p-3 my-2 rounded-xl bg-black/60 border border-border font-mono text-xs text-zinc-300 overflow-x-auto">
+                              <code>{children}</code>
+                            </pre>
+                          ) : (
+                            <code className="px-1.5 py-0.5 rounded bg-surface border border-border font-mono text-xs text-accent">{children}</code>
+                          );
+                        },
+                        ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 text-sm text-zinc-300">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 text-sm text-zinc-300">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:text-accent-hover transition-colors">
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="text-sm leading-relaxed text-white font-medium">
+                    {m.content}
+                  </div>
+                )}
+
+                {/* Traversed Causal Path Hops as clean breadcrumb */}
+                {m.hops && m.hops.length > 0 && (
+                  <div className="pt-2 border-t border-border/70 space-y-1.5">
+                    <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-zinc-400">
+                      <span>Causal Path Traversed ({m.hops.length} nodes):</span>
+                      <span className="text-zinc-500">Click node to inspect</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {m.hops.map((hop, hIdx) => (
+                        <React.Fragment key={hIdx}>
+                          <button
+                            onClick={() => onSelectNode?.(hop)}
+                            className="inline-flex items-center gap-1 text-2xs font-mono px-2 py-0.5 rounded-md bg-accent/10 text-violet-300 border border-accent/25 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer"
+                            title={`Focus ${hop} in FalkorDB graph`}
+                          >
+                            <span>{hop}</span>
+                          </button>
+                          {hIdx < (m.hops?.length || 0) - 1 && (
+                            <ArrowRight size={10} className="text-zinc-600 shrink-0" />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Compact Supporting Evidence Chips */}
+                {(() => {
+                  const sourceCards = resolveSourceCards(m.citations, m.hops);
+                  if (sourceCards.length === 0) return null;
+                  return (
+                    <div className="pt-2 border-t border-border/70 space-y-1.5">
+                      <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-zinc-400">
+                        <span>Supporting Evidence ({sourceCards.length}):</span>
+                        <span className="text-zinc-500">Opens drawer</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {sourceCards.map((src) => (
+                          <button
+                            key={src.id}
+                            onClick={() => {
+                              onSelectNode?.(src.id);
+                              onOpenSourceDrawer?.(src.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface/80 hover:bg-surface border border-border hover:border-accent/40 text-2xs transition-all cursor-pointer group"
+                            title={`Inspect ${src.title}`}
+                          >
+                            {renderSourceIcon(src.type)}
+                            <span className="font-mono font-semibold text-accent">{src.id}</span>
+                            <span className="text-zinc-400 group-hover:text-zinc-200 max-w-[140px] truncate hidden sm:inline">
+                              {src.title}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Collapsible OpenCypher Graph Proof */}
+                {m.traces && m.traces.length > 0 && (
+                  <div className="pt-2 border-t border-border/70">
+                    <button
+                      onClick={() =>
+                        setExpandedTraceIdx(expandedTraceIdx === idx ? null : idx)
+                      }
+                      className="flex items-center gap-1.5 text-2xs font-mono text-zinc-400 hover:text-success transition-colors cursor-pointer"
+                    >
+                      <Terminal size={12} strokeWidth={1.75} className="text-success" />
+                      <span>
+                        OpenCypher Graph Proof ({m.traces.length} tool
+                        {m.traces.length > 1 ? "s" : ""}, ~
+                        {m.traces.reduce((acc, t) => acc + t.durationMs, 0)}ms on FalkorDB)
+                      </span>
+                      {expandedTraceIdx === idx ? (
+                        <ChevronDown size={12} strokeWidth={1.75} />
+                      ) : (
+                        <ChevronRight size={12} strokeWidth={1.75} />
+                      )}
+                    </button>
+
+                    {expandedTraceIdx === idx && (
+                      <div className="mt-2 space-y-2 p-3 rounded-xl bg-black/60 border border-border font-mono text-2xs animate-in fade-in">
+                        {m.traces.map((trace, tIdx) => {
+                          const traceKey = `${idx}-${tIdx}`;
+                          return (
+                            <div key={tIdx} className="space-y-1.5">
+                              <div className="flex items-center justify-between text-zinc-400">
+                                <span className="text-success font-semibold">
+                                  {trace.tool}()
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-zinc-500">
+                                    {trace.durationMs}ms | {trace.resultCount} rows
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyCypher(trace.cypher.trim(), traceKey)}
+                                    className="p-1 rounded text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+                                    title="Copy OpenCypher query"
+                                  >
+                                    {copiedCypherIdx === traceKey ? (
+                                      <Check size={11} className="text-success" />
+                                    ) : (
+                                      <Copy size={11} />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                              <pre className="text-zinc-300 overflow-x-auto p-2.5 rounded-lg bg-bg border border-border/60 text-2xs leading-relaxed">
+                                {trace.cypher.trim()}
+                              </pre>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Helpful Empty State for Not In Graph / Unknown Entity */}
-              {(m.outcome === "not_in_graph" || m.outcome === "unknown_entity") && (
-                <div className="rounded-xl p-3.5 bg-warning/10 border border-warning/30 space-y-2.5">
-                  <div className="flex items-center gap-2 text-warning font-semibold text-xs uppercase tracking-wide font-mono">
-                    <AlertTriangle size={15} strokeWidth={2} />
-                    <span>Entity or Causal Link Not Found</span>
+                {/* Bot Actions & Feedback Loop */}
+                {m.role === "assistant" && !m.isStreaming && (
+                  <div className="pt-2 border-t border-border/70 flex items-center justify-between text-xs text-zinc-500">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleFeedback(idx, "up")}
+                        className={`p-1 rounded hover:bg-surface transition-colors cursor-pointer ${
+                          m.feedback === "up" ? "text-success" : "text-zinc-500 hover:text-zinc-300"
+                        }`}
+                        title="Accurate Answer"
+                      >
+                        <ThumbsUp size={13} strokeWidth={1.75} />
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(idx, "down")}
+                        className={`p-1 rounded hover:bg-surface transition-colors cursor-pointer ${
+                          m.feedback === "down" ? "text-danger" : "text-zinc-500 hover:text-zinc-300"
+                        }`}
+                        title="Report Inaccuracy"
+                      >
+                        <ThumbsDown size={13} strokeWidth={1.75} />
+                      </button>
+                      {m.feedback && (
+                        <span className="text-3xs text-zinc-400 font-mono ml-1">
+                          {m.feedback === "up" ? "Logged to alignment ledger" : "Flagged for review"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleCopy(m.content, idx)}
+                        className="p-1 rounded hover:bg-surface text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                        title="Copy Answer"
+                      >
+                        {copiedIdx === idx ? (
+                          <Check size={13} strokeWidth={2} className="text-success" />
+                        ) : (
+                          <Copy size={13} strokeWidth={1.75} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleSubmit(messages[idx - 1]?.content || m.content)}
+                        className="p-1 rounded hover:bg-surface text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                        title="Regenerate Answer"
+                      >
+                        <RefreshCw size={13} strokeWidth={1.75} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    FalkorDB graph traversal did not find an indexed entity or policy decision matching this query. Try rephrasing or asking about one of the known production systems in the company brain:
-                  </p>
-                  <div className="pt-2 border-t border-warning/20 space-y-1">
-                    <span className="text-2xs font-mono uppercase tracking-wider text-warning/80 block">
-                      Suggested Graph Inquiries:
+                )}
+
+                {/* Suggested Follow-Ups as sleek question pills */}
+                {m.role === "assistant" && !m.isStreaming && (
+                  <div className="pt-2 border-t border-border/70 space-y-1.5">
+                    <span className="text-3xs font-mono uppercase tracking-wider text-zinc-500 block">
+                      Suggested Follow-ups:
                     </span>
                     <div className="flex flex-col gap-1">
-                      {PRESET_QUERIES.map((p, pIdx) => (
+                      {getSuggestedFollowUps(m.content).map((su, sIdx) => (
                         <button
-                          key={pIdx}
-                          onClick={() => handleSubmit(p.query)}
-                          className="text-left text-2xs p-1.5 rounded-lg bg-bg/80 hover:bg-surface-hover border border-warning/20 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                          key={sIdx}
+                          onClick={() => handleSubmit(su)}
+                          className="text-left text-2xs p-2 rounded-lg bg-surface/40 hover:bg-surface border border-border/80 hover:border-accent/40 text-zinc-300 hover:text-white transition-all cursor-pointer"
                         >
-                          → {p.query}
+                          → {su}
                         </button>
                       ))}
                     </div>
                   </div>
+                )}
+              </div>
+
+              {m.role === "user" && (
+                <div className="size-7 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 mt-0.5 text-zinc-300 shadow-sm">
+                  <User size={13} strokeWidth={1.75} />
                 </div>
               )}
+            </div>
+          ))}
 
-              {/* Message Body with react-markdown rendering */}
-              {m.role === "assistant" ? (
-                <div className="prose prose-invert max-w-none text-sm leading-relaxed text-zinc-200 space-y-2">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed text-sm text-zinc-200">{children}</p>,
-                      strong: ({ children }) => <strong className="font-semibold text-zinc-100">{children}</strong>,
-                      code: ({ children, className }) => {
-                        const isBlock = Boolean(className);
-                        return isBlock ? (
-                          <pre className="p-3 my-2 rounded-xl bg-black/60 border border-border font-mono text-xs text-zinc-300 overflow-x-auto">
-                            <code>{children}</code>
-                          </pre>
-                        ) : (
-                          <code className="px-1.5 py-0.5 rounded bg-surface border border-border font-mono text-xs text-accent">{children}</code>
-                        );
-                      },
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 text-sm text-zinc-300">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 text-sm text-zinc-300">{children}</ol>,
-                      li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
-                      a: ({ href, children }) => (
-                        <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:text-accent-hover transition-colors">
-                          {children}
-                        </a>
-                      ),
-                    }}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="text-sm leading-relaxed text-white font-medium">
-                  {m.content}
-                </div>
-              )}
+          {/* Live Step List Loader */}
+          {loading && (
+            <div className="p-4 rounded-2xl bg-surface/80 border border-border max-w-[92%] sm:max-w-[85%] space-y-3 shadow-card">
+              <span className="text-2xs font-mono uppercase tracking-wider text-accent block font-medium">
+                Graph Query Execution Pipeline:
+              </span>
 
-              {/* Traversed Causal Path Hops with Connected Arrows */}
-              {m.hops && m.hops.length > 0 && (
-                <div className="pt-2 border-t border-border/80 space-y-1.5">
-                  <div className="flex items-center justify-between text-2xs font-mono uppercase tracking-wider text-accent font-medium">
-                    <span>Causal Path Traversed ({m.hops.length} nodes):</span>
-                    <span className="text-zinc-500 font-normal">Sub-10ms FalkorDB</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {m.hops.map((hop, hIdx) => (
-                      <React.Fragment key={hIdx}>
-                        <button
-                          onClick={() => onSelectNode?.(hop)}
-                          className="inline-flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded-md bg-accent/10 text-violet-300 border border-accent/25 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer"
-                          title={`Click to focus ${hop} in FalkorDB graph`}
-                        >
-                          <span>{hop}</span>
-                        </button>
-                        {hIdx < (m.hops?.length || 0) - 1 && (
-                          <ArrowRight size={10} className="text-zinc-500 shrink-0" />
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Supporting Evidence Source Cards Grid */}
-              {(() => {
-                const sourceCards = resolveSourceCards(m.citations, m.hops);
-                if (sourceCards.length === 0) return null;
-                return (
-                  <div className="pt-2 border-t border-border/80 space-y-2">
-                    <div className="flex items-center justify-between text-2xs font-mono uppercase tracking-wider text-zinc-400">
-                      <span>Verified Evidence & Sources ({sourceCards.length}):</span>
-                      <span className="text-zinc-500 font-normal">Click card to focus</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {sourceCards.map((src) => (
-                        <button
-                          key={src.id}
-                          onClick={() => {
-                            onSelectNode?.(src.id);
-                            onOpenSourceDrawer?.(src.id);
-                          }}
-                          className="flex flex-col text-left p-2.5 rounded-xl bg-surface/80 hover:bg-surface-hover border border-border/80 hover:border-accent/40 transition-all cursor-pointer group"
-                        >
-                          <div className="flex items-center justify-between w-full mb-1">
-                            <span className="flex items-center gap-1.5 text-2xs font-semibold text-accent">
-                              {renderSourceIcon(src.type)}
-                              <span className="font-mono">{src.id}</span>
-                            </span>
-                            <span className="text-3xs font-mono text-zinc-400 bg-black/40 px-1.5 py-0.5 rounded border border-border/40">
-                              {src.date}
-                            </span>
-                          </div>
-                          <span className="text-xs font-medium text-zinc-200 line-clamp-1 group-hover:text-white">
-                            {src.title}
-                          </span>
-                          <span className="text-2xs text-zinc-400 line-clamp-1 mt-0.5">
-                            {src.author}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Collapsible OpenCypher Graph Proof */}
-              {m.traces && m.traces.length > 0 && (
-                <div className="pt-2 border-t border-border">
-                  <button
-                    onClick={() =>
-                      setExpandedTraceIdx(expandedTraceIdx === idx ? null : idx)
-                    }
-                    className="flex items-center gap-1.5 text-2xs font-mono text-zinc-400 hover:text-success transition-colors cursor-pointer"
-                  >
-                    <Terminal size={12} strokeWidth={1.75} className="text-success" />
-                    <span>
-                      OpenCypher Graph Proof ({m.traces.length} tool
-                      {m.traces.length > 1 ? "s" : ""}, ~
-                      {m.traces.reduce((acc, t) => acc + t.durationMs, 0)}ms on FalkorDB)
-                    </span>
-                    {expandedTraceIdx === idx ? (
-                      <ChevronDown size={12} strokeWidth={1.75} />
-                    ) : (
-                      <ChevronRight size={12} strokeWidth={1.75} />
-                    )}
-                  </button>
-
-                  {expandedTraceIdx === idx && (
-                    <div className="mt-2 space-y-2 p-2.5 rounded-lg bg-black/60 border border-border font-mono text-2xs">
-                      {m.traces.map((trace, tIdx) => (
-                        <div key={tIdx} className="space-y-1">
-                          <div className="flex items-center justify-between text-zinc-400">
-                            <span className="text-success font-semibold">
-                              {trace.tool}()
-                            </span>
-                            <span className="text-zinc-500">
-                              {trace.durationMs}ms | {trace.resultCount} rows
-                            </span>
-                          </div>
-                          <pre className="text-zinc-300 overflow-x-auto p-2 rounded bg-bg border border-border/60 text-2xs leading-tight">
-                            {trace.cypher.trim()}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  {loadingStep > 1 ? (
+                    <Check size={13} strokeWidth={2} className="text-success" />
+                  ) : loadingStep === 1 ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin text-accent" />
+                  ) : (
+                    <Circle size={13} strokeWidth={1.5} className="text-zinc-600" />
                   )}
-                </div>
-              )}
-
-              {/* Bot Actions & Feedback Loop */}
-              {m.role === "assistant" && !m.isStreaming && (
-                <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-zinc-500">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleFeedback(idx, "up")}
-                      className={`p-1 rounded hover:bg-surface-hover transition-colors ${
-                        m.feedback === "up" ? "text-success" : "text-zinc-500"
-                      }`}
-                      title="Accurate Answer"
-                    >
-                      <ThumbsUp size={14} strokeWidth={1.75} />
-                    </button>
-                    <button
-                      onClick={() => handleFeedback(idx, "down")}
-                      className={`p-1 rounded hover:bg-surface-hover transition-colors ${
-                        m.feedback === "down" ? "text-danger" : "text-zinc-500"
-                      }`}
-                      title="Report Inaccuracy"
-                    >
-                      <ThumbsDown size={14} strokeWidth={1.75} />
-                    </button>
-                    {m.feedback && (
-                      <span className="text-2xs text-zinc-400 font-mono">
-                        {m.feedback === "up" ? "Logged to alignment ledger" : "Flagged for review"}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleCopy(m.content, idx)}
-                      className="p-1 rounded hover:bg-surface-hover text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      title="Copy Answer"
-                    >
-                      {copiedIdx === idx ? (
-                        <Check size={14} strokeWidth={2} className="text-success" />
-                      ) : (
-                        <Copy size={14} strokeWidth={1.75} />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleSubmit(messages[idx - 1]?.content || m.content)}
-                      className="p-1 rounded hover:bg-surface-hover text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      title="Regenerate Answer"
-                    >
-                      <RefreshCw size={14} strokeWidth={1.75} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Suggested Follow-Ups */}
-              {m.role === "assistant" && !m.isStreaming && (
-                <div className="pt-2 border-t border-border space-y-1.5">
-                  <span className="text-2xs font-mono uppercase tracking-wider text-zinc-500 block">
-                    Suggested Follow-ups:
+                  <span className={loadingStep === 1 ? "text-zinc-100 font-medium" : loadingStep > 1 ? "text-zinc-400" : "text-zinc-600"}>
+                    Understanding question & intent
                   </span>
-                  <div className="flex flex-col gap-1">
-                    {getSuggestedFollowUps(m.content).map((su, sIdx) => (
-                      <button
-                        key={sIdx}
-                        onClick={() => handleSubmit(su)}
-                        className="text-left text-xs p-2 rounded-lg bg-bg/80 hover:bg-surface-hover border border-border text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-                      >
-                        → {su}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-              )}
-            </div>
 
-            {m.role === "user" && (
-              <div className="size-7 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 mt-0.5 text-zinc-300">
-                <User size={14} strokeWidth={1.75} />
-              </div>
-            )}
-          </div>
-        ))}
+                <div className="flex items-center gap-2 text-xs">
+                  {loadingStep > 2 ? (
+                    <Check size={13} strokeWidth={2} className="text-success" />
+                  ) : loadingStep === 2 ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin text-accent" />
+                  ) : (
+                    <Circle size={13} strokeWidth={1.5} className="text-zinc-600" />
+                  )}
+                  <span className={loadingStep === 2 ? "text-zinc-100 font-medium" : loadingStep > 2 ? "text-zinc-400" : "text-zinc-600"}>
+                    Resolving entities in FalkorDB
+                  </span>
+                </div>
 
-        {/* Live Step List Loader */}
-        {loading && (
-          <div className="p-4 rounded-2xl bg-surface border border-border max-w-[92%] sm:max-w-[85%] space-y-3">
-            <span className="text-2xs font-mono uppercase tracking-wider text-accent block font-medium">
-              Graph Query Execution Pipeline:
-            </span>
+                <div className="flex items-center gap-2 text-xs">
+                  {loadingStep > 3 ? (
+                    <Check size={13} strokeWidth={2} className="text-success" />
+                  ) : loadingStep === 3 ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin text-accent" />
+                  ) : (
+                    <Circle size={13} strokeWidth={1.5} className="text-zinc-600" />
+                  )}
+                  <span className={loadingStep === 3 ? "text-zinc-100 font-medium" : loadingStep > 3 ? "text-zinc-400" : "text-zinc-600"}>
+                    Traversing causal graph hops (sub-10ms)
+                  </span>
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs">
-                {loadingStep > 1 ? (
-                  <Check size={14} strokeWidth={2} className="text-success" />
-                ) : loadingStep === 1 ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin text-accent" />
-                ) : (
-                  <Circle size={14} strokeWidth={1.5} className="text-zinc-600" />
-                )}
-                <span className={loadingStep === 1 ? "text-zinc-100 font-medium" : loadingStep > 1 ? "text-zinc-400" : "text-zinc-600"}>
-                  Understanding question & intent
-                </span>
-              </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {loadingStep > 4 ? (
+                    <Check size={13} strokeWidth={2} className="text-success" />
+                  ) : loadingStep === 4 ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin text-accent" />
+                  ) : (
+                    <Circle size={13} strokeWidth={1.5} className="text-zinc-600" />
+                  )}
+                  <span className={loadingStep === 4 ? "text-zinc-100 font-medium" : loadingStep > 4 ? "text-zinc-400" : "text-zinc-600"}>
+                    Verifying RFC-102 & Meeting minutes sources
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                {loadingStep > 2 ? (
-                  <Check size={14} strokeWidth={2} className="text-success" />
-                ) : loadingStep === 2 ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin text-accent" />
-                ) : (
-                  <Circle size={14} strokeWidth={1.5} className="text-zinc-600" />
-                )}
-                <span className={loadingStep === 2 ? "text-zinc-100 font-medium" : loadingStep > 2 ? "text-zinc-400" : "text-zinc-600"}>
-                  Resolving entities in FalkorDB
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                {loadingStep > 3 ? (
-                  <Check size={14} strokeWidth={2} className="text-success" />
-                ) : loadingStep === 3 ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin text-accent" />
-                ) : (
-                  <Circle size={14} strokeWidth={1.5} className="text-zinc-600" />
-                )}
-                <span className={loadingStep === 3 ? "text-zinc-100 font-medium" : loadingStep > 3 ? "text-zinc-400" : "text-zinc-600"}>
-                  Traversing causal graph hops (sub-10ms)
-                </span>
+                <div className="flex items-center gap-2 text-xs">
+                  {loadingStep === 5 ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin text-accent" />
+                  ) : (
+                    <Circle size={13} strokeWidth={1.5} className="text-zinc-600" />
+                  )}
+                  <span className={loadingStep === 5 ? "text-zinc-100 font-medium" : "text-zinc-600"}>
+                    Synthesizing verified answer
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                {loadingStep > 4 ? (
-                  <Check size={14} strokeWidth={2} className="text-success" />
-                ) : loadingStep === 4 ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin text-accent" />
-                ) : (
-                  <Circle size={14} strokeWidth={1.5} className="text-zinc-600" />
-                )}
-                <span className={loadingStep === 4 ? "text-zinc-100 font-medium" : loadingStep > 4 ? "text-zinc-400" : "text-zinc-600"}>
-                  Verifying RFC-102 & Meeting minutes sources
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                {loadingStep === 5 ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin text-accent" />
-                ) : (
-                  <Circle size={14} strokeWidth={1.5} className="text-zinc-600" />
-                )}
-                <span className={loadingStep === 5 ? "text-zinc-100 font-medium" : "text-zinc-600"}>
-                  Writing verified answer
-                </span>
+              {/* Skeleton Pulse Bars */}
+              <div className="space-y-2 pt-2 border-t border-border/60">
+                <div className="h-2 bg-surface rounded-md w-3/4 animate-pulse" />
+                <div className="h-2 bg-surface rounded-md w-5/6 animate-pulse" />
+                <div className="h-2 bg-surface rounded-md w-1/2 animate-pulse" />
               </div>
             </div>
+          )}
 
-            {/* Skeleton Pulse Bars */}
-            <div className="space-y-2 pt-2 border-t border-border/60">
-              <div className="h-2.5 bg-surface-hover rounded-md w-3/4 animate-pulse" />
-              <div className="h-2.5 bg-surface-hover rounded-md w-5/6 animate-pulse" />
-              <div className="h-2.5 bg-surface-hover rounded-md w-1/2 animate-pulse" />
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* TrueForge Elevated Input Bar */}
+      {/* Clean Elevated Input Bar */}
       <div className="border-t border-border bg-[#08080c]/90 backdrop-blur-xl p-3 sm:p-4 shrink-0">
-        <div className="max-w-4xl mx-auto w-full">
+        <div className="max-w-3xl mx-auto w-full">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSubmit();
             }}
-            className="rounded-2xl bg-[#0f0f16] border border-border/90 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 shadow-2xl transition-all p-2.5 sm:p-3"
+            className="rounded-2xl bg-[#0f0f16] border border-border/80 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 shadow-2xl transition-all p-2.5 sm:p-3"
           >
             <input
               ref={inputRef}
@@ -1072,11 +1024,11 @@ export function ChatPanel({
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-3xs font-mono text-accent bg-accent/10 border border-accent/20 font-medium">
                   <Sparkles size={11} />
-                  <span>TrueForge Autonomous Harness</span>
+                  <span>FalkorDB Graph Engine</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1.5 text-3xs font-mono text-zinc-400">
                   <span className="size-1.5 rounded-full bg-success" />
-                  <span>FalkorDB Provenance</span>
+                  <span>Sub-10ms Traversal</span>
                 </span>
               </div>
 
@@ -1100,9 +1052,11 @@ export function ChatPanel({
             <div className="flex items-center gap-2">
               <span>Press <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">/</kbd> to focus</span>
               <span>·</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">Esc</kbd> to clear hops</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">⌘K</kbd> for commands</span>
+              <span>·</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">Esc</kbd> to clear</span>
             </div>
-            <span>FalkorDB Sub-10ms Graph Traversal</span>
+            <span className="hidden sm:inline">Zero-Hallucination Institutional Memory</span>
           </div>
         </div>
       </div>
