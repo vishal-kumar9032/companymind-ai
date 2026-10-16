@@ -129,7 +129,7 @@ export const DEMO_ENTERPRISE_USERS: EnterpriseUser[] = [
 
 /**
  * Signs in using Firebase Google Auth with popup.
- * Falls back to local enterprise profile if real credentials fail or are mocked.
+ * Falls back to local enterprise profile if credentials are unconfigured in environment.
  */
 export async function signInWithGoogleAuth(
   presetUser?: EnterpriseUser

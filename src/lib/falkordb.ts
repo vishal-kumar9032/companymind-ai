@@ -23,7 +23,8 @@ export async function getFalkorClient(): Promise<FalkorDB> {
   return globalClient;
 }
 
-export async function getGraph(graphId = "companymind") {
+export async function getGraph(graphId?: string) {
   const client = await getFalkorClient();
-  return client.selectGraph(graphId);
+  const targetId = (graphId || process.env.FALKORDB_GRAPH || "companymind").toLowerCase();
+  return client.selectGraph(targetId);
 }

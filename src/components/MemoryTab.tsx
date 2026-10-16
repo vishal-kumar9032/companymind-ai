@@ -61,42 +61,11 @@ export function MemoryTab({
       if (data.findings && Array.isArray(data.findings)) {
         setFindings(data.findings);
       } else {
-        // Fallback default enterprise memory findings
-        setFindings([
-          {
-            id: "find-1",
-            text: "PR #214 blocked: Attempts to revive legacy auth-v1 in violation of DEC-44 sunset mandate.",
-            severity: "CRITICAL",
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            session_id: "session-1",
-            target_name: "auth-v1",
-            target_type: "Service",
-            agent: "GovernanceWatchdog",
-          },
-          {
-            id: "find-2",
-            text: "Database pool exhaustion risk: PR #218 requested pool size 50 exceeding DEC-105 VM limits.",
-            severity: "HIGH",
-            created_at: new Date(Date.now() - 7200000).toISOString(),
-            session_id: "session-1",
-            target_name: "postgres-primary",
-            target_type: "Service",
-            agent: "SREWatchdog",
-          },
-          {
-            id: "find-3",
-            text: "Cross-service dependency verified: web-checkout depends on api-gateway with HTTPS zero-trust tokens.",
-            severity: "LOW",
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            session_id: "session-0",
-            target_name: "web-checkout",
-            target_type: "Service",
-            agent: "ArchitectureOracle",
-          },
-        ]);
+        setFindings([]);
       }
     } catch (err) {
-      console.warn("Failed to fetch findings, using memory baseline:", err);
+      console.error("Failed to fetch findings from FalkorDB:", err);
+      setFindings([]);
     } finally {
       setLoading(false);
     }

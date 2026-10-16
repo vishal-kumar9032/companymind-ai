@@ -40,6 +40,7 @@ interface DashboardViewProps {
   onOpenGraph: () => void;
   onOpenMcp: () => void;
   onOpenMemory: () => void;
+  latencyMs?: number;
 }
 
 export function DashboardView({
@@ -54,6 +55,7 @@ export function DashboardView({
   onOpenGraph,
   onOpenMcp,
   onOpenMemory,
+  latencyMs = 2,
 }: DashboardViewProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
@@ -237,7 +239,7 @@ export function DashboardView({
               <span className="text-[11px] font-medium uppercase tracking-wider">Traversal Latency</span>
               <Zap className="w-4 h-4 text-violet-500" />
             </div>
-            <div className="text-2xl font-bold text-slate-900">2 ms</div>
+            <div className="text-2xl font-bold text-slate-900">{latencyMs} ms</div>
             <div className="text-[11px] text-emerald-600 font-medium mt-0.5">Sub-5ms FalkorDB execution</div>
           </div>
         </div>

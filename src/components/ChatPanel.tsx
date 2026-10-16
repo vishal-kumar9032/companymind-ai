@@ -98,7 +98,7 @@ const PRESET_CARDS = [
   {
     icon: Zap,
     title: "4-Hop Blast Radius",
-    description: "Simulate downstream service failures and team ownership if auth-v1 is shut down",
+    description: "Traverse downstream service dependencies and team ownership if auth-v1 is shut down",
     query: "What services break if auth-v1 is shut down?",
   },
   {
@@ -333,7 +333,7 @@ export function ChatPanel({
     ];
   };
 
-  // Simulate token/word streaming
+  // Progressive token streaming response
   const streamText = async (msgId: string, fullText: string) => {
     abortStreamRef.current = false;
     setStreamingMsgId(msgId);

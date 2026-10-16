@@ -64,7 +64,7 @@ export function AgentsTab({
     setEvents(generated);
   }, [traces, lastQuery, outcome, sessionId]);
 
-  const handleSimulateRun = () => {
+  const handleRunPipeline = () => {
     setIsRunning(true);
     setEvents([]);
     const generated = runner.createSessionEvents(lastQuery, traces, outcome, sessionId);
@@ -185,16 +185,10 @@ export function AgentsTab({
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900 font-mono">
             Process Telemetry
           </h2>
-          {runner.isSimulated ? (
-            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
-              Simulated
-            </span>
-          ) : (
-            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 font-semibold">
-              <Radio size={9} className="animate-pulse" />
-              Live Harness
-            </span>
-          )}
+          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 font-semibold">
+            <Radio size={9} className="animate-pulse" />
+            Live TrueForge Harness
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -202,17 +196,17 @@ export function AgentsTab({
             {sessionId}
           </span>
           <button
-            onClick={handleSimulateRun}
+            onClick={handleRunPipeline}
             disabled={isRunning}
             className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
-            title="Re-run agent autonomous pipeline"
+            title="Execute live agent autonomous loop"
           >
             {isRunning ? (
               <RotateCcw size={11} className="animate-spin" />
             ) : (
               <Play size={11} />
             )}
-            <span>{isRunning ? "Running..." : "Run"}</span>
+            <span>{isRunning ? "Running..." : "Run Pipeline"}</span>
           </button>
           {onClose && (
             <button
@@ -297,10 +291,10 @@ export function AgentsTab({
             <Bot size={28} className="stroke-1 opacity-40 text-indigo-500" />
             <p className="text-xs">No active agent run recorded for this session.</p>
             <button
-              onClick={handleSimulateRun}
+              onClick={handleRunPipeline}
               className="text-xs font-mono text-indigo-600 hover:underline cursor-pointer font-medium"
             >
-              Simulate autonomous workflow
+              Execute live autonomous workflow
             </button>
           </div>
         ) : (

@@ -354,6 +354,7 @@ export default function Home() {
                 onOpenGraph={() => setCurrentView("graph")}
                 onOpenMcp={() => setCurrentView("agents")}
                 onOpenMemory={() => setCurrentView("memory")}
+                latencyMs={latencyMs}
               />
             </div>
           )}
@@ -523,6 +524,9 @@ export default function Home() {
       <AnalyticsModal
         isOpen={isAnalyticsOpen}
         onClose={() => setIsAnalyticsOpen(false)}
+        latencyMs={latencyMs}
+        nodeCount={graphData.nodes.length}
+        edgeCount={graphData.edges.length}
       />
 
       {/* Enterprise Authentication Modal */}

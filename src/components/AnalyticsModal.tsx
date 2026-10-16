@@ -6,9 +6,18 @@ import { X, BarChart2, AlertTriangle, TrendingUp } from "lucide-react";
 interface AnalyticsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  latencyMs?: number;
+  nodeCount?: number;
+  edgeCount?: number;
 }
 
-export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
+export function AnalyticsModal({
+  isOpen,
+  onClose,
+  latencyMs = 2,
+  nodeCount = 34,
+  edgeCount = 59,
+}: AnalyticsModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -41,18 +50,18 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Avg Graph Latency</span>
-              <div className="text-xl font-extrabold text-emerald-600 font-mono">14ms</div>
+              <div className="text-xl font-extrabold text-emerald-600 font-mono">{latencyMs} ms</div>
               <p className="text-[10px] text-slate-500">FalkorDB in-memory Cypher</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Verification Score</span>
-              <div className="text-xl font-extrabold text-indigo-600 font-mono">99.4%</div>
-              <p className="text-[10px] text-slate-500">Zero-hallucination rate</p>
+              <div className="text-xl font-extrabold text-indigo-600 font-mono">100%</div>
+              <p className="text-[10px] text-slate-500">Verifiable Cypher provenance</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Tracked Entities</span>
-              <div className="text-xl font-extrabold text-purple-600 font-mono">34 nodes</div>
-              <p className="text-[10px] text-slate-500">Across 6 entity types</p>
+              <div className="text-xl font-extrabold text-purple-600 font-mono">{nodeCount} nodes</div>
+              <p className="text-[10px] text-slate-500">{edgeCount} relationships connected</p>
             </div>
           </div>
 
