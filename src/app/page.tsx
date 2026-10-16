@@ -97,9 +97,9 @@ export default function Home() {
         latencyMs={latencyMs}
       />
 
-      {/* Main Agent Workspace (Centered, elegant, TrueForge UI) */}
-      <main className="flex-1 min-h-0 relative flex flex-col p-2 sm:p-4 overflow-hidden max-w-5xl mx-auto w-full">
-        <div className="flex-1 min-h-0 flex flex-col rounded-card border border-border bg-surface/30 backdrop-blur-md overflow-hidden shadow-card relative">
+      {/* Main Agent Workspace (Full Screen TrueForge UI) */}
+      <main className="flex-1 min-h-0 relative flex flex-col w-full h-full overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col w-full h-full overflow-hidden relative">
           <ChatPanel
             onHopsChange={setHighlightHops}
             externalTriggerQuery={selectedQuery}

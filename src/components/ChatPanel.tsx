@@ -431,7 +431,7 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface/30 backdrop-blur-md rounded-card border border-border overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#08080c] overflow-hidden">
       {/* Header */}
       <div className="p-3 sm:p-4 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
@@ -521,63 +521,67 @@ export function ChatPanel({
       </div>
 
       {/* Message Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans">
-        {/* First Load Hero Strip & 4 Preset Scenario Cards */}
-        {messages.length <= 1 && (
-          <div className="p-4 rounded-2xl bg-surface/60 border border-border space-y-4 shadow-sm mb-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
-                  <Sparkles size={16} className="text-accent" />
-                  <span>Ask why a decision was made, what breaks, or who owns it</span>
-                </h3>
-                <p className="text-2xs text-zinc-400 mt-1">
-                  Autonomous enterprise graph intelligence grounded in FalkorDB with zero hallucination.
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 font-sans">
+        <div className="max-w-4xl mx-auto w-full space-y-6">
+          {/* First Load Hero Experience (TrueForge Style) */}
+          {messages.length <= 1 && (
+            <div className="py-4 sm:py-6 space-y-6">
+              <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent text-xs font-mono mb-1">
+                  <Sparkles size={13} />
+                  <span>TrueForge Autonomous Agent · FalkorDB Brain</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                  What can CompanyMind investigate for you?
+                </h1>
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                  Autonomous causal reasoning across meeting notes, RFC documents, GitHub PRs, and microservices with zero hallucination.
                 </p>
+
+                <div className="pt-2">
+                  <button
+                    onClick={handlePlayDemoScenario}
+                    disabled={demoRunning}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold shadow-lg shadow-accent/25 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Play size={13} fill="currentColor" />
+                    <span>{demoRunning ? "Playing Scenario..." : "Play 4-Hop Walkthrough (90s)"}</span>
+                  </button>
+                </div>
               </div>
 
-              <button
-                onClick={handlePlayDemoScenario}
-                disabled={demoRunning}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold shadow-md shadow-accent/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-              >
-                <Play size={12} fill="currentColor" />
-                <span>{demoRunning ? "Playing Scenario..." : "Play Demo (4-Hop)"}</span>
-              </button>
-            </div>
+              {/* Demo Step Caption Banner */}
+              {demoCaption && (
+                <div className="p-3 rounded-xl bg-accent/20 border border-accent/40 flex items-center gap-2.5 text-xs font-mono text-zinc-100 animate-in fade-in shadow-md">
+                  <span className="size-2 rounded-full bg-accent animate-ping shrink-0" />
+                  <span>{demoCaption}</span>
+                </div>
+              )}
 
-            {/* Demo Step Caption Banner */}
-            {demoCaption && (
-              <div className="p-2.5 rounded-xl bg-accent/20 border border-accent/40 flex items-center gap-2 text-xs font-mono text-zinc-100 animate-in fade-in">
-                <span className="size-2 rounded-full bg-accent animate-ping shrink-0" />
-                <span>{demoCaption}</span>
-              </div>
-            )}
-
-            {/* Four Large Preset Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {PRESET_CARDS.map((card, cIdx) => (
-                <button
-                  key={cIdx}
-                  onClick={() => handleSubmit(card.query)}
-                  className="flex flex-col text-left p-3 rounded-xl bg-surface hover:bg-surface-hover border border-border hover:border-accent/40 transition-all cursor-pointer group shadow-sm"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent group-hover:scale-110 transition-transform">
-                      <card.icon size={14} strokeWidth={1.75} />
+              {/* Four Large Preset Scenario Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {PRESET_CARDS.map((card, cIdx) => (
+                  <button
+                    key={cIdx}
+                    onClick={() => handleSubmit(card.query)}
+                    className="flex flex-col text-left p-4 rounded-xl bg-[#0f0f16] hover:bg-[#151520] border border-border hover:border-accent/50 transition-all cursor-pointer group shadow-sm"
+                  >
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="p-2 rounded-lg bg-accent/10 border border-accent/20 text-accent group-hover:scale-110 transition-transform">
+                        <card.icon size={16} strokeWidth={1.75} />
+                      </div>
+                      <span className="text-sm font-semibold text-zinc-100 group-hover:text-white font-mono">
+                        {card.title}
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold text-zinc-200 group-hover:text-white font-mono">
-                      {card.title}
+                    <span className="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300">
+                      {card.description}
                     </span>
-                  </div>
-                  <span className="text-2xs text-zinc-400 line-clamp-2 leading-relaxed">
-                    {card.description}
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {messages.map((m, idx) => (
           <div
@@ -1041,43 +1045,65 @@ export function ChatPanel({
         )}
 
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Input Field with Shortcut Hints */}
-      <div className="p-3 border-t border-border bg-surface/40">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          className="relative flex items-center"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask why a decision was made, what breaks, or who owns it... (Press / to focus)"
-            className="w-full bg-bg border border-border rounded-xl pl-4 pr-12 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="absolute right-2 p-2 bg-accent hover:bg-accent-hover disabled:opacity-40 text-white rounded-lg transition-colors cursor-pointer"
-            aria-label="Send query"
+      {/* TrueForge Elevated Input Bar */}
+      <div className="border-t border-border bg-[#08080c]/90 backdrop-blur-xl p-3 sm:p-4 shrink-0">
+        <div className="max-w-4xl mx-auto w-full">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+            className="rounded-2xl bg-[#0f0f16] border border-border/90 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25 shadow-2xl transition-all p-2.5 sm:p-3"
           >
-            <Send size={14} strokeWidth={2} />
-          </button>
-        </form>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask why a decision was made, what breaks, or audit PR #214... (Press / to focus)"
+              className="w-full bg-transparent px-2 sm:px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+              disabled={loading}
+            />
 
-        <div className="mt-2 flex items-center justify-between text-2xs text-zinc-500 font-mono px-1">
-          <div className="flex items-center gap-2">
-            <span>Press <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">/</kbd> to focus</span>
-            <span>·</span>
-            <span><kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">Esc</kbd> to clear hops</span>
+            <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-3xs font-mono text-accent bg-accent/10 border border-accent/20 font-medium">
+                  <Sparkles size={11} />
+                  <span>TrueForge Autonomous Harness</span>
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-3xs font-mono text-zinc-400">
+                  <span className="size-1.5 rounded-full bg-success" />
+                  <span>FalkorDB Provenance</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <span className="hidden md:inline text-3xs text-zinc-500 font-mono">
+                  Press <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">Enter</kbd> to send
+                </span>
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="size-8 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-30 text-white transition-all cursor-pointer flex items-center justify-center shadow-md shadow-accent/25"
+                  aria-label="Send query"
+                >
+                  <Send size={13} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div className="mt-2 flex items-center justify-between text-3xs text-zinc-500 font-mono px-1">
+            <div className="flex items-center gap-2">
+              <span>Press <kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">/</kbd> to focus</span>
+              <span>·</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface border border-border text-zinc-400 font-mono">Esc</kbd> to clear hops</span>
+            </div>
+            <span>FalkorDB Sub-10ms Graph Traversal</span>
           </div>
-          <span>FalkorDB Graph Engine</span>
         </div>
       </div>
     </div>
