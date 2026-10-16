@@ -12,17 +12,24 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity cursor-pointer"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <div className="w-full max-w-2xl bg-[#0f0f16] border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 bg-zinc-900/60 flex items-center justify-between">
+        <div className="p-4 border-b border-border bg-surface/40 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart2 className="size-4 text-falkor-400" />
-            <h3 className="font-bold text-sm text-zinc-100">Enterprise Graph Intelligence & Knowledge Gaps</h3>
+            <BarChart2 className="size-4 text-accent" />
+            <h3 className="font-semibold text-sm text-zinc-100">Enterprise Graph Intelligence & Knowledge Gaps</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 transition-colors"
+            className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>

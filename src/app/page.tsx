@@ -57,6 +57,26 @@ export default function Home() {
     fetchGraph();
   }, []);
 
+  // Global keyboard shortcuts (⌘K for palette, Esc to close drawers)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+      if (e.key === "Escape") {
+        setIsProcessOpen(false);
+        setIsGraphOpen(false);
+        setIsMemoryOpen(false);
+        setActiveSource(null);
+        setIsAnalyticsOpen(false);
+        setIsCommandPaletteOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
   const handleOpenSource = (sourceId: string) => {
     const src = ENTERPRISE_SOURCES[sourceId];
     if (src) {
@@ -95,6 +115,27 @@ export default function Home() {
         edgeCount={graphData.edges.length}
         onRefresh={fetchGraph}
         latencyMs={latencyMs}
+        isProcessOpen={isProcessOpen}
+        onToggleProcess={() => {
+          setIsProcessOpen(!isProcessOpen);
+          setIsGraphOpen(false);
+          setIsMemoryOpen(false);
+        }}
+        isGraphOpen={isGraphOpen}
+        onToggleGraph={() => {
+          setIsGraphOpen(!isGraphOpen);
+          setIsProcessOpen(false);
+          setIsMemoryOpen(false);
+        }}
+        isMemoryOpen={isMemoryOpen}
+        onToggleMemory={() => {
+          setIsMemoryOpen(!isMemoryOpen);
+          setIsProcessOpen(false);
+          setIsGraphOpen(false);
+        }}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+        activeOutcome={lastOutcome}
       />
 
       {/* Main Agent Workspace (Full Screen TrueForge UI) */}
@@ -246,6 +287,22 @@ export default function Home() {
         onClose={() => setIsCommandPaletteOpen(false)}
         onSelectQuery={handleSelectQueryFromPalette}
         onSelectSource={handleOpenSource}
+        onOpenProcess={() => {
+          setIsProcessOpen(true);
+          setIsGraphOpen(false);
+          setIsMemoryOpen(false);
+        }}
+        onOpenGraph={() => {
+          setIsGraphOpen(true);
+          setIsProcessOpen(false);
+          setIsMemoryOpen(false);
+        }}
+        onOpenMemory={() => {
+          setIsMemoryOpen(true);
+          setIsProcessOpen(false);
+          setIsGraphOpen(false);
+        }}
+        onOpenAnalytics={() => setIsAnalyticsOpen(true)}
       />
 
       {/* Analytics & Knowledge Gaps Modal */}
