@@ -122,17 +122,17 @@ export function GraphCanvas({
           style: {
             "background-color": "data(color)",
             shape: "data(shape)" as any,
-            color: "#ffffff",
+            color: "#0f172a",
             "font-size": "11px",
             "font-family": "var(--font-jetbrains-mono), monospace",
             "text-valign": "bottom",
             "text-margin-y": 6,
-            "text-outline-color": "#08080c",
+            "text-outline-color": "#ffffff",
             "text-outline-width": 2,
             width: 24,
             height: 24,
             "border-width": 1.5,
-            "border-color": "rgba(255, 255, 255, 0.15)",
+            "border-color": "#cbd5e1",
             label: "", // Hidden by default for clean look
             "transition-property": "opacity, border-color, border-width, width, height, background-color",
             "transition-duration": 0.25,
@@ -147,20 +147,20 @@ export function GraphCanvas({
         {
           selector: "edge",
           style: {
-            width: 1,
-            "line-color": "rgba(255, 255, 255, 0.12)",
-            "target-arrow-color": "rgba(255, 255, 255, 0.2)",
+            width: 1.25,
+            "line-color": "#cbd5e1",
+            "target-arrow-color": "#94a3b8",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             "arrow-scale": 0.8,
             "font-size": "9px",
             "font-family": "var(--font-jetbrains-mono), monospace",
-            color: "#71717a",
+            color: "#64748b",
             "text-rotation": "autorotate",
             "text-margin-y": -4,
-            "text-outline-color": "#08080c",
+            "text-outline-color": "#ffffff",
             "text-outline-width": 2,
-            opacity: 0.6,
+            opacity: 0.75,
             label: "",
             "transition-property": "opacity, line-color, width",
             "transition-duration": 0.25,
@@ -181,15 +181,15 @@ export function GraphCanvas({
         {
           selector: "node.highlighted",
           style: {
-            "border-color": "#facc15",
+            "border-color": "#4f46e5",
             "border-width": 3,
             width: 32,
             height: 32,
             "font-size": "12px",
             "font-weight": "bold",
-            "text-outline-color": "#08080c",
+            "text-outline-color": "#ffffff",
             "text-outline-width": 2.5,
-            color: "#fef08a",
+            color: "#312e81",
             "z-index": 999,
             opacity: 1,
           },
@@ -198,8 +198,8 @@ export function GraphCanvas({
           selector: "edge.highlighted",
           style: {
             width: 2.5,
-            "line-color": "#facc15",
-            "target-arrow-color": "#facc15",
+            "line-color": "#4f46e5",
+            "target-arrow-color": "#4f46e5",
             opacity: 1,
             "z-index": 998,
           },
@@ -393,12 +393,12 @@ export function GraphCanvas({
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Floating Controls: Zoom, Fit, Replay, Clear */}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-surface/90 backdrop-blur-md border border-border rounded-lg shadow-card z-10">
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-sm z-10">
         {hasPath && (
           <>
             <button
               onClick={animatePath}
-              className="flex items-center gap-1 px-2 py-1 text-2xs font-mono rounded bg-accent/15 text-accent hover:bg-accent/25 transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1 text-2xs font-mono rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors cursor-pointer"
               title="Replay Causal Path Animation"
             >
               <Play size={11} strokeWidth={2} />
@@ -406,18 +406,18 @@ export function GraphCanvas({
             </button>
             <button
               onClick={handleClearHighlights}
-              className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
               title="Clear Highlighted Path"
             >
               <X size={14} strokeWidth={1.75} />
             </button>
-            <span className="w-px h-3.5 bg-border" />
+            <span className="w-px h-3.5 bg-slate-200" />
           </>
         )}
 
         <button
           onClick={() => cyRef.current?.zoom(cyRef.current.zoom() * 1.25)}
-          className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           title="Zoom In"
           aria-label="Zoom In"
         >
@@ -425,7 +425,7 @@ export function GraphCanvas({
         </button>
         <button
           onClick={() => cyRef.current?.zoom(cyRef.current.zoom() * 0.8)}
-          className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           title="Zoom Out"
           aria-label="Zoom Out"
         >
@@ -433,7 +433,7 @@ export function GraphCanvas({
         </button>
         <button
           onClick={() => cyRef.current?.fit(undefined, 40)}
-          className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           title="Fit Graph to Viewport"
           aria-label="Fit Graph"
         >
@@ -442,7 +442,7 @@ export function GraphCanvas({
       </div>
 
       {/* Interactive Legend & Category Filter (Requirement #5) */}
-      <div className="absolute bottom-3 left-3 p-2 bg-surface/90 backdrop-blur-md border border-border rounded-xl text-2xs font-mono flex flex-wrap gap-x-2.5 gap-y-1.5 max-w-lg z-10 shadow-card">
+      <div className="absolute bottom-3 left-3 p-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl text-2xs font-mono flex flex-wrap gap-x-2.5 gap-y-1.5 max-w-lg z-10 shadow-sm">
         {Object.entries(LABEL_COLORS).map(([label, color]) => {
           const isActive = activeFilters[label] !== false;
           return (
@@ -455,7 +455,7 @@ export function GraphCanvas({
               title={`Toggle ${label} visibility`}
             >
               <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-zinc-300">{label}</span>
+              <span className="text-slate-600 font-medium">{label}</span>
             </button>
           );
         })}
@@ -463,22 +463,22 @@ export function GraphCanvas({
 
       {/* Slide-in Node Detail Drawer inside Card (Requirement #7) */}
       {selectedNode && (
-        <div className="absolute top-0 right-0 w-72 sm:w-80 h-full bg-bg/95 backdrop-blur-xl border-l border-border p-4 flex flex-col justify-between z-20 shadow-card animate-in slide-in-from-right duration-200 text-xs">
+        <div className="absolute top-0 right-0 w-72 sm:w-80 h-full bg-white/98 backdrop-blur-xl border-l border-slate-200 p-4 flex flex-col justify-between z-20 shadow-xl animate-in slide-in-from-right duration-200 text-xs">
           <div className="space-y-4 overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-border">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <span
                   className="size-3 rounded-full"
                   style={{ backgroundColor: selectedNode.color }}
                 />
-                <span className="font-semibold text-sm text-zinc-100 truncate">
+                <span className="font-semibold text-sm text-slate-900 truncate">
                   {selectedNode.label}
                 </span>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition-colors"
+                className="p-1 rounded text-slate-400 hover:text-slate-600 transition-colors"
                 aria-label="Close details"
               >
                 <X size={14} strokeWidth={1.75} />
@@ -487,22 +487,22 @@ export function GraphCanvas({
 
             {/* Entity Type Badge */}
             <div className="flex items-center gap-2">
-              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded-full bg-surface border border-border text-zinc-300">
+              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700">
                 {selectedNode.category}
               </span>
-              <span className="text-2xs font-mono text-zinc-500">ID: {selectedNode.id}</span>
+              <span className="text-2xs font-mono text-slate-400">ID: {selectedNode.id}</span>
             </div>
 
             {/* Properties key/value rows */}
             <div className="space-y-2">
-              <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400 block font-medium">
+              <span className="text-2xs font-mono uppercase tracking-wider text-slate-400 block font-medium">
                 Properties:
               </span>
-              <div className="space-y-1.5 p-2.5 rounded-xl bg-surface border border-border font-mono text-2xs">
+              <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-2xs">
                 {Object.entries(selectedNode.props || {}).map(([key, val]) => (
                   <div key={key} className="flex flex-col">
-                    <span className="text-zinc-500 uppercase">{key}:</span>
-                    <span className="text-zinc-200 font-sans break-words">{String(val)}</span>
+                    <span className="text-slate-400 uppercase">{key}:</span>
+                    <span className="text-slate-800 font-sans break-words">{String(val)}</span>
                   </div>
                 ))}
               </div>
@@ -511,7 +511,7 @@ export function GraphCanvas({
             {/* Connected Node Chips */}
             {selectedNode.connected && selectedNode.connected.length > 0 && (
               <div className="space-y-2">
-                <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400 block font-medium">
+                <span className="text-2xs font-mono uppercase tracking-wider text-slate-400 block font-medium">
                   Connected Entities ({selectedNode.connected.length}):
                 </span>
                 <div className="flex flex-wrap gap-1">
@@ -527,7 +527,7 @@ export function GraphCanvas({
                           }
                         }
                       }}
-                      className="text-2xs font-mono px-2 py-0.5 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                      className="text-2xs font-mono px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
                     >
                       {item.name}
                     </button>
@@ -538,14 +538,14 @@ export function GraphCanvas({
           </div>
 
           {/* Action: Ask about this node in Chat */}
-          <div className="pt-3 border-t border-border">
+          <div className="pt-3 border-t border-slate-200">
             <button
               onClick={() => {
                 if (onAskAboutNode) {
                   onAskAboutNode(`What is the impact and role of ${selectedNode.label} in the company graph?`);
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-medium transition-colors cursor-pointer shadow-md shadow-accent/20"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition-colors cursor-pointer shadow-sm shadow-indigo-600/20"
             >
               <MessageSquare size={13} strokeWidth={2} />
               <span>Ask Oracle About This</span>

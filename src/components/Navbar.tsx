@@ -11,7 +11,6 @@ import {
   Activity,
   Network,
   BarChart2,
-  ExternalLink,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -68,17 +67,17 @@ export function Navbar({
   };
 
   return (
-    <header className="h-14 border-b border-border bg-[#08080c]/80 backdrop-blur-xl sticky top-0 z-40 px-3 sm:px-6 flex items-center justify-between gap-2 select-none shrink-0">
+    <header className="h-14 border-b border-slate-200 bg-white/90 backdrop-blur-xl sticky top-0 z-40 px-3 sm:px-6 flex items-center justify-between gap-2 select-none shrink-0">
       {/* Left: Brand + FalkorDB Badge */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <div className="size-8 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shadow-sm shadow-accent/10">
+        <div className="size-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm">
           <Brain size={17} strokeWidth={1.75} />
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-sm tracking-tight text-white">
+          <span className="font-semibold text-sm tracking-tight text-slate-900">
             CompanyMind AI
           </span>
-          <span className="text-3xs font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-zinc-400 uppercase tracking-wider hidden sm:inline">
+          <span className="text-3xs font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 uppercase tracking-wider hidden sm:inline font-medium">
             FalkorDB
           </span>
         </div>
@@ -88,14 +87,14 @@ export function Navbar({
       <div className="flex-1 max-w-md mx-2 hidden sm:block">
         <button
           onClick={onOpenCommandPalette}
-          className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-surface/60 hover:bg-surface border border-border/80 hover:border-accent/40 text-xs text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer group shadow-inner"
+          className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/80 hover:bg-slate-100 border border-slate-200 hover:border-indigo-400 text-xs text-slate-500 hover:text-slate-800 transition-all cursor-pointer group shadow-inner"
           title="Search queries, RFCs, decisions (⌘K)"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Search size={13} className="text-zinc-500 group-hover:text-accent transition-colors" />
+            <Search size={13} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
             <span className="truncate">Search graph, RFCs, PRs...</span>
           </div>
-          <kbd className="text-3xs font-mono px-1.5 py-0.5 rounded bg-black/40 border border-border text-zinc-400">
+          <kbd className="text-3xs font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-500 shadow-xs">
             ⌘K
           </kbd>
         </button>
@@ -104,26 +103,26 @@ export function Navbar({
       {/* Right: View Toggles + Status + Menu */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Slide-over View Toggles */}
-        <div className="flex items-center gap-1 bg-surface/40 p-0.5 rounded-xl border border-border/70">
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
           {onToggleProcess && (
             <button
               onClick={onToggleProcess}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono transition-all cursor-pointer ${
                 isProcessOpen
-                  ? "bg-accent/25 text-accent border border-accent/40 font-semibold shadow-sm"
+                  ? "bg-white text-indigo-700 border border-indigo-200 font-semibold shadow-xs"
                   : activeOutcome === "governance_violation"
-                  ? "bg-danger/20 text-danger border border-danger/40 animate-pulse font-semibold"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-surface"
+                  ? "bg-rose-100 text-rose-700 border border-rose-300 animate-pulse font-semibold"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
               }`}
               title="Toggle Live Agent Process Telemetry"
             >
               <Activity
                 size={12}
-                className={activeOutcome === "governance_violation" ? "text-danger" : "text-accent"}
+                className={activeOutcome === "governance_violation" ? "text-rose-600" : "text-indigo-600"}
               />
               <span className="hidden md:inline">Process</span>
               {activeOutcome === "governance_violation" && (
-                <span className="size-1.5 rounded-full bg-danger animate-ping" />
+                <span className="size-1.5 rounded-full bg-rose-600 animate-ping" />
               )}
             </button>
           )}
@@ -133,12 +132,12 @@ export function Navbar({
               onClick={onToggleGraph}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono transition-all cursor-pointer ${
                 isGraphOpen
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-surface"
+                  ? "bg-white text-sky-700 border border-sky-200 font-semibold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
               }`}
               title="Toggle FalkorDB Graph Topology"
             >
-              <Network size={12} className="text-cyan-400" />
+              <Network size={12} className="text-sky-600" />
               <span className="hidden md:inline">Graph</span>
             </button>
           )}
@@ -148,12 +147,12 @@ export function Navbar({
               onClick={onToggleMemory}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono transition-all cursor-pointer ${
                 isMemoryOpen
-                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-surface"
+                  ? "bg-white text-purple-700 border border-purple-200 font-semibold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
               }`}
               title="Toggle Cross-Session Memory Ledger"
             >
-              <Brain size={12} className="text-purple-400" />
+              <Brain size={12} className="text-purple-600" />
               <span className="hidden md:inline">Memory</span>
             </button>
           )}
@@ -161,10 +160,10 @@ export function Navbar({
           {onOpenAnalytics && (
             <button
               onClick={onOpenAnalytics}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-mono text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all cursor-pointer"
               title="Open Graph Intelligence & Knowledge Gaps Analytics"
             >
-              <BarChart2 size={12} className="text-falkor-300" />
+              <BarChart2 size={12} className="text-indigo-600" />
               <span className="hidden lg:inline">Gaps</span>
             </button>
           )}
@@ -172,20 +171,20 @@ export function Navbar({
 
         {/* Status Confirmation Toast */}
         {message && (
-          <span className="hidden sm:inline-flex items-center gap-1 text-2xs text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-md font-mono">
+          <span className="hidden sm:inline-flex items-center gap-1 text-2xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-mono">
             <Check size={11} strokeWidth={2} />
             {message}
           </span>
         )}
 
         {/* Live Latency Chip */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface/60 border border-border/80 text-2xs font-mono text-zinc-400 shadow-sm">
-          <span className="size-1.5 rounded-full bg-success" />
-          <span className="text-zinc-300 hidden sm:inline">Connected</span>
-          <span className="text-zinc-600 hidden sm:inline">·</span>
-          <span className="text-accent">{latencyMs}ms</span>
-          <span className="text-zinc-600 hidden xl:inline">·</span>
-          <span className="text-zinc-400 hidden xl:inline">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-2xs font-mono text-slate-600 shadow-xs">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="text-slate-700 hidden sm:inline">Connected</span>
+          <span className="text-slate-300 hidden sm:inline">·</span>
+          <span className="text-indigo-600 font-semibold">{latencyMs}ms</span>
+          <span className="text-slate-300 hidden xl:inline">·</span>
+          <span className="text-slate-500 hidden xl:inline">
             {nodeCount}n / {edgeCount}e
           </span>
         </div>
@@ -196,7 +195,7 @@ export function Navbar({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="View source on GitHub"
-          className="size-8 rounded-xl bg-surface/60 hover:bg-surface border border-border flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+          className="size-8 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors shadow-xs"
           title="GitHub Repository"
         >
           <Github size={15} strokeWidth={1.75} />
@@ -207,22 +206,22 @@ export function Navbar({
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="More options"
-            className="size-8 rounded-xl bg-surface/60 hover:bg-surface border border-border flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="size-8 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shadow-xs"
           >
             <MoreVertical size={15} strokeWidth={1.75} />
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-xl bg-[#0f0f16] border border-border shadow-2xl backdrop-blur-2xl p-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-52 rounded-xl bg-white border border-slate-200 shadow-xl backdrop-blur-2xl p-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
               <button
                 onClick={handleSeed}
                 disabled={seeding}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-300 hover:text-white hover:bg-surface text-left transition-colors cursor-pointer disabled:opacity-50"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 text-left transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RotateCcw
                   size={13}
                   strokeWidth={1.75}
-                  className={seeding ? "animate-spin text-accent" : "text-zinc-400"}
+                  className={seeding ? "animate-spin text-indigo-600" : "text-slate-400"}
                 />
                 <span>{seeding ? "Resetting graph..." : "Reset graph dataset"}</span>
               </button>
@@ -232,9 +231,9 @@ export function Navbar({
                     setMenuOpen(false);
                     onOpenAnalytics();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-300 hover:text-white hover:bg-surface text-left transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 text-left transition-colors cursor-pointer"
                 >
-                  <BarChart2 size={13} className="text-falkor-300" />
+                  <BarChart2 size={13} className="text-indigo-600" />
                   <span>Knowledge Gaps & Metrics</span>
                 </button>
               )}

@@ -122,14 +122,14 @@ export function AgentsTab({
     switch (role) {
       case "Watchdog":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-danger/15 text-danger border border-danger/30 font-medium">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
             <ShieldAlert size={10} />
             Watchdog
           </span>
         );
       case "Ingestor":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-medium">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
             <Terminal size={10} />
             Ingestor
           </span>
@@ -137,7 +137,7 @@ export function AgentsTab({
       case "Oracle":
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30 font-medium">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
             <Sparkles size={10} />
             Oracle
           </span>
@@ -146,20 +146,20 @@ export function AgentsTab({
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden text-slate-800">
       {/* Header Bar */}
-      <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+      <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Bot size={15} strokeWidth={1.75} className="text-accent" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-100 font-mono">
+          <Bot size={15} strokeWidth={1.75} className="text-indigo-600" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900 font-mono">
             Process Telemetry
           </h2>
           {runner.isSimulated ? (
-            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-warning/15 text-warning border border-warning/30">
+            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
               Simulated
             </span>
           ) : (
-            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-success/15 text-success border border-success/30 flex items-center gap-1 font-medium">
+            <span className="text-3xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 font-semibold">
               <Radio size={9} className="animate-pulse" />
               Live Harness
             </span>
@@ -167,13 +167,13 @@ export function AgentsTab({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-3xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
+          <span className="text-3xs font-mono text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-xs">
             {sessionId}
           </span>
           <button
             onClick={handleSimulateRun}
             disabled={isRunning}
-            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-accent hover:bg-accent-hover text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
             title="Re-run agent autonomous pipeline"
           >
             {isRunning ? (
@@ -186,7 +186,7 @@ export function AgentsTab({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer ml-1"
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer ml-1"
               title="Close panel"
             >
               <X size={15} />
@@ -196,20 +196,20 @@ export function AgentsTab({
       </div>
 
       {/* Timeline Stream */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc]">
         {events.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-zinc-500 space-y-2">
-            <Bot size={28} className="stroke-1 opacity-40 text-accent" />
+          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
+            <Bot size={28} className="stroke-1 opacity-40 text-indigo-500" />
             <p className="text-xs">No active agent run recorded for this session.</p>
             <button
               onClick={handleSimulateRun}
-              className="text-xs font-mono text-accent hover:underline cursor-pointer"
+              className="text-xs font-mono text-indigo-600 hover:underline cursor-pointer font-medium"
             >
               Simulate autonomous workflow
             </button>
           </div>
         ) : (
-          <div className="relative border-l border-border/80 ml-3.5 space-y-6">
+          <div className="relative border-l border-slate-200 ml-3.5 space-y-6">
             {events.map((evt) => {
               const isExpanded = expandedJsonId === evt.id;
 
@@ -219,26 +219,26 @@ export function AgentsTab({
                   <div
                     className={`absolute -left-[5px] top-1.5 size-2.5 rounded-full border ${
                       evt.type === "approval_requested"
-                        ? "bg-danger border-danger/60 ring-4 ring-danger/10 animate-pulse"
+                        ? "bg-rose-500 border-rose-300 ring-4 ring-rose-100 animate-pulse"
                         : evt.type === "done"
-                        ? "bg-success border-success/60"
+                        ? "bg-emerald-500 border-emerald-300"
                         : evt.type === "tool_call" || evt.type === "tool_result"
-                        ? "bg-accent border-accent/60"
-                        : "bg-zinc-500 border-zinc-400"
+                        ? "bg-indigo-500 border-indigo-300"
+                        : "bg-slate-400 border-slate-300"
                     }`}
                   />
 
                   {/* Card Body */}
-                  <div className="p-3 rounded-xl bg-surface/70 hover:bg-surface border border-border transition-all space-y-2">
+                  <div className="p-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 shadow-xs transition-all space-y-2">
                     {/* Event Header */}
                     <div className="flex items-center justify-between text-2xs font-mono">
                       <div className="flex items-center gap-2">
                         {getRoleBadge(evt.agentRole)}
-                        <span className="text-zinc-400 capitalize">
+                        <span className="text-slate-500 capitalize">
                           {evt.type.replace("_", " ")}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-zinc-500">
+                      <div className="flex items-center gap-1 text-slate-400">
                         <Clock size={11} />
                         <span>
                           {new Date(evt.timestamp).toLocaleTimeString([], {
@@ -248,7 +248,7 @@ export function AgentsTab({
                           })}
                         </span>
                         {evt.durationMs !== undefined && (
-                          <span className="text-success ml-1">
+                          <span className="text-emerald-600 font-semibold ml-1">
                             {evt.durationMs}ms
                           </span>
                         )}
@@ -257,18 +257,18 @@ export function AgentsTab({
 
                     {/* Step Name / Tool Details */}
                     {evt.stepName && (
-                      <div className="text-xs font-medium text-zinc-200">
+                      <div className="text-xs font-semibold text-slate-900">
                         {evt.stepName}
                       </div>
                     )}
 
                     {evt.toolName && (
-                      <div className="text-xs font-mono text-zinc-300 flex items-center justify-between">
-                        <span className="text-accent font-semibold">
+                      <div className="text-xs font-mono text-slate-700 flex items-center justify-between">
+                        <span className="text-indigo-600 font-semibold">
                           {evt.toolName}()
                         </span>
                         {evt.resultSummary && (
-                          <span className="text-2xs text-zinc-400">
+                          <span className="text-2xs text-slate-500">
                             {evt.resultSummary}
                           </span>
                         )}
@@ -276,56 +276,56 @@ export function AgentsTab({
                     )}
 
                     {evt.argsSummary && (
-                      <div className="text-2xs font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-border/50 truncate">
+                      <div className="text-2xs font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-200 truncate">
                         args: {evt.argsSummary}
                       </div>
                     )}
 
                     {/* Prominent Approval Card */}
                     {evt.type === "approval_requested" && evt.approvalData && (
-                      <div className="mt-3 p-3.5 rounded-xl bg-danger/10 border border-danger/30 space-y-3">
+                      <div className="mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-2xs font-mono text-danger font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="text-2xs font-mono text-rose-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
                             <Lock size={12} />
                             Human-in-the-Loop Approval Required
                           </span>
-                          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-danger/20 text-danger border border-danger/30 font-semibold">
+                          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-rose-200 text-rose-900 border border-rose-300 font-bold">
                             {evt.approvalData.riskLevel} RISK
                           </span>
                         </div>
 
-                        <div className="space-y-1.5 text-xs text-zinc-300">
+                        <div className="space-y-1.5 text-xs text-slate-800">
                           <div>
-                            <span className="text-zinc-400 font-mono text-2xs uppercase">Action: </span>
-                            <span className="font-semibold text-zinc-100">
+                            <span className="text-slate-500 font-mono text-2xs uppercase">Action: </span>
+                            <span className="font-semibold text-slate-900">
                               {evt.approvalData.action}
                             </span>
                           </div>
                           <div>
-                            <span className="text-zinc-400 font-mono text-2xs uppercase">Target: </span>
+                            <span className="text-slate-500 font-mono text-2xs uppercase">Target: </span>
                             <button
                               onClick={() => onSelectNode?.(evt.approvalData?.target.split("/")[0].trim() || "auth-v1")}
-                              className="text-accent hover:underline font-mono text-2xs cursor-pointer"
+                              className="text-indigo-600 hover:underline font-mono text-2xs cursor-pointer font-medium"
                             >
                               {evt.approvalData.target}
                             </button>
                           </div>
                           <div>
-                            <span className="text-zinc-400 font-mono text-2xs uppercase">Rationale: </span>
-                            <span className="text-zinc-300 italic">
+                            <span className="text-slate-500 font-mono text-2xs uppercase">Rationale: </span>
+                            <span className="text-slate-700 italic">
                               "{evt.approvalData.reason}"
                             </span>
                           </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="pt-2 border-t border-danger/20">
+                        <div className="pt-2 border-t border-rose-200">
                           {evt.approvalData.status !== "pending" ? (
                             <div
                               className={`py-1.5 px-3 rounded-lg text-2xs font-mono flex items-center gap-2 ${
                                 evt.approvalData.status === "allowed"
-                                  ? "bg-success/20 text-success border border-success/40"
-                                  : "bg-danger/20 text-danger border border-danger/40"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                  : "bg-rose-100 text-rose-800 border border-rose-300"
                               }`}
                             >
                               <CheckCircle2 size={13} />
@@ -344,7 +344,7 @@ export function AgentsTab({
                                   handleResolveApproval(evt.approvalData!, "allowed")
                                 }
                                 disabled={resolvingApprovalId === evt.approvalData.id}
-                                className="flex-1 py-1.5 px-3 rounded-lg bg-success hover:bg-success/90 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs"
                               >
                                 <CheckCircle2 size={13} />
                                 <span>Allow & Store Finding</span>
@@ -354,7 +354,7 @@ export function AgentsTab({
                                   handleResolveApproval(evt.approvalData!, "denied")
                                 }
                                 disabled={resolvingApprovalId === evt.approvalData.id}
-                                className="flex-1 py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="flex-1 py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                               >
                                 <AlertCircle size={13} />
                                 <span>Deny Action</span>
@@ -372,7 +372,7 @@ export function AgentsTab({
                           onClick={() =>
                             setExpandedJsonId(isExpanded ? null : evt.id)
                           }
-                          className="flex items-center gap-1 text-3xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                          className="flex items-center gap-1 text-3xs font-mono text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                         >
                           {isExpanded ? (
                             <ChevronDown size={11} />
@@ -382,7 +382,7 @@ export function AgentsTab({
                           <span>{isExpanded ? "Hide Telemetry JSON" : "Expand Telemetry JSON"}</span>
                         </button>
                         {isExpanded && (
-                          <pre className="mt-1.5 p-2 rounded bg-black/60 border border-border/60 text-3xs font-mono text-zinc-300 overflow-x-auto max-h-40">
+                          <pre className="mt-1.5 p-2 rounded-lg bg-slate-900 border border-slate-800 text-3xs font-mono text-slate-200 overflow-x-auto max-h-40 shadow-inner">
                             {JSON.stringify(evt.rawJson, null, 2)}
                           </pre>
                         )}
@@ -394,15 +394,6 @@ export function AgentsTab({
             })}
           </div>
         )}
-      </div>
-
-      {/* Footer Info */}
-      <div className="p-3 border-t border-border bg-surface/40 flex items-center justify-between text-2xs font-mono text-zinc-500">
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-success inline-block" />
-          <span>FalkorDB OpenCypher Pipeline Active</span>
-        </div>
-        <span>Agent Memory Synced</span>
       </div>
     </div>
   );

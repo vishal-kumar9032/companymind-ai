@@ -7,7 +7,6 @@ import {
   Clock,
   RefreshCw,
   Search,
-  Filter,
   CheckCircle2,
   ExternalLink,
   Plus,
@@ -109,7 +108,7 @@ export function MemoryTab({
 
   const handleAddFinding = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newText.trim()) return;
+    if (!newText.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -117,49 +116,48 @@ export function MemoryTab({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          targetName: newTarget,
-          text: newText,
+          targetName: newTarget.trim(),
+          text: newText.trim(),
           severity: newSeverity,
-          sessionId: "session-1",
+          sessionId: "manual-input",
         }),
       });
 
       if (res.ok) {
         setNewText("");
         setShowAddForm(false);
-        await fetchFindings();
+        fetchFindings();
       }
     } catch (err) {
-      console.error("Error creating finding:", err);
+      console.error("Failed to add finding:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const getSeverityBadge = (sev: string) => {
-    const s = (sev || "LOW").toUpperCase();
-    switch (s) {
+    switch (sev?.toUpperCase()) {
       case "CRITICAL":
         return (
-          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-danger/20 text-danger border border-danger/40">
+          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300">
             CRITICAL
           </span>
         );
       case "HIGH":
         return (
-          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-warning/20 text-warning border border-warning/40">
+          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
             HIGH
           </span>
         );
       case "MEDIUM":
         return (
-          <span className="text-3xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/40">
+          <span className="text-3xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">
             MEDIUM
           </span>
         );
       default:
         return (
-          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-zinc-700/40 text-zinc-300 border border-border">
+          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
             LOW
           </span>
         );
@@ -169,11 +167,11 @@ export function MemoryTab({
   const getTargetIcon = (type?: string) => {
     switch (type?.toLowerCase()) {
       case "githubpr":
-        return <GitPullRequest size={12} className="text-amber-400" />;
+        return <GitPullRequest size={12} className="text-indigo-600" />;
       case "doc":
-        return <FileText size={12} className="text-violet-400" />;
+        return <FileText size={12} className="text-purple-600" />;
       default:
-        return <Server size={12} className="text-blue-400" />;
+        return <Server size={12} className="text-blue-600" />;
     }
   };
 
@@ -190,19 +188,19 @@ export function MemoryTab({
   });
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden text-slate-800">
       {/* Toast Alert when a finding is recalled */}
       {recalledFindingToast && (
-        <div className="p-3 bg-accent/20 border-b border-accent/40 flex items-center justify-between text-xs text-zinc-100 font-mono animate-in fade-in shrink-0">
+        <div className="p-3 bg-indigo-50 border-b border-indigo-200 flex items-center justify-between text-xs text-indigo-900 font-mono animate-in fade-in shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-accent" />
+            <Sparkles size={14} className="text-indigo-600" />
             <span>
               <strong>Recalled finding from memory:</strong> "{recalledFindingToast}"
             </span>
           </div>
           <button
             onClick={onClearToast}
-            className="text-2xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="text-2xs text-indigo-600 hover:text-indigo-900 transition-colors cursor-pointer font-medium"
           >
             Dismiss
           </button>
@@ -210,13 +208,13 @@ export function MemoryTab({
       )}
 
       {/* Header */}
-      <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+      <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Brain size={15} strokeWidth={1.75} className="text-purple-400" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-100 font-mono">
+          <Brain size={15} strokeWidth={1.75} className="text-purple-600" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900 font-mono">
             Memory Ledger
           </h2>
-          <span className="text-3xs font-mono text-zinc-400 bg-surface px-2 py-0.5 rounded border border-border">
+          <span className="text-3xs font-mono text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-xs">
             {findings.length} findings
           </span>
         </div>
@@ -224,7 +222,7 @@ export function MemoryTab({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-2xs font-mono px-2 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shadow-xs"
           >
             <Plus size={11} />
             <span>Record</span>
@@ -232,7 +230,7 @@ export function MemoryTab({
           <button
             onClick={fetchFindings}
             disabled={loading}
-            className="p-1 rounded bg-surface hover:bg-surface-hover border border-border text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-xs"
             title="Refresh memory store from FalkorDB"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -240,7 +238,7 @@ export function MemoryTab({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer ml-1"
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer ml-1"
               title="Close panel"
             >
               <X size={15} />
@@ -253,16 +251,16 @@ export function MemoryTab({
       {showAddForm && (
         <form
           onSubmit={handleAddFinding}
-          className="p-4 border-b border-border bg-black/40 space-y-3 text-xs"
+          className="p-4 border-b border-slate-200 bg-slate-50 space-y-3 text-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-zinc-200 font-mono text-2xs uppercase">
+            <span className="font-semibold text-slate-900 font-mono text-2xs uppercase">
               Save New Agent Finding to Graph
             </span>
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="text-zinc-500 hover:text-zinc-300"
+              className="text-slate-500 hover:text-slate-800 font-medium"
             >
               Cancel
             </button>
@@ -270,7 +268,7 @@ export function MemoryTab({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-3xs font-mono text-zinc-400 block mb-1">
+              <label className="text-3xs font-mono text-slate-500 block mb-1">
                 Target Node
               </label>
               <input
@@ -278,17 +276,17 @@ export function MemoryTab({
                 value={newTarget}
                 onChange={(e) => setNewTarget(e.target.value)}
                 placeholder="e.g. auth-v1, payments-api"
-                className="w-full bg-bg border border-border rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-accent font-mono"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
               />
             </div>
             <div>
-              <label className="text-3xs font-mono text-zinc-400 block mb-1">
+              <label className="text-3xs font-mono text-slate-500 block mb-1">
                 Severity
               </label>
               <select
                 value={newSeverity}
                 onChange={(e) => setNewSeverity(e.target.value)}
-                className="w-full bg-bg border border-border rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-accent font-mono"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
               >
                 <option value="CRITICAL">CRITICAL</option>
                 <option value="HIGH">HIGH</option>
@@ -299,7 +297,7 @@ export function MemoryTab({
           </div>
 
           <div>
-            <label className="text-3xs font-mono text-zinc-400 block mb-1">
+            <label className="text-3xs font-mono text-slate-500 block mb-1">
               Observation / Rule Summary
             </label>
             <textarea
@@ -307,14 +305,14 @@ export function MemoryTab({
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               placeholder="Describe the governance violation, performance anomaly, or architecture rule..."
-              className="w-full bg-bg border border-border rounded-lg p-2 text-xs text-zinc-100 focus:outline-none focus:border-accent"
+              className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting || !newText.trim()}
-            className="w-full py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white font-medium transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
           >
             {isSubmitting ? "Persisting to FalkorDB..." : "Persist to Agent Memory"}
           </button>
@@ -322,18 +320,18 @@ export function MemoryTab({
       )}
 
       {/* Filter and Search Bar */}
-      <div className="p-3 border-b border-border bg-surface/20 flex flex-wrap items-center gap-2">
+      <div className="p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[140px]">
           <Search
             size={12}
-            className="absolute left-2.5 top-2.5 text-zinc-500"
+            className="absolute left-2.5 top-2.5 text-slate-400"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search findings, services, agents..."
-            className="w-full bg-bg border border-border rounded-lg pl-7 pr-2.5 py-1 text-2xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-accent"
+            className="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-2.5 py-1 text-2xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -344,8 +342,8 @@ export function MemoryTab({
               onClick={() => setFilterSeverity(sev)}
               className={`px-2 py-0.5 rounded border transition-colors cursor-pointer ${
                 filterSeverity === sev
-                  ? "bg-accent/20 text-accent border-accent/40 font-semibold"
-                  : "bg-surface border-border text-zinc-400 hover:text-zinc-200"
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold"
+                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900"
               }`}
             >
               {sev}
@@ -355,28 +353,28 @@ export function MemoryTab({
       </div>
 
       {/* Findings List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8fafc]">
         {filtered.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-zinc-500 space-y-2">
-            <Brain size={28} className="stroke-1 opacity-40 text-accent" />
+          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
+            <Brain size={28} className="stroke-1 opacity-40 text-purple-500" />
             <p className="text-xs">No agent findings match your search filter.</p>
           </div>
         ) : (
           filtered.map((item) => (
             <div
               key={item.id}
-              className="p-3.5 rounded-xl bg-surface/70 hover:bg-surface border border-border transition-all space-y-2.5 shadow-sm"
+              className="p-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 transition-all space-y-2.5 shadow-xs"
             >
               {/* Finding Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {getSeverityBadge(item.severity)}
-                  <span className="text-2xs font-mono text-zinc-400">
+                  <span className="text-2xs font-mono text-slate-500 font-medium">
                     {item.agent || "PolicyWatchdog"}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-3xs font-mono text-zinc-500">
+                <div className="flex items-center gap-1.5 text-3xs font-mono text-slate-400">
                   <Clock size={11} />
                   <span>
                     {new Date(item.created_at || Date.now()).toLocaleDateString(
@@ -388,18 +386,18 @@ export function MemoryTab({
               </div>
 
               {/* Finding Summary */}
-              <p className="text-xs text-zinc-200 leading-relaxed font-sans">
+              <p className="text-xs text-slate-800 leading-relaxed font-sans">
                 {item.text}
               </p>
 
-              {/* Target Node Chip (Clickable to focus on Graph) */}
+              {/* Target Node Chip */}
               {item.target_name && (
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-2xs font-mono">
-                  <div className="flex items-center gap-1.5 text-zinc-400">
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs font-mono">
+                  <div className="flex items-center gap-1.5 text-slate-500">
                     <span>Attached to:</span>
                     <button
                       onClick={() => onSelectNode?.(item.target_name!)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 hover:border-accent transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer font-medium"
                       title="Focus node in FalkorDB graph canvas"
                     >
                       {getTargetIcon(item.target_type)}
@@ -408,7 +406,7 @@ export function MemoryTab({
                     </button>
                   </div>
 
-                  <span className="text-3xs text-zinc-500">
+                  <span className="text-3xs text-slate-400 font-mono">
                     {item.session_id || "session-1"}
                   </span>
                 </div>
@@ -419,9 +417,9 @@ export function MemoryTab({
       </div>
 
       {/* Footer Info */}
-      <div className="p-3 border-t border-border bg-surface/40 flex items-center justify-between text-2xs font-mono text-zinc-500">
+      <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-2xs font-mono text-slate-500">
         <span>Persistent Epistemic Graph Storage</span>
-        <span className="text-success flex items-center gap-1">
+        <span className="text-emerald-700 flex items-center gap-1 font-medium">
           <CheckCircle2 size={11} />
           Synced across Sessions
         </span>

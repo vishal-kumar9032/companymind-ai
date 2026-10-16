@@ -108,7 +108,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#08080c] text-zinc-100 overflow-hidden font-sans select-none">
+    <div className="flex flex-col h-screen bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
       {/* Top Slim Navigation Bar */}
       <Navbar
         nodeCount={graphData.nodes.length}
@@ -178,12 +178,12 @@ export default function Home() {
       {isProcessOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setIsProcessOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-10 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
             aria-label="TrueForge Agent Process Telemetry"
           >
             <AgentsTab
@@ -206,24 +206,24 @@ export default function Home() {
       {isGraphOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setIsGraphOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 right-0 w-full sm:w-[560px] md:w-[680px] z-10 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            className="fixed inset-y-0 right-0 w-full sm:w-[560px] md:w-[680px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
             aria-label="FalkorDB Graph Topology"
           >
-            <div className="p-3.5 border-b border-border bg-surface/40 flex items-center justify-between shrink-0">
+            <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <Network size={15} className="text-cyan-400" />
-                <h3 className="text-xs font-semibold text-zinc-100 font-mono uppercase tracking-wider">
+                <Network size={15} className="text-indigo-600" />
+                <h3 className="text-xs font-semibold text-slate-900 font-mono uppercase tracking-wider">
                   FalkorDB Topology ({graphData.nodes.length} nodes · {graphData.edges.length} edges)
                 </h3>
               </div>
               <button
                 onClick={() => setIsGraphOpen(false)}
-                className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-surface transition-colors cursor-pointer"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Close panel"
               >
                 <X size={15} />
@@ -231,8 +231,8 @@ export default function Home() {
             </div>
             <div className="flex-1 min-h-0 relative">
               {loading ? (
-                <div className="w-full h-full flex items-center justify-center bg-bg/50 text-xs font-mono text-zinc-400 gap-2">
-                  <span className="size-2 rounded-full bg-accent animate-ping" />
+                <div className="w-full h-full flex items-center justify-center bg-slate-50 text-xs font-mono text-slate-500 gap-2">
+                  <span className="size-2 rounded-full bg-indigo-600 animate-ping" />
                   <span>Hydrating FalkorDB topology...</span>
                 </div>
               ) : (
@@ -254,12 +254,12 @@ export default function Home() {
       {isMemoryOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setIsMemoryOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-10 bg-[#08080c]/98 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
             aria-label="Agent Shared Memory"
           >
             <MemoryTab
