@@ -7,9 +7,17 @@ interface NavbarProps {
   nodeCount: number;
   edgeCount: number;
   onRefresh: () => void;
+  activeTab: "overview" | "studio" | "registry";
+  onTabChange: (tab: "overview" | "studio" | "registry") => void;
 }
 
-export function Navbar({ nodeCount, edgeCount, onRefresh }: NavbarProps) {
+export function Navbar({
+  nodeCount,
+  edgeCount,
+  onRefresh,
+  activeTab,
+  onTabChange,
+}: NavbarProps) {
   const [seeding, setSeeding] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -31,26 +39,66 @@ export function Navbar({ nodeCount, edgeCount, onRefresh }: NavbarProps) {
   };
 
   return (
-    <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <header className="border-b border-border/40 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/70 sticky top-0 z-50">
       <div className="flex h-16 items-center justify-between px-6">
         {/* Left: Brand & Tagline */}
         <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl bg-gradient-to-tr from-falkor-700 via-falkor-500 to-indigo-400 flex items-center justify-center shadow-lg shadow-falkor-500/20">
+          <div
+            onClick={() => onTabChange("overview")}
+            className="size-10 rounded-xl bg-gradient-to-tr from-falkor-700 via-falkor-500 to-indigo-400 flex items-center justify-center shadow-lg shadow-falkor-500/20 cursor-pointer"
+          >
             <Sparkles className="size-5 text-white animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              <h1
+                onClick={() => onTabChange("overview")}
+                className="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent cursor-pointer"
+              >
                 CompanyMind AI
               </h1>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-falkor-500/10 text-falkor-300 border border-falkor-500/30">
                 FalkorDB Brain
               </span>
             </div>
-            <p className="text-xs text-muted-foreground hidden sm:block">
+            <p className="text-[11px] text-zinc-400 hidden lg:block">
               Autonomous Enterprise Graph Brain & Cross-Agent Shared Memory
             </p>
           </div>
+        </div>
+
+        {/* Center: Segmented View Navigation */}
+        <div className="flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800/80 shadow-inner">
+          <button
+            onClick={() => onTabChange("overview")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "overview"
+                ? "bg-falkor-600 text-white shadow-sm shadow-falkor-600/30"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => onTabChange("studio")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "studio"
+                ? "bg-falkor-600 text-white shadow-sm shadow-falkor-600/30"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            Graph Studio
+          </button>
+          <button
+            onClick={() => onTabChange("registry")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "registry"
+                ? "bg-falkor-600 text-white shadow-sm shadow-falkor-600/30"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            Registry
+          </button>
         </div>
 
         {/* Right: Status Badges, Action Button, GitHub */}

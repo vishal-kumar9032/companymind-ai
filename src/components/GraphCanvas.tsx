@@ -26,6 +26,25 @@ export function GraphCanvas({ data, highlightHops }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
+
+  const handleFilterCategory = (cat: string) => {
+    setCategoryFilter(cat);
+    if (!cyRef.current) return;
+    const cy = cyRef.current;
+    if (cat === "All") {
+      cy.elements().removeClass("hidden");
+      cy.animate({ fit: { eles: cy.elements(), padding: 40 }, duration: 400 });
+    } else {
+      cy.elements().addClass("hidden");
+      const targetNodes = cy.nodes().filter((n) => n.data("category") === cat);
+      targetNodes.removeClass("hidden");
+      targetNodes.connectedEdges().removeClass("hidden");
+      if (targetNodes.length > 0) {
+        cy.animate({ fit: { eles: targetNodes, padding: 50 }, duration: 400 });
+      }
+    }
+  };
 
   useEffect(() => {
     if (!containerRef.current || !data.nodes.length) return;
@@ -111,6 +130,12 @@ export function GraphCanvas({ data, highlightHops }: GraphCanvasProps) {
             "z-index": 999,
           },
         },
+        {
+          selector: ".hidden",
+          style: {
+            display: "none",
+          },
+        },
       ],
       layout: {
         name: "cose",
@@ -169,8 +194,25 @@ export function GraphCanvas({ data, highlightHops }: GraphCanvasProps) {
       {/* Cytoscape Container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
+      {/* Category Filter Pills */}
+      <div className="absolute top-4 left-4 flex flex-wrap items-center gap-1 p-1 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg shadow-lg z-10 text-[11px] font-mono">
+        {["All", "Service", "Decision", "Doc", "Meeting", "GitHubPR"].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => handleFilterCategory(cat)}
+            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+              categoryFilter === cat
+                ? "bg-falkor-600 text-white"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Floating Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-1.5 p-1 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg shadow-lg">
+      <div className="absolute top-4 right-4 flex items-center gap-1.5 p-1 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg shadow-lg z-10">
         <button
           onClick={() => cyRef.current?.zoom(cyRef.current.zoom() * 1.2)}
           className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-100 transition-colors"
@@ -195,7 +237,7 @@ export function GraphCanvas({ data, highlightHops }: GraphCanvasProps) {
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 p-2.5 bg-zinc-950/80 backdrop-blur border border-zinc-800/80 rounded-lg text-[11px] font-mono flex flex-wrap gap-x-3 gap-y-1.5 max-w-lg">
+      <div className="absolute bottom-4 left-4 p-2.5 bg-zinc-950/80 backdrop-blur border border-zinc-800/80 rounded-lg text-[11px] font-mono flex flex-wrap gap-x-3 gap-y-1.5 max-w-lg z-10">
         {Object.entries(LABEL_COLORS).map(([label, color]) => (
           <div key={label} className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
@@ -206,7 +248,7 @@ export function GraphCanvas({ data, highlightHops }: GraphCanvasProps) {
 
       {/* Selected Node Details Drawer */}
       {selectedNode && (
-        <div className="absolute top-4 left-4 p-4 bg-zinc-900/95 backdrop-blur border border-zinc-700/80 rounded-xl shadow-2xl max-w-sm text-xs z-20 animate-in fade-in duration-200">
+        <div className="absolute top-14 left-4 p-4 bg-zinc-900/95 backdrop-blur border border-zinc-700/80 rounded-xl shadow-2xl max-w-sm text-xs z-20 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800">
             <div className="flex items-center gap-2">
               <span

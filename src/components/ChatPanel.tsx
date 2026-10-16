@@ -14,6 +14,8 @@ interface Message {
 
 interface ChatPanelProps {
   onHopsChange: (hops: string[]) => void;
+  externalTriggerQuery?: string | null;
+  onClearExternalTrigger?: () => void;
 }
 
 const PRESET_QUERIES = [
@@ -35,7 +37,11 @@ const PRESET_QUERIES = [
   },
 ];
 
-export function ChatPanel({ onHopsChange }: ChatPanelProps) {
+export function ChatPanel({
+  onHopsChange,
+  externalTriggerQuery,
+  onClearExternalTrigger,
+}: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -55,6 +61,13 @@ export function ChatPanel({ onHopsChange }: ChatPanelProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  useEffect(() => {
+    if (externalTriggerQuery) {
+      handleSubmit(externalTriggerQuery);
+      onClearExternalTrigger?.();
+    }
+  }, [externalTriggerQuery]);
 
   const handleSubmit = async (textToSend?: string) => {
     const text = textToSend || input;
@@ -179,13 +192,13 @@ export function ChatPanel({ onHopsChange }: ChatPanelProps) {
                     onClick={() =>
                       setExpandedTraceIdx(expandedTraceIdx === idx ? null : idx)
                     }
-                    className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 hover:text-emerald-300 transition-colors cursor-pointer"
                   >
                     <Terminal className="size-3 text-emerald-400" />
                     <span>
-                      FalkorDB Trace ({m.traces.length} tool
+                      OpenCypher Graph Proof ({m.traces.length} tool
                       {m.traces.length > 1 ? "s" : ""}, ~
-                      {m.traces.reduce((acc, t) => acc + t.durationMs, 0)}ms)
+                      {m.traces.reduce((acc, t) => acc + t.durationMs, 0)}ms on FalkorDB)
                     </span>
                     {expandedTraceIdx === idx ? (
                       <ChevronDown className="size-3" />
