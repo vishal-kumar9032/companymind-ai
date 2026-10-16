@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { LandingPage } from "@/components/LandingPage";
+import { AuthPage } from "@/components/AuthPage";
 import { SaaSSidebar, SaaSView } from "@/components/SaaSSidebar";
 import { SaaSHeader } from "@/components/SaaSHeader";
 import { DashboardView } from "@/components/DashboardView";
@@ -16,9 +18,11 @@ import { AuthModal } from "@/components/AuthModal";
 import { GraphData, ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
 import { TENANTS, TenantConfig } from "@/lib/tenants";
-import { EnterpriseUser, signOutEnterpriseUser } from "@/lib/firebase";
+import { EnterpriseUser, DEMO_ENTERPRISE_USERS, signOutEnterpriseUser } from "@/lib/firebase";
 
 export default function Home() {
+  const [appStage, setAppStage] = useState<"landing" | "auth" | "dashboard">("landing");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [currentView, setCurrentView] = useState<SaaSView>("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -68,15 +72,36 @@ export default function Home() {
 
   useEffect(() => {
     fetchGraph();
-    // Hydrate saved user session
+    // Hydrate saved user session & URL search parameters
     if (typeof window !== "undefined") {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const stageParam = urlParams.get("stage");
         const saved = localStorage.getItem("companymind_user");
+
         if (saved) {
-          setCurrentUser(JSON.parse(saved));
+          const userObj = JSON.parse(saved);
+          setCurrentUser(userObj);
+          if (stageParam === "landing") {
+            setAppStage("landing");
+          } else {
+            setAppStage("dashboard");
+          }
+        } else if (stageParam === "login") {
+          setAuthMode("login");
+          setAppStage("auth");
+        } else if (stageParam === "register") {
+          setAuthMode("register");
+          setAppStage("auth");
+        } else if (stageParam === "dashboard") {
+          // If explicitly requesting dashboard, use demo user
+          setCurrentUser(DEMO_ENTERPRISE_USERS[0]);
+          setAppStage("dashboard");
+        } else {
+          setAppStage("landing");
         }
       } catch {
-        // Ignore parsing errors
+        setAppStage("landing");
       }
     }
   }, []);
@@ -87,7 +112,9 @@ export default function Home() {
       // ⌘K or Ctrl+K for command palette
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
+        if (appStage === "dashboard") {
+          setIsCommandPaletteOpen((prev) => !prev);
+        }
         return;
       }
 
@@ -101,32 +128,34 @@ export default function Home() {
         return;
       }
 
-      // Quick numbers 1-6 to switch views if not typing in an input
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+      // Quick numbers 1-6 to switch views in dashboard if not typing in an input
+      if (appStage === "dashboard") {
+        const target = e.target as HTMLElement;
+        const isInput =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
 
-      if (!isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const views: SaaSView[] = [
-          "dashboard",
-          "chat",
-          "graph",
-          "agents",
-          "memory",
-          "registry",
-        ];
-        const num = parseInt(e.key, 10);
-        if (num >= 1 && num <= views.length) {
-          setCurrentView(views[num - 1]);
+        if (!isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          const views: SaaSView[] = [
+            "dashboard",
+            "chat",
+            "graph",
+            "agents",
+            "memory",
+            "registry",
+          ];
+          const num = parseInt(e.key, 10);
+          if (num >= 1 && num <= views.length) {
+            setCurrentView(views[num - 1]);
+          }
         }
       }
     };
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, []);
+  }, [appStage]);
 
   const handleOpenSource = (sourceId: string) => {
     const src = ENTERPRISE_SOURCES[sourceId];
@@ -165,8 +194,55 @@ export default function Home() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("companymind_user");
     }
+    setAppStage("landing");
   };
 
+  const handleUserAuthenticated = (user: EnterpriseUser) => {
+    setCurrentUser(user);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("companymind_user", JSON.stringify(user));
+    }
+    setAppStage("dashboard");
+  };
+
+  /* =========================================================================
+     STAGE 1: HIGH-CONVERTING TRUEFORGE LANDING PAGE
+     ========================================================================= */
+  if (appStage === "landing") {
+    return (
+      <LandingPage
+        onGetStarted={() => {
+          setAuthMode("register");
+          setAppStage("auth");
+        }}
+        onSignIn={() => {
+          setAuthMode("login");
+          setAppStage("auth");
+        }}
+        onExploreDemo={() => {
+          const demoUser = DEMO_ENTERPRISE_USERS[0];
+          handleUserAuthenticated(demoUser);
+        }}
+      />
+    );
+  }
+
+  /* =========================================================================
+     STAGE 2: AUTHENTICATION PAGE (LOGIN & REGISTER)
+     ========================================================================= */
+  if (appStage === "auth") {
+    return (
+      <AuthPage
+        mode={authMode}
+        onSuccess={handleUserAuthenticated}
+        onBackToLanding={() => setAppStage("landing")}
+      />
+    );
+  }
+
+  /* =========================================================================
+     STAGE 3: THE TRUEFORGE AGENT HARNESS DASHBOARD & WORKSPACE
+     ========================================================================= */
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#f8fafc] text-slate-800 font-sans select-none antialiased">
       {/* 1. Desktop Enterprise Sidebar */}
@@ -180,6 +256,7 @@ export default function Home() {
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+          onGoToLanding={() => setAppStage("landing")}
           currentUser={currentUser}
           onOpenAuthModal={() => setIsAuthModalOpen(true)}
           onSignOut={handleSignOut}
@@ -218,6 +295,10 @@ export default function Home() {
                 setIsMobileSidebarOpen(false);
                 setIsAnalyticsOpen(true);
               }}
+              onGoToLanding={() => {
+                setIsMobileSidebarOpen(false);
+                setAppStage("landing");
+              }}
               currentUser={currentUser}
               onOpenAuthModal={() => {
                 setIsMobileSidebarOpen(false);
@@ -250,6 +331,7 @@ export default function Home() {
             )
           }
           onRefreshGraph={fetchGraph}
+          onGoToLanding={() => setAppStage("landing")}
           activeAgent={activeAgent}
           activeOutcome={lastOutcome}
           gatewayStatus={gatewayStatus}
@@ -447,12 +529,7 @@ export default function Home() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onUserAuthenticated={(user) => {
-          setCurrentUser(user);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("companymind_user", JSON.stringify(user));
-          }
-        }}
+        onUserAuthenticated={handleUserAuthenticated}
       />
     </div>
   );

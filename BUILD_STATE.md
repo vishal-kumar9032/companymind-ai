@@ -99,7 +99,12 @@
     - `Episodic Memory` (`MemoryTab.tsx`): Cross-session agent memory timeline stored in FalkorDB with search and tags.
     - `Document Catalog` (`RegistryTab.tsx`): Overhauled with modern SaaS light theme, search, category filters, and direct graph query actions.
   - **Clean Code Hygiene:** Removed deprecated prototype components (`Navbar.tsx`, `Sidebar.tsx`, `OverviewTab.tsx`).
-  - **Production Verification:** Full production build (`next build`) compiled cleanly (0 errors), PM2 service reloaded online (`companymind-ai` on port 13050), and verified via local curl and live public HTTPS on `https://companymind.135-235-136-6.sslip.io`.
+- `2026-10-16` (Branch `feat/ui-rebuild` - TrueForge Agent Harness UI, Public Landing Page, and Auth Gate):
+  - **High-Converting Public Landing Page (`LandingPage.tsx`):** Built modern SaaS marketing and product landing page with TrueForge branding (`https://trueforge.dev`), live execution terminal showcase, FalkorDB 4-hop metrics (2ms Cypher latency), harness capabilities grid (Autonomous Agent Loop, Remote MCP Tool Gateway, Human-in-the-Loop Checkpoints, Multi-Model Routing, Multi-Tenant Isolation), pipeline architecture diagram, and transparent deployment tiers (Community, Professional, Enterprise).
+  - **Dedicated Authentication Portal (`AuthPage.tsx`):** Built enterprise login and registration screen with Google Firebase SSO, work email/password, organization domain picker, and instant 1-click test personas (Sarah Chen, Alex Mercer, Elena Rostova).
+  - **Harness & Dashboard Integration (`page.tsx`):** Seamless multi-stage flow (`landing` → `auth` → `dashboard`) with instant live demo entrance, state persistence, and bidirectional navigation.
+  - **Clean Production Verification:** Production build (`next build`) passed with 0 TypeScript/lint errors, PM2 service reloaded online (`companymind-ai` on port 13050), and verified via local curl and live public HTTPS on `https://companymind.135-235-136-6.sslip.io`.
+
 
 
 

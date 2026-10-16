@@ -45,6 +45,7 @@ interface SaaSSidebarProps {
   onToggleCollapse: () => void;
   onOpenCommandPalette: () => void;
   onOpenAnalytics: () => void;
+  onGoToLanding?: () => void;
   currentUser: EnterpriseUser | null;
   onOpenAuthModal: () => void;
   onSignOut: () => void;
@@ -67,6 +68,7 @@ export function SaaSSidebar({
   onToggleCollapse,
   onOpenCommandPalette,
   onOpenAnalytics,
+  onGoToLanding,
   currentUser,
   onOpenAuthModal,
   onSignOut,
@@ -144,26 +146,30 @@ export function SaaSSidebar({
       <div className="flex flex-col border-b border-slate-200/80">
         {/* Brand Bar */}
         <div className="h-14 px-3.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+          <button
+            onClick={onGoToLanding}
+            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group"
+            title="Return to TrueForge Public Portal"
+          >
+            <div className="size-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
               <Brain size={18} strokeWidth={2} />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm tracking-tight text-slate-900 truncate">
-                    CompanyMind
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+                    TrueForge
                   </span>
-                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold uppercase">
-                    AI
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold uppercase">
+                    Harness
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-medium truncate">
-                  Enterprise Graph Platform
+                  FalkorDB Graph Engine
                 </span>
               </div>
             )}
-          </div>
+          </button>
 
           {!isCollapsed && (
             <button

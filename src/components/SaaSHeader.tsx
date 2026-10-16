@@ -31,6 +31,7 @@ interface SaaSHeaderProps {
   onSelectModel: (modelId: string) => void;
   onRunDemo: () => void;
   onRefreshGraph: () => void;
+  onGoToLanding?: () => void;
   activeAgent?: {
     name: string;
     role: string;
@@ -54,6 +55,7 @@ export function SaaSHeader({
   onSelectModel,
   onRunDemo,
   onRefreshGraph,
+  onGoToLanding,
   activeAgent = {
     name: "ArchitectureOracle",
     role: "Enterprise Knowledge & Provenance Orchestrator",
