@@ -9,7 +9,11 @@ import {
 } from "@/lib/tools";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getTrueForgeClient, isTrueForgeEnabled } from "@/lib/trueforge";
-import { getTrueFoundryClient, isTrueFoundryGatewayConfigured } from "@/lib/truefoundry";
+import {
+  getTrueFoundryClient,
+  isTrueFoundryGatewayConfigured,
+  TRUEFOUNDRY_TOOL_DEFINITIONS,
+} from "@/lib/truefoundry";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +28,94 @@ export async function POST(req: NextRequest) {
     const hops: string[] = [];
     let highlightNodeIds: string[] = [];
 
-    // 1. Audit PR Questions
-    if (query.includes("pr #214") || (query.includes("audit") && query.includes("214")) || query.includes("pr 214")) {
-      const res = await auditPR(214);
-      traces.push(res.trace);
+    // Autonomous Tool Calling via TrueFoundry LLM Gateway
+    if (isTrueFoundryGatewayConfigured()) {
+      try {
+        const tfClient = getTrueFoundryClient();
+        if (tfClient) {
+          const model = process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-2.5-flash-lite";
+          const firstStep = await tfClient.chat.completions.create({
+            model,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are CompanyMind AI, an autonomous enterprise intelligence agent powered by FalkorDB graph brain. Call the appropriate FalkorDB tool to answer the user query regarding services, blast radius, decisions, PR governance, or experts.",
+              },
+              { role: "user", content: message },
+            ],
+            tools: TRUEFOUNDRY_TOOL_DEFINITIONS,
+          });
+
+          const toolCalls = firstStep.choices[0]?.message?.tool_calls;
+          if (toolCalls && toolCalls.length > 0) {
+            let toolEvidence = "";
+            for (const tc of toolCalls) {
+              if (tc.type !== "function" || !tc.function) continue;
+              const fn = tc.function.name;
+              const args = JSON.parse(tc.function.arguments || "{}");
+
+              if (fn === "service_blast_radius") {
+                const res = await serviceBlastRadius(args.serviceName || "auth-v1", args.depth || 4);
+                traces.push(res.trace);
+                hops.push(...res.hops);
+                outcome = "answered_with_path";
+                toolEvidence += JSON.stringify(res.data) + "\n";
+              } else if (fn === "trace_decision_provenance") {
+                const res = await traceDecisionProvenance(args.serviceName || "auth-v1");
+                traces.push(res.trace);
+                hops.push(...res.hops);
+                outcome = "answered_with_path";
+                toolEvidence += JSON.stringify(res.data) + "\n";
+              } else if (fn === "audit_pr_governance") {
+                const prNum = parseInt(args.prNumber) || 214;
+                const res = await auditPR(prNum);
+                traces.push(res.trace);
+                hops.push(`GitHubPR #${prNum}`, "auth-v1", "DEC-44", "RFC-102", "Sarah Chen");
+                outcome = res.violations.length > 0 ? "governance_violation" : "answered_with_path";
+                toolEvidence += JSON.stringify(res.violations) + "\n";
+              } else if (fn === "find_subject_matter_experts") {
+                const res = await findSubjectMatterExperts(args.serviceName || "auth-v1");
+                traces.push(res.trace);
+                hops.push(args.serviceName || "auth-v1", ...res.data.map((e: any) => e.expert));
+                outcome = "answered_with_path";
+                toolEvidence += JSON.stringify(res.data) + "\n";
+              }
+            }
+
+            if (toolEvidence) {
+              const synthRes = await tfClient.chat.completions.create({
+                model,
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are CompanyMind AI, powered by FalkorDB graph brain. Synthesize the verified OpenCypher graph evidence into a concise executive answer with clear supporting evidence. Explicitly reference service names, RFCs, meetings, and team leads discovered in the graph.",
+                  },
+                  {
+                    role: "user",
+                    content: `User query: "${message}"\nVerified FalkorDB Graph Results:\n${toolEvidence}`,
+                  },
+                ],
+              });
+
+              const synth = synthRes.choices[0]?.message?.content;
+              if (synth && synth.length > 20) {
+                answer = synth;
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn("TrueFoundry tool dispatch fallback to graph heuristic:", err?.message);
+      }
+    }
+
+    // Deterministic FalkorDB Graph Routing (runs if no tool called or gateway not active)
+    if (!answer) {
+      if (query.includes("pr #214") || (query.includes("audit") && query.includes("214")) || query.includes("pr 214")) {
+        const res = await auditPR(214);
+        traces.push(res.trace);
 
       if (res.violations.length > 0) {
         const v = res.violations[0];
@@ -134,8 +222,9 @@ export async function POST(req: NextRequest) {
         `3. *"Audit PR #214 for architecture violations"* (Governance Watchdog)\n` +
         `4. *"Who owns payments-api?"* (Institutional Knowledge)`;
     }
+    } // End of if (!answer) deterministic fallback
 
-    // TrueForge Agent Harness or Gemini Execution
+    // TrueForge Agent Harness
     if (isTrueForgeEnabled()) {
       try {
         const tf = getTrueForgeClient();
@@ -155,13 +244,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. TrueFoundry LLM Gateway Execution (if configured)
-    if (isTrueFoundryGatewayConfigured()) {
+    // 6. TrueFoundry LLM Gateway Fallback Synthesis (if not already synthesized)
+    if (isTrueFoundryGatewayConfigured() && !traces.some(t => t.tool === "truefoundry_llm_gateway")) {
       try {
         const tfClient = getTrueFoundryClient();
         if (tfClient) {
+          const model = process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-2.5-flash-lite";
           const tfRes = await tfClient.chat.completions.create({
-            model: process.env.TRUEFOUNDRY_MODEL || "openai/gpt-4o-mini",
+            model,
             messages: [
               {
                 role: "system",
