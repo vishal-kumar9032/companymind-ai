@@ -66,6 +66,8 @@
 - `2026-10-16`: Implemented 7-point Hackathon UX overhaul: 3-part layout (Sidebar with synced data sources, Main Stage with Graph/Chat, Collapsible Source Inspector Drawer), interactive source citation chips (`[RFC-102]`, `[DEC-44]`, `[PR-214]`), visible AI stepping state (`FalkorDB → RFC Correlation → TrueFoundry Synthesis`), skeleton loaders, thumbs up/down feedback buttons, suggested follow-ups row, role-based viewing switcher (`Engineering Lead`, `VP Eng`, `New Hire`, `Compliance`), Command Palette (`⌘K`), Knowledge Gaps Analytics modal, and 90-second Alex Mercer onboarding demo walkthrough. Verified on live HTTPS.
 - `2026-10-16` (Branch `feat/ui-rebuild` - Step 1): Design tokens, typography (Inter + JetBrains Mono), radial gradient background, surface tokens (1px inner highlight, box-shadow), tailwindcss-animate integration, and slim Navbar with real latency chip ("Connected · 4 ms") and Track chips. Verified with `next build`.
 - `2026-10-16` (Branch `feat/ui-rebuild` - Step 2): Implemented react-markdown + remark-gfm rendering (fixing raw asterisks/backticks), word-by-word streaming with Stop generation control, 5-stage live step loader with tick marks and skeleton bars, keyboard shortcuts ('/' to focus, 'Escape' to clear highlights), and accessible typography (14px body, 11px min). Verified with `next build`.
+- `2026-10-16` (Branch `feat/ui-rebuild` - Step 3): Rebuilt GraphCanvas with dot-grid canvas, distinct node shapes (diamond Decision, round-square Service, ellipse Person, etc.), landmark labels for top 8 nodes, sequential 300ms path animation with dimming, position caching in localStorage, interactive filter legend, floating replay/clear controls, and slide-in node drawer. Verified with `next build`.
+
 
 
 
