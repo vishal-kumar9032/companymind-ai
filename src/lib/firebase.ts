@@ -20,23 +20,33 @@ import {
   Firestore,
 } from "firebase/firestore";
 
-// Firebase credentials configuration
-// Connected to user's FolkerDB Firebase project
+// Firebase credentials configuration strictly loaded from environment variables
+// No secrets or keys are hardcoded in the codebase
+export function isFirebaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  );
+}
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCSObTyxU7twPZaoD4auLLWm8syR0_RrjM",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "folkerdb.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "folkerdb",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "folkerdb.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "724013743681",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:724013743681:web:310de347cb8ae6491290c0",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-5B334M8V81",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
-export function getFirebaseApp(): FirebaseApp {
+export function getFirebaseApp(): FirebaseApp | null {
+  if (!isFirebaseConfigured()) {
+    return null;
+  }
   if (!app) {
     if (getApps().length > 0) {
       app = getApp();
@@ -47,16 +57,24 @@ export function getFirebaseApp(): FirebaseApp {
   return app;
 }
 
-export function getFirebaseAuth(): Auth {
+export function getFirebaseAuth(): Auth | null {
+  const fbApp = getFirebaseApp();
+  if (!fbApp) {
+    return null;
+  }
   if (!auth) {
-    auth = getAuth(getFirebaseApp());
+    auth = getAuth(fbApp);
   }
   return auth;
 }
 
-export function getFirebaseFirestore(): Firestore {
+export function getFirebaseFirestore(): Firestore | null {
+  const fbApp = getFirebaseApp();
+  if (!fbApp) {
+    return null;
+  }
   if (!db) {
-    db = getFirestore(getFirebaseApp());
+    db = getFirestore(fbApp);
   }
   return db;
 }
@@ -125,6 +143,14 @@ export async function signInWithGoogleAuth(
 
   try {
     const authInstance = getFirebaseAuth();
+    if (!authInstance) {
+      const defaultUser = DEMO_ENTERPRISE_USERS[0];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("companymind_user", JSON.stringify(defaultUser));
+      }
+      return defaultUser;
+    }
+
     const result = await signInWithPopup(authInstance, googleProvider);
     const fbUser = result.user;
 
@@ -146,13 +172,15 @@ export async function signInWithGoogleAuth(
     // Attempt to persist user profile in Firestore
     try {
       const firestore = getFirebaseFirestore();
-      await addDoc(collection(firestore, "users"), {
-        uid: enterpriseUser.uid,
-        email: enterpriseUser.email,
-        displayName: enterpriseUser.displayName,
-        tenantId: enterpriseUser.tenantId,
-        lastLogin: serverTimestamp(),
-      });
+      if (firestore) {
+        await addDoc(collection(firestore, "users"), {
+          uid: enterpriseUser.uid,
+          email: enterpriseUser.email,
+          displayName: enterpriseUser.displayName,
+          tenantId: enterpriseUser.tenantId,
+          lastLogin: serverTimestamp(),
+        });
+      }
     } catch {
       // Local fallback if Firestore rules or offline
     }
@@ -174,7 +202,9 @@ export async function signInWithGoogleAuth(
 export async function signOutEnterpriseUser(): Promise<void> {
   try {
     const authInstance = getFirebaseAuth();
-    await signOut(authInstance);
+    if (authInstance) {
+      await signOut(authInstance);
+    }
   } catch {
     // Ignore error
   }
@@ -196,6 +226,7 @@ export async function saveTenantQuery(
 ): Promise<void> {
   try {
     const firestore = getFirebaseFirestore();
+    if (!firestore) return;
     await addDoc(collection(firestore, `tenants/${tenantId}/queries`), {
       userEmail,
       question,

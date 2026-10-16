@@ -15,7 +15,7 @@
 - **Process Manager:** PM2 (`companymind-ai`, process ID 1, port 13050)
 - **Reverse Proxy:** Caddy 2 with automatic Let's Encrypt TLS certificate
 - **Database Engine:** FalkorDB Docker container (`falkordb/falkordb:latest` on ports 6379 / 3000)
-- **LLM Gateway:** TrueFoundry LLM Gateway (`https://vishal9032.truefoundry.cloud/api/llm/v1`) using `google-gemini/gemini-2.5-flash-lite`
+- **LLM Gateway:** Enterprise AI Gateway via environment variables (`TRUEFOUNDRY_BASE_URL`) using multi-model routing
 
 ---
 
@@ -80,7 +80,7 @@
 - `2026-10-16` (Branch `feat/ui-rebuild` - Enterprise Dashboard, Groq Qwen/Gemini 3.1 TrueFoundry Models, Firebase Google Auth & Multi-Agent Collaboration Studio):
   - **Enterprise Dashboard:** Built comprehensive `DashboardView.tsx` directly addressing the enterprise problem: scattered information across meeting notes, project reports, task records, and employee docs causing delays and ownership confusion. Added 4 institutional query hubs (Ownership, Decisions, Blockers/Delays, Supporting Proofs) and evidence card explorer with direct document citations.
   - **TrueFoundry Multi-Model Gateway:** Integrated `groq/qwen-qwen3.8-27b` (ultra-fast ~300ms inference), `google-gemini/gemini-3.1-flash-lite`, `groq/openai-gpt-oss-120b`, and `falkordb-autonomous`. Verified live model switching via API and UI dropdown with automated sub-5ms circuit-breaker fallback.
-  - **Firebase Integration:** Connected user's `folkerdb` Firebase project credentials (`AIzaSyCS...`) with Google Sign-In popup, instant enterprise profile testing, and multi-tenant Firestore query storage (`tenants/{tenantId}/queries`). Installed official `firebase/agent-skills` package.
+  - **Firebase Integration:** Connected Firebase Google Sign-In authentication popup, instant enterprise profile testing, and multi-tenant Firestore query storage (`tenants/{tenantId}/queries`). Installed official `firebase/agent-skills` package.
   - **Multi-Tenant Architecture:** Built `src/lib/tenants.ts` supporting `Acme Corporation` (Core Infra), `FinFlow Global` (Payments & Fraud), and `HealthPulse Systems` (Healthcare & Compliance). Filtered graph calls and active workspaces.
   - **Multi-Agent Coordination Studio:** Demonstrated collaborative workflow across 5 agents (`PolicyWatchdog`, `ArchitectureOracle`, `BlastRadiusMapper`, `OwnershipGraph`, `IncidentMemory`) with real-time execution telemetry and human-in-the-loop PR interception.
   - **Verification:** Production build passed (`next build` 0 errors), PM2 restarted online (`companymind-ai`), and live HTTPS verified on `https://companymind.135-235-136-6.sslip.io`.
@@ -88,6 +88,11 @@
   - **Clean Enterprise SaaS Branding:** Systematically removed all third-party branding from customer-facing UI and JSON payloads, replacing them with professional enterprise naming: "Enterprise AI Gateway", "Enterprise MCP Gateway", "Autonomous Agent Workforce", and "Groq LPU Engine".
   - **UI/UX Pro Max Integration:** Installed and configured the `ui-ux-pro-max-skill` suite (`ui-ux-pro-max`, `ui-styling`, `design-system`, `design`, `banner-design`, `brand`, `slides`) into `.agents/skills/` to provide design token standards, component specifications, and accessibility verification.
   - **Production Verification:** Full Next.js production build (`next build`) compiled cleanly with 0 TypeScript/lint errors. PM2 service reloaded online (`companymind-ai` on port 13050). Live HTTPS verified at `https://companymind.135-235-136-6.sslip.io`.
+- `2026-10-16` (Branch `feat/ui-rebuild` - Complete Secret Sanitization & Pure Env-Driven Config):
+  - **Zero Hardcoded Secrets:** Completely removed all fallback credentials, API keys, and personal URLs from `src/lib/firebase.ts`, `src/lib/truefoundry.ts`, `.env.example`, and `BUILD_STATE.md`.
+  - **Fail-Safe & Graceful Degradation:** All integrations (`Firebase`, `Enterprise AI Gateway`) are strictly driven by `process.env.*`. When environment variables are absent, services gracefully degrade to local enterprise demo mode without throwing unhandled exceptions.
+  - **Clean Git Tracking:** Sanitized `.git/config` branch remote configurations.
+
 
 
 

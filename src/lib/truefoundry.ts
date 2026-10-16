@@ -46,14 +46,10 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 
 export function getTrueFoundryClient(): OpenAI | null {
   const apiKey = process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY;
-  if (!apiKey) {
+  const baseURL = process.env.TRUEFOUNDRY_BASE_URL || process.env.TFY_BASE_URL;
+  if (!apiKey || !baseURL) {
     return null;
   }
-
-  const baseURL =
-    process.env.TRUEFOUNDRY_BASE_URL ||
-    process.env.TFY_BASE_URL ||
-    "https://vishal9032.truefoundry.cloud/api/llm/v1";
 
   return new OpenAI({
     apiKey,
@@ -62,7 +58,10 @@ export function getTrueFoundryClient(): OpenAI | null {
 }
 
 export function isTrueFoundryGatewayConfigured(): boolean {
-  return Boolean(process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY);
+  return Boolean(
+    (process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY) &&
+    (process.env.TRUEFOUNDRY_BASE_URL || process.env.TFY_BASE_URL)
+  );
 }
 
 /**
