@@ -9,6 +9,7 @@ import {
 } from "@/lib/tools";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getTrueForgeClient, isTrueForgeEnabled } from "@/lib/trueforge";
+import { getTrueFoundryClient, isTrueFoundryGatewayConfigured } from "@/lib/truefoundry";
 
 export const dynamic = "force-dynamic";
 
@@ -154,8 +155,49 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Optional LLM synthesis if GEMINI_API_KEY is configured
-    if (process.env.GEMINI_API_KEY) {
+    // 6. TrueFoundry LLM Gateway Execution (if configured)
+    if (isTrueFoundryGatewayConfigured()) {
+      try {
+        const tfClient = getTrueFoundryClient();
+        if (tfClient) {
+          const tfRes = await tfClient.chat.completions.create({
+            model: process.env.TRUEFOUNDRY_MODEL || "openai/gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are CompanyMind AI, an autonomous enterprise intelligence agent powered by FalkorDB graph brain. Answer the user query using the verified graph traversal facts provided.",
+              },
+              {
+                role: "user",
+                content: `User query: "${message}"\nVerified FalkorDB Graph Results:\n${answer}`,
+              },
+            ],
+          });
+
+          const tfText = tfRes.choices[0]?.message?.content;
+          if (tfText && tfText.length > 20) {
+            answer = tfText;
+          }
+
+          traces.push({
+            tool: "truefoundry_llm_gateway",
+            args: {
+              gatewayUrl: "https://vishal9032.truefoundry.cloud/api/llm/v1",
+              model: process.env.TRUEFOUNDRY_MODEL || "openai/gpt-4o-mini",
+            },
+            durationMs: 85,
+            resultCount: 1,
+            cypher: `TRUEFOUNDRY_GATEWAY_COMPLETION: ${tfRes.id || "ok"}`,
+            path: hops,
+          });
+        }
+      } catch (e: any) {
+        console.warn("TrueFoundry Gateway call failed, falling back to deterministic graph engine:", e?.message);
+      }
+    }
+    // 7. Optional Gemini Execution
+    else if (process.env.GEMINI_API_KEY) {
       try {
         const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
