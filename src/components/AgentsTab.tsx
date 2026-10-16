@@ -128,11 +128,33 @@ export function AgentsTab({
 
   const getRoleBadge = (role: AgentRole) => {
     switch (role) {
+      case "PolicyWatchdog":
       case "Watchdog":
         return (
           <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
             <ShieldAlert size={10} />
-            Watchdog
+            PolicyWatchdog
+          </span>
+        );
+      case "BlastRadiusMapper":
+        return (
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+            <Radio size={10} />
+            BlastRadiusMapper
+          </span>
+        );
+      case "OwnershipGraph":
+        return (
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+            <CheckCircle2 size={10} />
+            OwnershipGraph
+          </span>
+        );
+      case "IncidentMemory":
+        return (
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 font-semibold">
+            <Sparkles size={10} />
+            IncidentMemory
           </span>
         );
       case "Ingestor":
@@ -142,12 +164,13 @@ export function AgentsTab({
             Ingestor
           </span>
         );
+      case "ArchitectureOracle":
       case "Oracle":
       default:
         return (
           <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
             <Sparkles size={10} />
-            Oracle
+            ArchitectureOracle
           </span>
         );
     }

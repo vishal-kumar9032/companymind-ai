@@ -122,35 +122,40 @@ export async function POST(req: NextRequest) {
       };
     }
 
+    const requestedModel: string = body.model || process.env.TRUEFOUNDRY_MODEL || "groq/qwen-qwen3.8-27b";
+    const tenantId: string = body.tenantId || "acme-core";
+
     // Gateway Status Tracker
     let gatewayStatus = {
       provider: "TrueFoundry LLM Gateway",
       status: "online" as "online" | "fallback_active",
-      model: process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-2.5-flash-lite",
+      model: requestedModel,
       fallbackEngine: "Autonomous FalkorDB Graph Engine",
       latencyMs: 0,
       reason: "",
     };
 
-    const isGatewayInCooldown = Date.now() - lastGatewayFailureTime < GATEWAY_CIRCUIT_COOLDOWN_MS;
-    if (isGatewayInCooldown) {
+    const isGatewayInCooldown = requestedModel === "falkordb-autonomous" || (Date.now() - lastGatewayFailureTime < GATEWAY_CIRCUIT_COOLDOWN_MS);
+    if (requestedModel === "falkordb-autonomous") {
+      gatewayStatus.status = "fallback_active";
+      gatewayStatus.reason = "Autonomous Mode Selected (Sub-5ms FalkorDB Native)";
+    } else if (isGatewayInCooldown) {
       gatewayStatus.status = "fallback_active";
       gatewayStatus.reason = lastGatewayFailureReason || "Rate Limit / Quota Exceeded (429)";
     }
 
     // 1. TrueFoundry LLM Gateway Dispatch (if active and not cooling down)
-    if (isTrueFoundryGatewayConfigured() && !isGatewayInCooldown && message) {
+    if (isTrueFoundryGatewayConfigured() && !isGatewayInCooldown && requestedModel !== "falkordb-autonomous" && message) {
       const gwStart = Date.now();
       try {
         const tfClient = getTrueFoundryClient();
         if (tfClient) {
-          const model = process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-2.5-flash-lite";
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2500);
+          const timeoutId = setTimeout(() => controller.abort(), 4500);
 
           const firstStep = await tfClient.chat.completions.create(
             {
-              model,
+              model: requestedModel,
               messages: [
                 {
                   role: "system",
@@ -166,7 +171,9 @@ export async function POST(req: NextRequest) {
           clearTimeout(timeoutId);
 
           gatewayStatus.latencyMs = Date.now() - gwStart;
-          const toolCalls = firstStep.choices[0]?.message?.tool_calls;
+          const choice = firstStep.choices[0];
+          const toolCalls = choice?.message?.tool_calls;
+          
           if (toolCalls && toolCalls.length > 0) {
             let toolEvidence = "";
             for (const tc of toolCalls) {
@@ -205,7 +212,7 @@ export async function POST(req: NextRequest) {
 
             if (toolEvidence) {
               const synthRes = await tfClient.chat.completions.create({
-                model,
+                model: requestedModel,
                 messages: [
                   {
                     role: "system",
@@ -224,7 +231,7 @@ export async function POST(req: NextRequest) {
                 answer = synth;
                 traces.push({
                   tool: "truefoundry_llm_gateway",
-                  args: { model, tool_calls_count: toolCalls.length },
+                  args: { model: requestedModel, tool_calls_count: toolCalls.length },
                   durationMs: Date.now() - gwStart,
                   resultCount: 1,
                   cypher: `TRUEFOUNDRY_LLM_GATEWAY: synthesized from ${mcpToolsInvoked.join(", ")}`,
@@ -232,14 +239,25 @@ export async function POST(req: NextRequest) {
                 });
               }
             }
+          } else if (choice?.message?.content && choice.message.content.trim().length > 15) {
+            // Direct generation from Groq / Gemini model
+            answer = choice.message.content;
+            traces.push({
+              tool: "truefoundry_llm_gateway",
+              args: { model: requestedModel, type: "direct_generation" },
+              durationMs: Date.now() - gwStart,
+              resultCount: 1,
+              cypher: `TRUEFOUNDRY_LLM_GATEWAY [${requestedModel}]: direct inference`,
+              path: hops,
+            });
           }
         }
       } catch (err: any) {
         lastGatewayFailureTime = Date.now();
         lastGatewayFailureReason =
           err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")
-            ? "Quota Exceeded (429) · Free tier exhausted"
-            : err?.message || "Gateway unreachable";
+            ? "Quota Exceeded (429) · Rate limit reached"
+            : err?.message || "Gateway unreachable / high demand";
         gatewayStatus.status = "fallback_active";
         gatewayStatus.reason = lastGatewayFailureReason;
       }
@@ -813,6 +831,8 @@ export async function POST(req: NextRequest) {
           "recall_agent_findings",
         ],
       },
+      tenantId,
+      model: requestedModel,
       latencyMs: totalDurationMs,
     });
   } catch (err: any) {

@@ -90,6 +90,8 @@ interface ChatPanelProps {
   onToggleMemory?: () => void;
   isMemoryOpen?: boolean;
   activeOutcome?: string;
+  selectedModel?: string;
+  currentTenantId?: string;
 }
 
 const PRESET_CARDS = [
@@ -130,6 +132,8 @@ export function ChatPanel({
   role = "new_hire",
   onResponseUpdate,
   activeOutcome,
+  selectedModel = "groq/qwen-qwen3.8-27b",
+  currentTenantId = "acme-core",
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -373,7 +377,11 @@ export function ChatPanel({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          message: text,
+          model: selectedModel,
+          tenantId: currentTenantId,
+        }),
       });
 
       if (!res.ok) throw new Error("API call failed");

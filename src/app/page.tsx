@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
+import { DashboardView } from "@/components/DashboardView";
 import { GraphCanvas } from "@/components/GraphCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
 import { AgentsTab } from "@/components/AgentsTab";
@@ -11,6 +12,8 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { AnalyticsModal } from "@/components/AnalyticsModal";
 import { GraphData, ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
+import { TENANTS, TenantConfig } from "@/lib/tenants";
+import { EnterpriseUser, DEMO_ENTERPRISE_USERS } from "@/lib/firebase";
 import {
   Activity,
   Network,
@@ -20,6 +23,11 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const [currentView, setCurrentView] = useState<"dashboard" | "chat">("dashboard");
+  const [currentTenant, setCurrentTenant] = useState<TenantConfig>(TENANTS[0]);
+  const [selectedModel, setSelectedModel] = useState<string>("groq/qwen-qwen3.8-27b");
+  const [currentUser, setCurrentUser] = useState<EnterpriseUser | null>(null);
+
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [highlightHops, setHighlightHops] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,17 +35,17 @@ export default function Home() {
   const [activeSource, setActiveSource] = useState<SourceDetail | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [latencyMs, setLatencyMs] = useState(4);
+  const [latencyMs, setLatencyMs] = useState(2);
   const [lastTraces, setLastTraces] = useState<ToolTrace[]>([]);
   const [lastQuery, setLastQuery] = useState("What services break if auth-v1 is shut down?");
   const [lastOutcome, setLastOutcome] = useState("answered_with_path");
   const [memoryRefreshTrigger, setMemoryRefreshTrigger] = useState(0);
   const [gatewayStatus, setGatewayStatus] = useState<any>({
     provider: "TrueFoundry LLM Gateway",
-    status: "fallback_active",
-    reason: "Quota Exceeded (429)",
+    status: "online",
+    reason: "",
     fallbackEngine: "Autonomous FalkorDB Graph Engine",
-    model: "google-gemini/gemini-2.5-flash-lite",
+    model: "groq/qwen-qwen3.8-27b",
   });
   const [activeAgent, setActiveAgent] = useState<any>({
     name: "ArchitectureOracle",
@@ -66,6 +74,17 @@ export default function Home() {
 
   useEffect(() => {
     fetchGraph();
+    // Check saved user in localStorage
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("companymind_user");
+        if (saved) {
+          setCurrentUser(JSON.parse(saved));
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    }
   }, []);
 
   // Global keyboard shortcuts (⌘K for palette, Esc to close drawers)
@@ -97,6 +116,12 @@ export default function Home() {
 
   const handleSelectQueryFromPalette = (query: string) => {
     setSelectedQuery(query);
+    setCurrentView("chat");
+  };
+
+  const handleRunQueryFromDashboard = (query: string) => {
+    setSelectedQuery(query);
+    setCurrentView("chat");
   };
 
   const handleResponseUpdate = (data: {
@@ -125,12 +150,29 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
-      {/* Top Slim Navigation Bar */}
+      {/* Top Navigation Bar with View Switcher, Tenant Switcher & Model Selector */}
       <Navbar
         nodeCount={graphData.nodes.length}
         edgeCount={graphData.edges.length}
         onRefresh={fetchGraph}
         latencyMs={latencyMs}
+        currentView={currentView}
+        onSelectView={setCurrentView}
+        currentTenant={currentTenant}
+        onSelectTenant={setCurrentTenant}
+        selectedModel={selectedModel}
+        onSelectModel={setSelectedModel}
+        currentUser={currentUser}
+        onOpenAuthModal={() => {
+          // Trigger demo login if not logged in
+          if (!currentUser) {
+            const demo = DEMO_ENTERPRISE_USERS[0];
+            setCurrentUser(demo);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("companymind_user", JSON.stringify(demo));
+            }
+          }
+        }}
         isProcessOpen={isProcessOpen}
         onToggleProcess={() => {
           setIsProcessOpen(!isProcessOpen);
@@ -156,52 +198,72 @@ export default function Home() {
         agent={activeAgent}
       />
 
-      {/* Main Agent Workspace (Full Screen TrueForge UI) */}
+      {/* Main Content Area */}
       <main className="flex-1 min-h-0 relative flex flex-col w-full h-full overflow-hidden">
-        <div className="flex-1 min-h-0 flex flex-col w-full h-full overflow-hidden relative">
-          <ChatPanel
-            onHopsChange={setHighlightHops}
-            externalTriggerQuery={selectedQuery}
-            onClearExternalTrigger={() => setSelectedQuery(null)}
-            onOpenSourceDrawer={handleOpenSource}
-            onSelectNode={(nodeId: string) => {
-              setHighlightHops([nodeId]);
-              handleOpenSource(nodeId);
-            }}
-            onResponseUpdate={handleResponseUpdate}
-            onToggleProcess={() => {
-              setIsProcessOpen(!isProcessOpen);
-              setIsGraphOpen(false);
-              setIsMemoryOpen(false);
-            }}
-            isProcessOpen={isProcessOpen}
-            onToggleGraph={() => {
-              setIsGraphOpen(!isGraphOpen);
-              setIsProcessOpen(false);
-              setIsMemoryOpen(false);
-            }}
-            isGraphOpen={isGraphOpen}
-            onToggleMemory={() => {
-              setIsMemoryOpen(!isMemoryOpen);
-              setIsProcessOpen(false);
-              setIsGraphOpen(false);
-            }}
-            isMemoryOpen={isMemoryOpen}
-            activeOutcome={lastOutcome}
-          />
-        </div>
+        {currentView === "dashboard" ? (
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
+            <DashboardView
+              currentTenant={currentTenant}
+              onSelectTenant={setCurrentTenant}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
+              currentUser={currentUser}
+              onUserChange={setCurrentUser}
+              onRunQuery={handleRunQueryFromDashboard}
+              onOpenSource={setActiveSource}
+              onOpenGraph={() => setIsGraphOpen(true)}
+              onOpenMcp={() => setIsProcessOpen(true)}
+              onOpenMemory={() => setIsMemoryOpen(true)}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 flex flex-col w-full h-full overflow-hidden relative">
+            <ChatPanel
+              onHopsChange={setHighlightHops}
+              externalTriggerQuery={selectedQuery}
+              onClearExternalTrigger={() => setSelectedQuery(null)}
+              onOpenSourceDrawer={handleOpenSource}
+              onSelectNode={(nodeId: string) => {
+                setHighlightHops([nodeId]);
+                handleOpenSource(nodeId);
+              }}
+              onResponseUpdate={handleResponseUpdate}
+              onToggleProcess={() => {
+                setIsProcessOpen(!isProcessOpen);
+                setIsGraphOpen(false);
+                setIsMemoryOpen(false);
+              }}
+              isProcessOpen={isProcessOpen}
+              onToggleGraph={() => {
+                setIsGraphOpen(!isGraphOpen);
+                setIsProcessOpen(false);
+                setIsMemoryOpen(false);
+              }}
+              isGraphOpen={isGraphOpen}
+              onToggleMemory={() => {
+                setIsMemoryOpen(!isMemoryOpen);
+                setIsProcessOpen(false);
+                setIsGraphOpen(false);
+              }}
+              isMemoryOpen={isMemoryOpen}
+              activeOutcome={lastOutcome}
+              selectedModel={selectedModel}
+              currentTenantId={currentTenant.id}
+            />
+          </div>
+        )}
       </main>
 
       {/* Small Slide-over Process Panel */}
       {isProcessOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsProcessOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 right-0 w-full sm:w-[480px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            className="fixed inset-y-0 right-0 w-full sm:w-[500px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
             aria-label="TrueForge Agent Process Telemetry"
           >
             <AgentsTab
@@ -225,12 +287,12 @@ export default function Home() {
       {isGraphOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsGraphOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 right-0 w-full sm:w-[560px] md:w-[680px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            className="fixed inset-y-0 right-0 w-full sm:w-[600px] md:w-[720px] z-10 bg-white/98 backdrop-blur-2xl border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
             aria-label="FalkorDB Graph Topology"
           >
             <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
@@ -273,7 +335,7 @@ export default function Home() {
       {isMemoryOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsMemoryOpen(false)}
             aria-hidden="true"
           />
