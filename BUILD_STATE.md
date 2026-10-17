@@ -294,3 +294,4 @@
 
 - `2026-10-17` (Branch `feat/connectors-memory` - Fix: remove fallback Firebase credentials): Removed hardcoded Firebase API key and fallback config from `src/lib/firebase.ts`, strictly loading all credentials from environment variables. Lazy-initialized Firebase app only when environment variables are configured. Verified: `tsc --noEmit` and `next build` passed clean with 0 errors.
 
+- `2026-10-17` (Branch `feat/connectors-memory` - CI: add GitHub Actions continuous integration workflow): Added `.github/workflows/ci.yml` running Node 20, pnpm 9, frozen lockfile install, `tsc --noEmit` typecheck, and Next.js production build verification on pushes and pull requests.
