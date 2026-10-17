@@ -125,6 +125,18 @@ function truncate(v: unknown): string {
   return s.length > MAX_TOOL_CHARS ? s.slice(0, MAX_TOOL_CHARS) + `…[truncated]` : s;
 }
 
+const MODEL_COOLDOWN_MS = 60_000;
+const RUN_BUDGET_MS = 100_000;
+const modelCooldown = new Map<string, number>();
+
+/** Models that failed recently go to the back of the line instead of being retried first on every step. */
+function orderByHealth(models: string[]): string[] {
+  const now = Date.now();
+  const healthy = models.filter((m) => (modelCooldown.get(m) || 0) <= now);
+  const cooling = models.filter((m) => (modelCooldown.get(m) || 0) > now);
+  return [...healthy, ...cooling];
+}
+
 async function chat(
   client: OpenAI,
   models: string[],
@@ -134,7 +146,7 @@ async function chat(
   let lastErr: unknown;
   const directGemini = getDirectGeminiClient();
 
-  for (const model of models) {
+  for (const model of orderByHealth(models)) {
     try {
       const activeClient = (model === "gemini-2.5-flash" || model === "gemini-2.5-flash-lite")
         ? (directGemini || client)
@@ -148,6 +160,7 @@ async function chat(
     } catch (err: any) {
       console.warn(`[Agent Gateway] Model ${model} failed (${err?.status || err?.code || "error"}):`, err?.message || err);
       lastErr = err;
+      modelCooldown.set(model, Date.now() + MODEL_COOLDOWN_MS);
     }
   }
 
@@ -233,12 +246,14 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       emit: (e: { type: "approval"; approvalId: string; tool: string; args: Record<string, unknown> }) => onEvent(e),
     };
 
-    const models = candidateModels(model);
+    let models = candidateModels(model);
     let answer = "";
     let steps = 0;
+    const deadline = Date.now() + RUN_BUDGET_MS;
 
-    for (; steps < MAX_STEPS; steps++) {
+    for (; steps < MAX_STEPS && Date.now() < deadline; steps++) {
       const { model: used, message } = await chat(client, models, messages, toolbox.definitions);
+      models = [used, ...models.filter((m) => m !== used)];
       onEvent({ type: "model", model: used, step: steps + 1 });
       const calls = (message.tool_calls || []).filter((c) => c.type === "function") as any[];
 
@@ -281,7 +296,17 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       for (const r of results) messages.push({ role: "tool", tool_call_id: r.id, content: r.text });
     }
 
-    if (!answer) answer = "I reached my step limit before finishing. Here is what I gathered so far; please narrow the request and I will continue.";
+    if (!answer) {
+      // Out of steps or time: ask once, without tools, for an answer from what was gathered.
+      try {
+        const synth = await chat(client, models, [
+          ...messages,
+          { role: "user", content: "You are out of steps. Using only the tool results above, give the best answer you can now. State clearly what you found, what is still missing, and cite sources. Do not call tools." },
+        ], []);
+        answer = (synth.message.content || "").trim();
+      } catch {}
+    }
+    if (!answer) answer = "I ran out of steps before finishing and could not summarise what I found. Please narrow the request and try again.";
 
     onEvent({ type: "answer", runId, role, text: answer });
     await remember(caller, role, `Q: ${goal.slice(0, 300)} -> A: ${answer.slice(0, 600)}`, "episodic", [], runId).catch(() => {});
