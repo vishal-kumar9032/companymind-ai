@@ -1,5 +1,12 @@
 import { NextRequest } from "next/server";
-import { connectToolkit, connectionStatus, isComposioConfigured, TOOLKITS } from "@/lib/agent/composio";
+import {
+  connectToolkit,
+  connectionStatus,
+  disconnectToolkit,
+  isComposioConfigured,
+  TOOLKITS,
+} from "@/lib/agent/composio";
+import { invalidateStatusCache } from "@/lib/agent/loop";
 import { resolveCaller } from "@/lib/agent/identity";
 
 export const runtime = "nodejs";
@@ -34,6 +41,24 @@ export async function POST(req: NextRequest) {
     const origin = req.headers.get("origin") || new URL(req.url).origin;
     const url = await connectToolkit(caller.id, toolkit, `${origin}/?connected=${encodeURIComponent(toolkit)}`);
     return json({ url });
+  } catch (err: any) {
+    return json({ error: String(err?.message || err).slice(0, 300) }, 502);
+  }
+}
+
+/** Disconnect one toolkit (or googlesuper bundle); revokes and deletes connected account. */
+export async function DELETE(req: NextRequest) {
+  const caller = await resolveCaller(req);
+  if (!caller || !caller.authenticated) return json({ error: "Sign in to manage accounts" }, 401);
+  if (!isComposioConfigured()) return json({ error: "Connectors are not configured on this server" }, 503);
+
+  const { toolkit } = await req.json().catch(() => ({}));
+  if (typeof toolkit !== "string") return json({ error: "toolkit is required" }, 400);
+
+  try {
+    const res = await disconnectToolkit(caller.id, toolkit);
+    invalidateStatusCache(caller.id);
+    return json({ ok: true, toolkit, count: res.count });
   } catch (err: any) {
     return json({ error: String(err?.message || err).slice(0, 300) }, 502);
   }

@@ -50,6 +50,14 @@ const ROLE_PROMPT: Record<Role, string> = {
 
 let statusCache = new Map<string, { at: number; connected: string[] }>();
 
+export function invalidateStatusCache(callerId?: string) {
+  if (callerId) {
+    statusCache.delete(callerId);
+  } else {
+    statusCache.clear();
+  }
+}
+
 async function connectedToolkits(caller: Caller): Promise<string[]> {
   if (!caller.authenticated) return [];
   const hit = statusCache.get(caller.id);

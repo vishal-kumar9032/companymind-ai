@@ -10,6 +10,7 @@ import {
   Sparkles,
   ExternalLink,
   Layers,
+  Unlink,
 } from "lucide-react";
 import { authHeaders } from "@/lib/clientAuth";
 
@@ -33,6 +34,7 @@ interface State {
 export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => void }) {
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -71,6 +73,32 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
     } catch (e: any) {
       setError(e?.message || "Could not start the connection");
       setBusy(null);
+    }
+  }
+
+  async function disconnect(slug: string, label: string) {
+    const isBundle = slug === "googlesuper";
+    const confirmMsg = isBundle
+      ? "Disconnect Google Workspace?\n\nThis will revoke access to Gmail, Calendar, Drive, Docs, and Sheets."
+      : `Disconnect ${label}?\n\nThis will remove connected account access for ${label}.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setDisconnecting(slug);
+    setError(null);
+    try {
+      const res = await fetch("/api/connections", {
+        method: "DELETE",
+        headers: { "content-type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ toolkit: slug }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || `Failed (${res.status})`);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || "Could not disconnect account");
+    } finally {
+      setDisconnecting(null);
     }
   }
 
@@ -155,9 +183,24 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
 
           <div>
             {isGoogleSuperConnected ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs">
-                <CheckCircle2 size={14} className="text-emerald-700" /> All Google Tools Connected
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs">
+                  <CheckCircle2 size={14} className="text-emerald-700" /> All Google Tools Connected
+                </span>
+                <button
+                  disabled={disconnecting !== null || busy !== null}
+                  onClick={() => disconnect("googlesuper", "Google Workspace")}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 px-3 py-1.5 text-xs font-semibold shadow-2xs transition cursor-pointer disabled:opacity-40"
+                  title="Disconnect all Google tools"
+                >
+                  {disconnecting === "googlesuper" ? (
+                    <Loader2 size={13} className="animate-spin text-rose-600" />
+                  ) : (
+                    <Unlink size={13} className="text-rose-600" />
+                  )}
+                  <span>Disconnect All</span>
+                </button>
+              </div>
             ) : (
               <button
                 disabled={!state?.authenticated || !state?.configured || busy !== null}
@@ -215,9 +258,24 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
               </div>
 
               {t.connected ? (
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                  <CheckCircle2 size={13} /> Connected
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    <CheckCircle2 size={13} /> Connected
+                  </span>
+                  <button
+                    disabled={disconnecting !== null || busy !== null}
+                    onClick={() => disconnect(t.slug, t.label)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-500 px-2.5 py-1 text-xs font-medium transition cursor-pointer disabled:opacity-40"
+                    title={`Disconnect ${t.label}`}
+                  >
+                    {disconnecting === t.slug ? (
+                      <Loader2 size={12} className="animate-spin text-rose-600" />
+                    ) : (
+                      <Unlink size={12} />
+                    )}
+                    <span>Disconnect</span>
+                  </button>
+                </div>
               ) : (
                 <button
                   disabled={!state?.authenticated || !state?.configured || busy !== null}

@@ -211,6 +211,100 @@ export async function connectToolkit(
   }
 }
 
+/** Invalidate cached OpenAI tool definitions for a user (or all). */
+export function invalidateToolCache(userId?: string) {
+  if (userId) {
+    for (const key of toolCache.keys()) {
+      if (key.startsWith(`${userId}:`)) toolCache.delete(key);
+    }
+  } else {
+    toolCache.clear();
+  }
+}
+
+/** Disconnect one toolkit (or all Google tools if googlesuper). Revokes and deletes connected accounts. */
+export async function disconnectToolkit(
+  userId: string,
+  toolkit: string,
+): Promise<{ ok: boolean; count: number }> {
+  let composio = getComposio();
+  if (!composio) throw new Error("Composio is not configured");
+
+  const target = toolkit.toLowerCase();
+  const isGoogleTarget = target === "googlesuper" || target.startsWith("google") || target === "gmail";
+
+  const shouldDeleteSlug = (slug: string) => {
+    const s = slug.toLowerCase();
+    if (target === "googlesuper") {
+      return s === "googlesuper" || s.startsWith("google") || s === "gmail";
+    }
+    if (isGoogleTarget && s === "googlesuper") {
+      return true;
+    }
+    return s === target;
+  };
+
+  const executeDelete = async (clientInstance: Composio) => {
+    const accountsToDelete = new Set<string>();
+
+    // 1. Query connected accounts list for this user
+    try {
+      const list = await clientInstance.connectedAccounts.list({ userIds: [userId] });
+      for (const acc of list.items || []) {
+        const slug = acc.toolkit?.slug || "";
+        if (shouldDeleteSlug(slug)) {
+          accountsToDelete.add(acc.id);
+        }
+      }
+    } catch {}
+
+    // 2. Query active session toolkits for this user
+    try {
+      const session: any = await clientInstance.sessions.create(userId, {
+        toolkits: TOOLKITS.map((t) => t.slug) as any,
+      });
+      const res = await session.toolkits({ toolkits: TOOLKITS.map((t) => t.slug) });
+      for (const item of res.items || []) {
+        const slug = String(item.slug || "").toLowerCase();
+        const accId = item.connection?.connectedAccount?.id;
+        if (accId && shouldDeleteSlug(slug)) {
+          accountsToDelete.add(accId);
+        }
+      }
+    } catch {}
+
+    let count = 0;
+    for (const accId of accountsToDelete) {
+      try {
+        await clientInstance.connectedAccounts.delete(accId);
+        count++;
+      } catch (err: any) {
+        console.error(`Failed to delete connected account ${accId}:`, err?.message || err);
+      }
+    }
+
+    return count;
+  };
+
+  try {
+    const count = await executeDelete(composio);
+    invalidateToolCache(userId);
+    return { ok: true, count };
+  } catch (err: any) {
+    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+    if (userKey) {
+      try {
+        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
+        const count = await executeDelete(fallbackClient);
+        client = fallbackClient;
+        invalidateToolCache(userId);
+        return { ok: true, count };
+      } catch {}
+    }
+    throw new Error(formatComposioError(err));
+  }
+}
+
 /** Slugs that change the outside world. These go through human approval. */
 const WRITE_WORDS = new Set([
   "SEND", "CREATE", "UPDATE", "DELETE", "REMOVE", "APPEND", "ADD", "INSERT", "POST", "MERGE", "COMMENT",
