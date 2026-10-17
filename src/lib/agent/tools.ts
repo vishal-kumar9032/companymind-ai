@@ -38,6 +38,14 @@ const fn = (name: string, description: string, properties: Record<string, unknow
 
 const MAX_ROWS = 50;
 
+const UPSERT_LABELS = ["Person", "Team", "Meeting", "Doc", "Decision", "Service", "GitHubPR", "GitHubIssue"];
+const UPSERT_RELS = [
+  "MEMBER_OF", "ATTENDED", "AUTHORED", "RECORDED_IN", "PROPOSES", "APPROVED", "SUPERSEDES", "GOVERNS",
+  "OWNS", "DEPENDS_ON", "TRACKS", "RESOLVES", "TOUCHES", "AUTHORED_PR",
+];
+const UPSERT_PROPS = ["title", "date", "url", "status", "summary", "email", "role", "rationale", "tier", "type"];
+const str = (v: unknown, n: number) => String(v ?? "").slice(0, n);
+
 /** An empty result is stated outright so the model reports it instead of inventing an answer. */
 const orEmpty = (rows: unknown[] | undefined, what: string) =>
   rows && rows.length
@@ -232,6 +240,75 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       const steps = row.entities.map((e: string, i: number) => `${e} (${row.labels[i]})${i < row.relationships.length ? ` -[${row.relationships[i]}]-` : ""}`);
       return { hops: row.hops, path: steps.join(" "), entities: row.entities, relationships: row.relationships };
     },
+  },
+  {
+    def: fn(
+      "graph_upsert",
+      "Record entities and relationships you have verified from connected sources (emails, docs, PRs, calendar events) into this workspace's knowledge graph so future questions can use graph tools. Only record facts you actually read; every entity needs a `source` (e.g. gmail:<messageId>, drive:<fileId>, github:<owner/repo#123>). Signed-in workspaces only.",
+      {
+        entities: {
+          type: "array",
+          description: "Max 25. Each: {label, name, source, properties?}. name is the display name or title; properties (all strings) may use: " + UPSERT_PROPS.join(", "),
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string", enum: UPSERT_LABELS },
+              name: { type: "string" },
+              source: { type: "string" },
+              properties: { type: "object", properties: Object.fromEntries(UPSERT_PROPS.map((k) => [k, { type: "string" }])) },
+            },
+            required: ["label", "name", "source"],
+          },
+        },
+        relationships: {
+          type: "array",
+          description: "Max 40. Each: {from:{label,name}, type, to:{label,name}}; both ends must be in this call or already in the graph.",
+          items: {
+            type: "object",
+            properties: {
+              from: { type: "object", properties: { label: { type: "string", enum: UPSERT_LABELS }, name: { type: "string" } } },
+              type: { type: "string", enum: UPSERT_RELS },
+              to: { type: "object", properties: { label: { type: "string", enum: UPSERT_LABELS }, name: { type: "string" } } },
+            },
+            required: ["from", "type", "to"],
+          },
+        },
+      },
+      [],
+    ),
+    run: async ({ entities, relationships }, ctx) => {
+      if (!ctx.caller.authenticated) return { error: "Sign in to build your own knowledge graph; the demo workspace is read-only." };
+      const graph = await getGraph(ctx.caller.graph);
+      let nodes = 0;
+      let edges = 0;
+      const skipped: string[] = [];
+      for (const e of (Array.isArray(entities) ? entities : []).slice(0, 25)) {
+        const name = str(e?.name, 200).trim();
+        if (!UPSERT_LABELS.includes(e?.label) || !name || !str(e?.source, 200).trim()) {
+          skipped.push(`entity ${name || "?"}: needs a valid label, name and source`);
+          continue;
+        }
+        const props: Record<string, string> = { source: str(e.source, 200), updated_at: new Date().toISOString() };
+        for (const k of UPSERT_PROPS) if (e.properties?.[k] != null) props[k] = str(e.properties[k], 500);
+        await graph.query(`MERGE (n:\`${e.label}\` {name: $name}) SET n += $props`, { params: { name, props } });
+        nodes++;
+      }
+      for (const r of (Array.isArray(relationships) ? relationships : []).slice(0, 40)) {
+        const fl = r?.from?.label, tl = r?.to?.label;
+        if (!UPSERT_RELS.includes(r?.type) || !UPSERT_LABELS.includes(fl) || !UPSERT_LABELS.includes(tl) || !r.from?.name || !r.to?.name) {
+          skipped.push(`relationship ${str(r?.type, 40)}: needs valid labels, names and type`);
+          continue;
+        }
+        const res = await graph.query(
+          `MATCH (a:\`${fl}\` {name: $from}), (b:\`${tl}\` {name: $to}) MERGE (a)-[x:\`${r.type}\`]->(b) RETURN count(x) AS c`,
+          { params: { from: str(r.from.name, 200), to: str(r.to.name, 200) } },
+        );
+        if (Number((res.data as any[])?.[0]?.c) > 0) edges++;
+        else skipped.push(`relationship ${r.type}: ${r.from.name} or ${r.to.name} not in the graph`);
+      }
+      return { entitiesWritten: nodes, relationshipsWritten: edges, skipped };
+    },
+    roles: ["orchestrator", "researcher", "scribe"],
   },
   {
     def: fn("recall", "Search shared agent memory (what any agent learned in earlier sessions).", {
