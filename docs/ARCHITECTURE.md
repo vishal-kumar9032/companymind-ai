@@ -24,7 +24,7 @@ When an engineer or leader asks:
 
 ### The Solution: CompanyMind AI
 **CompanyMind AI** constructs a living, causal knowledge and governance graph inside **FalkorDB**. 
-By integrating with **Google Workspace MCP** and **GitHub MCP**, CompanyMind continuously synthesizes meeting decisions, architectural RFCs, GitHub PRs, and team ownership into an interconnected graph. 
+By connecting **Google Workspace** and **GitHub** through Composio, CompanyMind is designed to synthesize meeting decisions, architectural RFCs, GitHub PRs, and team ownership into an interconnected graph. 
 
 Furthermore, CompanyMind serves as the **persistent, shared memory layer across autonomous agents**, preventing context window bloat and ensuring every decision is auditable back to its human source.
 
@@ -143,7 +143,7 @@ graph LR
 
 ## 4. Parameterized Cypher Tools (Zero-Hallucination Design)
 
-In strict adherence to the FalkorDB Hackathon guidelines, **the LLM is never permitted to write raw Cypher queries**. All graph operations are packaged as structured, typed tools executed over MCP or direct function calls.
+The core tools below are **parameterised Cypher**: the model supplies typed arguments (a service name, a PR number, an algorithm enum) and never the query text. `graph_algorithm` and `shortest_path` follow the same rule and validate labels and relationship types against the live schema. The one exception is `graph_query`, a read-only escape hatch: the model writes OpenCypher, but it runs through `GRAPH.RO_QUERY` so the database itself rejects writes.
 
 ### Core Tool Catalogue
 
@@ -224,9 +224,9 @@ To showcase FalkorDB's multi-hop traversal power to the judges:
 ## 6. Implementation Milestones
 
 - [x] **Milestone 1:** Git repository initialization and core architectural blueprint.
-- [ ] **Milestone 2:** Local FalkorDB environment setup with Docker & Python virtual environment.
-- [ ] **Milestone 3:** Seed database with rich, realistic enterprise scenario (Google Docs, Meet Notes, GitHub PRs, Services).
-- [ ] **Milestone 4:** Build the MCP & Parameterized Tool Execution Layer in Python (`falkordb` client).
-- [ ] **Milestone 5:** Build the Multi-Agent Orchestrator (Ingestor, Watchdog, Oracle).
-- [ ] **Milestone 6:** Modern Web Dashboard UI (Agent Chat + Cytoscape.js Graph Canvas).
-- [ ] **Milestone 7:** Testing, README finalization, and Demo Video recording.
+- [x] **Milestone 2:** FalkorDB running in Docker.
+- [x] **Milestone 3:** Seed database with a realistic enterprise scenario (`pnpm seed`).
+- [x] **Milestone 4:** Parameterised Cypher tools, graph algorithms and read-only `graph_query` (TypeScript, `falkordb` client).
+- [x] **Milestone 5:** Agent loop with an orchestrator and Researcher / Governance / Scribe specialists, shared graph memory and human approvals.
+- [x] **Milestone 6:** Web dashboard (Ask AI chat with live tool trail, Cytoscape.js graph canvas, Connections).
+- [ ] **Milestone 7:** Ingest connected Google / GitHub data into each user's graph; end-to-end test with a real account; demo video.
