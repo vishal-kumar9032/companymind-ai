@@ -410,6 +410,40 @@ function scoreTool(name: string): number {
   return 0;
 }
 
+/**
+ * Hand-picked tools per toolkit: the read tools an agent needs to answer questions and sync data, plus a
+ * few writes (always queued for approval). Ranking a toolkit's whole catalogue and keeping the top few
+ * returned irrelevant admin tools (no calendar event listing, no PR listing, no Drive file listing).
+ */
+const CURATED_TOOLS: Record<string, string[]> = {
+  gmail: [
+    "GMAIL_FETCH_EMAILS", "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID", "GMAIL_FETCH_MESSAGE_BY_THREAD_ID",
+    "GMAIL_LIST_THREADS", "GMAIL_SEARCH_PEOPLE", "GMAIL_CREATE_EMAIL_DRAFT", "GMAIL_SEND_EMAIL",
+  ],
+  googlecalendar: [
+    "GOOGLECALENDAR_EVENTS_LIST", "GOOGLECALENDAR_EVENTS_LIST_ALL_CALENDARS", "GOOGLECALENDAR_FIND_EVENT",
+    "GOOGLECALENDAR_FIND_FREE_SLOTS", "GOOGLECALENDAR_LIST_CALENDARS", "GOOGLECALENDAR_CREATE_EVENT",
+  ],
+  googledrive: [
+    "GOOGLEDRIVE_LIST_FILES", "GOOGLEDRIVE_FIND_FILE", "GOOGLEDRIVE_FIND_FOLDER",
+    "GOOGLEDRIVE_GET_FILE_METADATA", "GOOGLEDRIVE_LIST_COMMENTS",
+  ],
+  googledocs: [
+    "GOOGLEDOCS_SEARCH_DOCUMENTS", "GOOGLEDOCS_GET_DOCUMENT_BY_ID", "GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT",
+    "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN",
+  ],
+  googlesheets: [
+    "GOOGLESHEETS_SEARCH_SPREADSHEETS", "GOOGLESHEETS_GET_SPREADSHEET_INFO", "GOOGLESHEETS_VALUES_GET",
+    "GOOGLESHEETS_BATCH_GET", "GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW", "GOOGLESHEETS_CREATE_SPREADSHEET_ROW",
+  ],
+  github: [
+    "GITHUB_GET_THE_AUTHENTICATED_USER", "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
+    "GITHUB_LIST_PULL_REQUESTS", "GITHUB_FIND_PULL_REQUESTS", "GITHUB_GET_A_PULL_REQUEST",
+    "GITHUB_LIST_REPOSITORY_ISSUES", "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER",
+    "GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS", "GITHUB_GET_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT",
+  ],
+};
+
 const toolCache = new Map<string, { at: number; tools: OpenAI.Chat.Completions.ChatCompletionTool[] }>();
 
 /** OpenAI-format tool schemas for the toolkits this user has actually connected. */
@@ -428,12 +462,16 @@ export async function getConnectedTools(
     const perToolkit = await Promise.all(
       toolkits.map(async (toolkitSlug) => {
         try {
-          const raw = (await c.tools.get(userId, { toolkits: [toolkitSlug], limit: 25 } as any)) as any;
+          const curated = CURATED_TOOLS[toolkitSlug];
+          const raw = (await c.tools.get(
+            userId,
+            (curated ? { tools: curated } : { toolkits: [toolkitSlug], limit: 25 }) as any,
+          )) as any;
           const list = (Array.isArray(raw) ? raw : []) as any[];
-          return list
-            .filter((t: any) => t?.type === "function" && t?.function?.name)
-            .sort((a: any, b: any) => scoreTool(a.function?.name || "") - scoreTool(b.function?.name || ""))
-            .slice(0, 4);
+          const usable = list.filter((t: any) => t?.type === "function" && t?.function?.name);
+          return curated
+            ? usable
+            : usable.sort((a: any, b: any) => scoreTool(a.function?.name || "") - scoreTool(b.function?.name || "")).slice(0, 4);
         } catch {
           return [];
         }
