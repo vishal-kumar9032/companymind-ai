@@ -15,9 +15,9 @@ function connect(): Promise<FalkorDB> {
   const password = process.env.FALKORDB_PASSWORD || undefined;
   const username = process.env.FALKORDB_USERNAME || undefined;
 
-  if (process.env.NODE_ENV === "production" && host === "localhost") {
+  if (process.env.VERCEL && host === "localhost") {
     throw new Error(
-      "FALKORDB_URL or FALKORDB_HOST must be set in production (localhost is not reachable from serverless).",
+      "FALKORDB_URL or FALKORDB_HOST must be set on Vercel (localhost is not reachable from serverless).",
     );
   }
 
