@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { executeComposioTool } from "@/lib/agent/composio";
 import { resolveCaller } from "@/lib/agent/identity";
-import { getApproval, remember, setApprovalStatus } from "@/lib/agent/memory";
+import { claimApproval, getApproval, remember, setApprovalStatus } from "@/lib/agent/memory";
 
 export const runtime = "nodejs";
 
@@ -22,13 +22,15 @@ export async function POST(req: NextRequest) {
   if (!approval) return json({ error: "Approval not found" }, 404);
   if (approval.status !== "pending") return json({ error: `Already ${approval.status}` }, 409);
 
+  if (!(await claimApproval(caller, id, decision === "reject" ? "rejected" : "approved"))) {
+    return json({ error: "Already decided" }, 409);
+  }
+
   if (decision === "reject") {
-    await setApprovalStatus(caller, id, "rejected");
     await remember(caller, "user", `Rejected ${approval.tool}`, "procedural", [], undefined).catch(() => {});
     return json({ status: "rejected" });
   }
 
-  await setApprovalStatus(caller, id, "approved");
   const res = await executeComposioTool(caller.id, approval.tool, approval.args);
   if (!res.ok) {
     await setApprovalStatus(caller, id, "failed", res.error || "failed");

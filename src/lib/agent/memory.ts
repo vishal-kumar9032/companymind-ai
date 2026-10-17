@@ -178,3 +178,13 @@ export async function setApprovalStatus(c: Caller, approvalId: string, status: A
     params: { id: approvalId, status, result: result.slice(0, 4000) },
   });
 }
+
+/** Atomically move a pending approval to `status`; false if someone else already decided it. */
+export async function claimApproval(c: Caller, approvalId: string, status: "approved" | "rejected"): Promise<boolean> {
+  const graph = await g(c);
+  const res = await graph.query(
+    `MATCH (a:Approval {id: $id, status: 'pending'}) SET a.status = $status RETURN count(a) AS claimed`,
+    { params: { id: approvalId, status } },
+  );
+  return Number((res.data as any[])?.[0]?.claimed) > 0;
+}
