@@ -144,6 +144,96 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       orEmpty((await findSubjectMatterExperts(a.serviceName, ctx.caller.graph)).data, "experts"),
   },
   {
+    def: fn(
+      "graph_algorithm",
+      "Run a graph algorithm over one node label and one relationship type to find what matters structurally. pagerank = most depended-on / most influential nodes; betweenness = bottlenecks that sit on many paths between others (single points of failure); communities = clusters of tightly connected nodes; components = disconnected islands. Call graph_schema first and use its exact label and relationship names.",
+      {
+        algorithm: { type: "string", enum: ["pagerank", "betweenness", "communities", "components"] },
+        label: { type: "string", description: "Node label, e.g. Service" },
+        relationship: { type: "string", description: "Relationship type, e.g. DEPENDS_ON" },
+      },
+      ["algorithm", "label", "relationship"],
+    ),
+    run: async ({ algorithm, label, relationship }, ctx) => {
+      const graph = await getGraph(ctx.caller.graph);
+      const names = async (proc: string) => ((await graph.roQuery(`CALL ${proc}()`)).data as any[]).map((r) => String(Object.values(r)[0]));
+      const [labels, rels] = await Promise.all([names("db.labels"), names("db.relationshipTypes")]);
+      if (!labels.includes(label)) return { error: `Unknown label "${label}". Labels: ${labels.join(", ") || "none"}` };
+      if (!rels.includes(relationship)) return { error: `Unknown relationship "${relationship}". Relationships: ${rels.join(", ") || "none"}` };
+
+      const cfg = { nodeLabels: [label], relationshipTypes: [relationship] };
+      const display = "coalesce(node.name, node.title, node.id)";
+      const started = Date.now();
+      let res;
+      switch (algorithm) {
+        case "pagerank":
+          res = await graph.query(
+            `CALL algo.pageRank($label, $rel) YIELD node, score RETURN ${display} AS name, score ORDER BY score DESC LIMIT 10`,
+            { params: { label, rel: relationship } },
+          );
+          break;
+        case "betweenness":
+          res = await graph.query(
+            `CALL algo.betweenness($cfg) YIELD node, score RETURN ${display} AS name, score ORDER BY score DESC LIMIT 10`,
+            { params: { cfg } },
+          );
+          break;
+        case "communities":
+          res = await graph.query(
+            `CALL algo.labelPropagation($cfg) YIELD node, communityId RETURN communityId AS community, collect(${display}) AS members ORDER BY size(members) DESC LIMIT 10`,
+            { params: { cfg } },
+          );
+          break;
+        case "components":
+          res = await graph.query(
+            `CALL algo.WCC($cfg) YIELD node, componentId RETURN componentId AS component, collect(${display}) AS members ORDER BY size(members) DESC LIMIT 10`,
+            { params: { cfg } },
+          );
+          break;
+        default:
+          return { error: "algorithm must be pagerank, betweenness, communities or components" };
+      }
+      const rows = ((res.data as any[]) || []).slice(0, MAX_ROWS);
+      return rows.length
+        ? { algorithm, label, relationship, rows, ms: Date.now() - started }
+        : { algorithm, label, relationship, rows: [], note: `No ${label} nodes connected by ${relationship}.` };
+    },
+  },
+  {
+    def: fn(
+      "shortest_path",
+      "Shortest chain of relationships between two entities, in either direction. Use it to explain HOW two things are connected (e.g. a person and a service, a decision and a PR). Returns each hop with its relationship type.",
+      {
+        from: { type: "string", description: "Exact entity name, title or id" },
+        to: { type: "string", description: "Exact entity name, title or id" },
+        maxHops: { type: "integer", description: "Maximum hops, default 6, max 8" },
+      },
+      ["from", "to"],
+    ),
+    run: async ({ from, to, maxHops }, ctx) => {
+      const graph = await getGraph(ctx.caller.graph);
+      const hops = Math.min(Math.max(Number(maxHops) || 6, 1), 8);
+      const match = (v: string) => `toLower(${v}.name) = toLower($${v}) OR toLower(${v}.id) = toLower($${v}) OR toLower(${v}.title) = toLower($${v})`;
+      // FalkorDB has no undirected shortestPath, so search exact lengths 1, 2, 3... and stop at the first hit.
+      let row: any;
+      for (let k = 1; k <= hops && !row; k++) {
+        const res = await graph.roQuery(
+          `MATCH (a), (b) WHERE (${match("a")}) AND (${match("b")}) AND a <> b
+           MATCH p = (a)-[*${k}]-(b)
+           RETURN [n IN nodes(p) | coalesce(n.name, n.title, n.id)] AS entities,
+                  [n IN nodes(p) | labels(n)[0]] AS labels,
+                  [r IN relationships(p) | type(r)] AS relationships, length(p) AS hops
+           LIMIT 1`,
+          { params: { a: String(from), b: String(to) } },
+        );
+        row = (res.data as any[])?.[0];
+      }
+      if (!row) return { error: `No path of up to ${hops} hops between "${from}" and "${to}" (or one of them does not exist).` };
+      const steps = row.entities.map((e: string, i: number) => `${e} (${row.labels[i]})${i < row.relationships.length ? ` -[${row.relationships[i]}]-` : ""}`);
+      return { hops: row.hops, path: steps.join(" "), entities: row.entities, relationships: row.relationships };
+    },
+  },
+  {
     def: fn("recall", "Search shared agent memory (what any agent learned in earlier sessions).", {
       query: { type: "string" },
       limit: { type: "integer", default: 6 },

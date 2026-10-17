@@ -212,7 +212,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       caller.authenticated
         ? `Connected accounts: ${connected.length ? connected.join(", ") : "none yet"}. If the task needs an account that is not connected, say so and tell the user to connect it in Connections. Never invent data from an unconnected source.`
         : "This is the read-only demo workspace: only the sample knowledge graph is available, no accounts are connected, and no actions can be taken.",
-      "Rules: use tools to get facts, never guess. Cite where each fact came from (graph entity, document, email, PR). If you cannot find something, say so plainly. Keep answers concise and structured.",
+      "Rules: use tools to get facts, never guess. For \"how is X connected to Y\" use shortest_path (never conclude two entities are unrelated from one entity_neighborhood); for \"what matters most / biggest risk / clusters\" use graph_algorithm. Cite where each fact came from (graph entity, document, email, PR). If you cannot find something, say so plainly. Keep answers concise and structured.",
       memories.length
         ? "Relevant shared memory from earlier work:\n" + memories.map((m: any) => `- [${m.kind}] ${String(m.text || "").slice(0, 240)}`).join("\n")
         : "",
