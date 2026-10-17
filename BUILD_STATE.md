@@ -121,3 +121,4 @@
 
 
 
+- `2026-10-17` (Branch `feat/connectors-memory` - Step 1, Platform/Deploy readiness): FalkorDB client now supports `FALKORDB_URL` (FalkorDB Cloud), username/TLS, caches the connection on `globalThis` (serverless-safe, retries after failure) and refuses `localhost` in production. Added `vercel.json` and documented `FALKORDB_URL` / `COMPOSIO_API_KEY` in `.env.example`. Verified: `tsc --noEmit` clean. Not yet verified: deploy to Vercel against FalkorDB Cloud (needs credentials).

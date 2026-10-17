@@ -1,26 +1,41 @@
 import { FalkorDB } from "falkordb";
 
-let globalClient: FalkorDB | null = null;
+// Cache on globalThis so Next.js dev reloads and warm serverless invocations reuse one connection.
+const g = globalThis as unknown as { __falkor?: Promise<FalkorDB> };
 
-export async function getFalkorClient(): Promise<FalkorDB> {
-  if (globalClient) {
-    return globalClient;
+function connect(): Promise<FalkorDB> {
+  const url = process.env.FALKORDB_URL;
+  if (url) {
+    // Hosted FalkorDB Cloud: redis(s)://user:pass@host:port
+    return FalkorDB.connect({ url });
   }
 
   const host = process.env.FALKORDB_HOST || "localhost";
   const port = Number(process.env.FALKORDB_PORT) || 6379;
   const password = process.env.FALKORDB_PASSWORD || undefined;
+  const username = process.env.FALKORDB_USERNAME || undefined;
 
-  globalClient = await FalkorDB.connect({
-    socket: {
-      host,
-      port,
-      tls: process.env.FALKORDB_TLS === "true",
-    },
+  if (process.env.NODE_ENV === "production" && host === "localhost") {
+    throw new Error(
+      "FALKORDB_URL or FALKORDB_HOST must be set in production (localhost is not reachable from serverless).",
+    );
+  }
+
+  return FalkorDB.connect({
+    socket: { host, port, tls: process.env.FALKORDB_TLS === "true" },
+    username,
     password,
   });
+}
 
-  return globalClient;
+export async function getFalkorClient(): Promise<FalkorDB> {
+  if (!g.__falkor) {
+    g.__falkor = connect().catch((err) => {
+      g.__falkor = undefined; // allow retry on next request
+      throw err;
+    });
+  }
+  return g.__falkor;
 }
 
 export async function getGraph(graphId?: string) {
