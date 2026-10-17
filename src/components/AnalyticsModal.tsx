@@ -1,21 +1,120 @@
 "use client";
 
 import React from "react";
-import { X, BarChart2, AlertTriangle, TrendingUp } from "lucide-react";
+import { X, BarChart2, AlertTriangle, TrendingUp, Sparkles, ArrowRight, ShieldCheck, Server } from "lucide-react";
+import { GraphData } from "@/lib/schema";
 
 interface AnalyticsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  graphData?: GraphData;
+  onSelectQuery?: (query: string) => void;
+  latencyMs?: number;
+  nodeCount?: number;
+  edgeCount?: number;
 }
 
-export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
+export function AnalyticsModal({
+  isOpen,
+  onClose,
+  graphData,
+  onSelectQuery,
+  latencyMs = 2,
+  nodeCount = 0,
+  edgeCount = 0,
+}: AnalyticsModalProps) {
   if (!isOpen) return null;
 
+  const actualNodeCount = graphData?.nodes?.length ?? nodeCount;
+  const actualEdgeCount = graphData?.edges?.length ?? edgeCount;
+
+  // Extract real graph entities
+  const services = graphData?.nodes?.filter((n) => n.label === "Service") || [];
+  const decisions = graphData?.nodes?.filter((n) => n.label === "Decision") || [];
+  const prs = graphData?.nodes?.filter((n) => n.label === "GitHubPR") || [];
+
+  // Dynamically compute architectural questions based on real graph entities
+  const dynamicQuestions = [
+    ...(services.length > 0
+      ? [
+          {
+            q: `What services break if ${services[0].name} is shut down?`,
+            cat: "Blast Radius",
+            service: services[0].name,
+          },
+        ]
+      : []),
+    ...(prs.length > 0
+      ? [
+          {
+            q: `Audit ${prs[0].name} against active architectural decisions`,
+            cat: "Governance",
+            service: prs[0].name,
+          },
+        ]
+      : []),
+    ...(services.length > 1
+      ? [
+          {
+            q: `Who owns ${services[1].name} and what decisions govern it?`,
+            cat: "Ownership",
+            service: services[1].name,
+          },
+        ]
+      : []),
+    ...(decisions.length > 0
+      ? [
+          {
+            q: `Explain ${decisions[0].name} and trace its meeting origin`,
+            cat: "Provenance",
+            service: decisions[0].name,
+          },
+        ]
+      : []),
+  ];
+
+  // Dynamically detect knowledge gaps by inspecting graph entities
+  const dynamicGaps = [
+    ...services
+      .filter((s) => (s.properties?.tier || "").toLowerCase().includes("deprecated"))
+      .map((s) => ({
+        title: `Sunsetting Risk: ${s.name}`,
+        level: "High Risk",
+        levelClass: "bg-rose-100 text-rose-800 border-rose-200",
+        bgClass: "bg-rose-50 border-rose-200",
+        text: `${s.name} is classified as ${s.properties?.tier || "Deprecated"}. Inbound callers must be migrated to avoid breaking downstream microservices.`,
+        query: `What services break if ${s.name} is shut down?`,
+      })),
+    ...services
+      .filter((s) => s.name === "postgres-primary" || (s.properties?.tier || "").includes("Tier 0"))
+      .map((s) => ({
+        title: `Single-Point-of-Failure: ${s.name}`,
+        level: "Tier 0 Critical",
+        levelClass: "bg-amber-100 text-amber-800 border-amber-200",
+        bgClass: "bg-amber-50 border-amber-200",
+        text: `${s.name} serves multiple inbound callers. Ensure connection pool limits (DEC-105) are enforced on all dependent client instances.`,
+        query: `What breaks if ${s.name} goes down?`,
+      })),
+    ...decisions.slice(0, 1).map((d) => ({
+      title: `Policy Watchdog: ${d.name} Compliance`,
+      level: "Active Policy",
+      levelClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
+      bgClass: "bg-indigo-50 border-indigo-200",
+      text: d.properties?.rationale || d.properties?.summary || `Governing mandate enforced across microservice PR audits.`,
+      query: `Explain ${d.name} and why it was decided`,
+    })),
+  ];
+
+  const handleRunQuery = (query: string) => {
+    onSelectQuery?.(query);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity cursor-pointer"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -28,8 +127,9 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
             <h3 className="font-semibold text-sm text-slate-900">Enterprise Graph Intelligence & Knowledge Gaps</h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>
@@ -41,84 +141,85 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Avg Graph Latency</span>
-              <div className="text-xl font-extrabold text-emerald-600 font-mono">14ms</div>
-              <p className="text-[10px] text-slate-500">FalkorDB in-memory Cypher</p>
+              <div className="text-xl font-extrabold text-emerald-600 font-mono">{latencyMs} ms</div>
+              <p className="text-[10px] text-slate-500">FalkorDB in-memory execution</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Verification Score</span>
-              <div className="text-xl font-extrabold text-indigo-600 font-mono">99.4%</div>
-              <p className="text-[10px] text-slate-500">Zero-hallucination rate</p>
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Tracked Nodes</span>
+              <div className="text-xl font-extrabold text-indigo-600 font-mono">{actualNodeCount}</div>
+              <p className="text-[10px] text-slate-500">Entities in living topology</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Tracked Entities</span>
-              <div className="text-xl font-extrabold text-purple-600 font-mono">34 nodes</div>
-              <p className="text-[10px] text-slate-500">Across 6 entity types</p>
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Causal Relations</span>
+              <div className="text-xl font-extrabold text-purple-600 font-mono">{actualEdgeCount}</div>
+              <p className="text-[10px] text-slate-500">Dependencies & approvals</p>
             </div>
           </div>
 
-          {/* Top Asked Questions */}
+          {/* Dynamic Architectural Questions */}
           <div className="space-y-2.5">
             <h4 className="font-semibold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <TrendingUp className="size-3.5 text-indigo-600" />
-              <span>Most Queried Architectural Questions</span>
+              <span>Recommended Graph Traversal Solvers</span>
             </h4>
             <div className="space-y-1.5">
-              {[
-                { q: "What services break if auth-v1 is shut down?", count: 42, cat: "Blast Radius" },
-                { q: "Audit PR #214 against DEC-44 sunset rule", count: 35, cat: "Governance" },
-                { q: "Who owns payments-api and who are the SMEs?", count: 28, cat: "Ownership" },
-                { q: "Why did we decide to use mTLS for identity-service?", count: 19, cat: "Provenance" },
-              ].map((item, idx) => (
+              {dynamicQuestions.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200"
+                  onClick={() => handleRunQuery(item.q)}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer group"
                 >
-                  <span className="text-slate-800 font-medium truncate">{item.q}</span>
+                  <span className="text-slate-800 font-medium truncate group-hover:text-indigo-600 transition-colors">
+                    {item.q}
+                  </span>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">
                       {item.cat}
                     </span>
-                    <span className="font-mono text-indigo-600 font-bold">{item.count} asks</span>
+                    <ArrowRight size={13} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Identified Knowledge Gaps */}
+          {/* Dynamically Identified Knowledge Gaps */}
           <div className="space-y-2.5">
             <h4 className="font-semibold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle className="size-3.5 text-amber-600" />
-              <span>Detected Institutional Knowledge Gaps</span>
+              <span>Identified Topology & Governance Risks</span>
             </h4>
             <div className="space-y-2">
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-slate-800 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-amber-800">Missing RFC Documentation: postgres-primary</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-200 text-amber-800 font-bold">High Risk</span>
+              {dynamicGaps.map((gap, idx) => (
+                <div key={idx} className={`p-3.5 rounded-xl border ${gap.bgClass} text-slate-800 space-y-1.5`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-xs text-slate-900">{gap.title}</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${gap.levelClass}`}>
+                      {gap.level}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">{gap.text}</p>
+                  <div className="pt-1 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleRunQuery(gap.query)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                    >
+                      <span>Analyze Risk in Graph</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  <code className="bg-amber-100/80 px-1 rounded text-amber-900">postgres-primary</code> has 3 inbound dependencies but zero linked RFC specifications or recorded architectural review meetings.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-slate-800 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-purple-800">Policy Renewal: DEC-88 Cookie Security</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-200 text-purple-800 font-bold">Audit Due</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Decided on Sept 01, 2026. Needs re-certification with SOC2 auditor prior to Q4 compliance review.
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-mono text-[11px]">Powered by FalkorDB Graph Analysis</span>
+          <span className="text-slate-500 font-mono text-[11px]">Powered by FalkorDB Real Graph Engine</span>
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium transition-colors cursor-pointer"
           >

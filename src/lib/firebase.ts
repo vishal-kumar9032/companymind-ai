@@ -1,8 +1,12 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut,
   User,
   onAuthStateChanged,
@@ -20,16 +24,9 @@ import {
   Firestore,
 } from "firebase/firestore";
 
-// Firebase credentials configuration strictly loaded from environment variables
+// Firebase configuration strictly loaded from environment variables
 // No secrets or keys are hardcoded in the codebase
-export function isFirebaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  );
-}
-
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
@@ -39,22 +36,43 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
 
+export function isFirebaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  );
+}
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+export let analytics: Analytics | null = null;
 
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured()) {
     return null;
   }
   if (!app) {
-    if (getApps().length > 0) {
-      app = getApp();
-    } else {
-      app = initializeApp(firebaseConfig);
-    }
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   }
   return app;
+}
+
+export async function getFirebaseAnalytics(): Promise<Analytics | null> {
+  if (typeof window === "undefined") return null;
+  const fbApp = getFirebaseApp();
+  if (!fbApp) return null;
+  if (!analytics) {
+    try {
+      const supported = await isSupported();
+      if (supported) {
+        analytics = getAnalytics(fbApp);
+      }
+    } catch {
+      // Ignored if blocked by client
+    }
+  }
+  return analytics;
 }
 
 export function getFirebaseAuth(): Auth | null {
@@ -69,12 +87,21 @@ export function getFirebaseAuth(): Auth | null {
 }
 
 export function getFirebaseFirestore(): Firestore | null {
+  // Guard: If Firestore is not enabled or provisioned, return null to avoid
+  // "@firebase/firestore: Database '(default)' not found" retry noise in console.
+  if (process.env.NEXT_PUBLIC_ENABLE_FIRESTORE !== "true") {
+    return null;
+  }
   const fbApp = getFirebaseApp();
   if (!fbApp) {
     return null;
   }
   if (!db) {
-    db = getFirestore(fbApp);
+    try {
+      db = getFirestore(fbApp);
+    } catch {
+      return null;
+    }
   }
   return db;
 }
@@ -93,43 +120,23 @@ export interface EnterpriseUser {
   isFirebaseAuthenticated: boolean;
 }
 
-// Preset Enterprise Profiles for instant demo / verification
-export const DEMO_ENTERPRISE_USERS: EnterpriseUser[] = [
-  {
-    uid: "sarah-chen-infra",
-    displayName: "Sarah Chen",
-    email: "sarah.chen@acme.corp",
-    photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-    tenantId: "acme-core",
-    role: "Staff Principal Engineer",
-    department: "Core Infrastructure",
-    isFirebaseAuthenticated: false,
-  },
-  {
-    uid: "alex-mercer-payments",
-    displayName: "Alex Mercer",
-    email: "alex.mercer@finflow.io",
-    photoURL: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-    tenantId: "finflow-global",
-    role: "Lead Platform Engineer",
-    department: "Checkout & Payments",
-    isFirebaseAuthenticated: false,
-  },
-  {
-    uid: "elena-rostova-mobile",
-    displayName: "Elena Rostova",
-    email: "elena.rostova@acme.corp",
-    photoURL: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
-    tenantId: "acme-core",
-    role: "Lead Mobile Architect",
-    department: "Mobile Platform",
-    isFirebaseAuthenticated: false,
-  },
-];
+// Default workspace user identity for unauthenticated exploration
+export const GUEST_ENTERPRISE_USER: EnterpriseUser = {
+  uid: "workspace-member",
+  displayName: "Workspace Member",
+  email: "member@company.internal",
+  tenantId: "acme-core",
+  role: "Platform Engineer",
+  department: "Core Architecture",
+  isFirebaseAuthenticated: false,
+};
+
+// Clean reference array
+export const DEMO_ENTERPRISE_USERS: EnterpriseUser[] = [GUEST_ENTERPRISE_USER];
 
 /**
  * Signs in using Firebase Google Auth with popup.
- * Falls back to local enterprise profile if real credentials fail or are mocked.
+ * Falls back to local enterprise profile if credentials are unconfigured in environment.
  */
 export async function signInWithGoogleAuth(
   presetUser?: EnterpriseUser
@@ -173,13 +180,15 @@ export async function signInWithGoogleAuth(
     try {
       const firestore = getFirebaseFirestore();
       if (firestore) {
-        await addDoc(collection(firestore, "users"), {
+        // Fire-and-forget: login must never wait on a profile write (Firestore may be
+        // unprovisioned or offline, in which case the write promise never settles).
+        addDoc(collection(firestore, "users"), {
           uid: enterpriseUser.uid,
           email: enterpriseUser.email,
           displayName: enterpriseUser.displayName,
           tenantId: enterpriseUser.tenantId,
           lastLogin: serverTimestamp(),
-        });
+        }).catch(() => {});
       }
     } catch {
       // Local fallback if Firestore rules or offline
@@ -194,6 +203,198 @@ export async function signInWithGoogleAuth(
     }
     return defaultUser;
   }
+}
+
+/**
+ * Signs up using Firebase Email/Password Auth.
+ * Falls back to local enterprise profile if Firebase is unconfigured or blocked.
+ */
+export async function signUpWithEmail(
+  email: string,
+  pass: string,
+  displayName?: string,
+  tenantId: string = "acme-core",
+  department: string = "Engineering Platform"
+): Promise<EnterpriseUser> {
+  const authInstance = getFirebaseAuth();
+  if (!authInstance) {
+    const fallbackUser: EnterpriseUser = {
+      uid: `user-${Date.now()}`,
+      displayName: displayName || email.split("@")[0],
+      email,
+      tenantId,
+      role: "Lead Systems Architect",
+      department,
+      isFirebaseAuthenticated: false,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("companymind_user", JSON.stringify(fallbackUser));
+    }
+    return fallbackUser;
+  }
+
+  try {
+    const cred = await createUserWithEmailAndPassword(authInstance, email, pass);
+    if (displayName && cred.user) {
+      await updateProfile(cred.user, { displayName }).catch(() => {});
+    }
+
+    const enterpriseUser: EnterpriseUser = {
+      uid: cred.user.uid,
+      displayName: displayName || cred.user.displayName || email.split("@")[0],
+      email: cred.user.email || email,
+      tenantId,
+      role: "Lead Systems Architect",
+      department,
+      isFirebaseAuthenticated: true,
+    };
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("companymind_user", JSON.stringify(enterpriseUser));
+    }
+
+    // Fire-and-forget Firestore profile save
+    try {
+      const firestore = getFirebaseFirestore();
+      if (firestore) {
+        addDoc(collection(firestore, "users"), {
+          uid: enterpriseUser.uid,
+          email: enterpriseUser.email,
+          displayName: enterpriseUser.displayName,
+          tenantId: enterpriseUser.tenantId,
+          lastLogin: serverTimestamp(),
+        }).catch(() => {});
+      }
+    } catch {}
+
+    return enterpriseUser;
+  } catch (error: any) {
+    if (error?.code === "auth/email-already-in-use") {
+      throw new Error("This email is already registered. Please switch to the Sign In tab.");
+    }
+    if (error?.code === "auth/weak-password") {
+      throw new Error("Password should be at least 6 characters.");
+    }
+    if (error?.code === "auth/invalid-email") {
+      throw new Error("Invalid email address format.");
+    }
+    if (error?.code === "auth/operation-not-allowed") {
+      console.warn("Firebase Email/Password provider not enabled in console, using enterprise persona fallback:", error?.message);
+      const fallbackUser: EnterpriseUser = {
+        uid: `user-${Date.now()}`,
+        displayName: displayName || email.split("@")[0],
+        email,
+        tenantId,
+        role: "Lead Systems Architect",
+        department,
+        isFirebaseAuthenticated: false,
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("companymind_user", JSON.stringify(fallbackUser));
+      }
+      return fallbackUser;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Signs in using Firebase Email/Password Auth.
+ * Falls back to local enterprise profile if Firebase is unconfigured or blocked.
+ */
+export async function signInWithEmail(
+  email: string,
+  pass: string,
+  tenantId: string = "acme-core"
+): Promise<EnterpriseUser> {
+  const authInstance = getFirebaseAuth();
+  if (!authInstance) {
+    const fallbackUser: EnterpriseUser = {
+      uid: `user-${Date.now()}`,
+      displayName: email.split("@")[0].replace(".", " "),
+      email,
+      tenantId,
+      role: "Senior Staff Engineer",
+      department: "Engineering Platform",
+      isFirebaseAuthenticated: false,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("companymind_user", JSON.stringify(fallbackUser));
+    }
+    return fallbackUser;
+  }
+
+  try {
+    const cred = await signInWithEmailAndPassword(authInstance, email, pass);
+    const enterpriseUser: EnterpriseUser = {
+      uid: cred.user.uid,
+      displayName: cred.user.displayName || email.split("@")[0].replace(".", " "),
+      email: cred.user.email || email,
+      tenantId,
+      role: "Senior Staff Engineer",
+      department: "Engineering Platform",
+      isFirebaseAuthenticated: true,
+    };
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("companymind_user", JSON.stringify(enterpriseUser));
+    }
+
+    return enterpriseUser;
+  } catch (error: any) {
+    if (error?.code === "auth/user-not-found" || error?.code === "auth/wrong-password" || error?.code === "auth/invalid-credential") {
+      throw new Error("Invalid email or password. Please verify your credentials or register.");
+    }
+    if (error?.code === "auth/operation-not-allowed") {
+      console.warn("Firebase Email/Password not enabled in console, falling back to local enterprise persona:", error?.message);
+      const fallbackUser: EnterpriseUser = {
+        uid: `user-${Date.now()}`,
+        displayName: email.split("@")[0].replace(".", " "),
+        email,
+        tenantId,
+        role: "Senior Staff Engineer",
+        department: "Engineering Platform",
+        isFirebaseAuthenticated: false,
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("companymind_user", JSON.stringify(fallbackUser));
+      }
+      return fallbackUser;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Subscribes to Firebase auth state changes.
+ */
+export function onFirebaseAuthStateChanged(
+  callback: (user: EnterpriseUser | null) => void
+): () => void {
+  const authInstance = getFirebaseAuth();
+  if (!authInstance) {
+    return () => {};
+  }
+  return onAuthStateChanged(authInstance, (fbUser) => {
+    if (fbUser) {
+      const enterpriseUser: EnterpriseUser = {
+        uid: fbUser.uid,
+        displayName: fbUser.displayName || fbUser.email?.split("@")[0] || "Enterprise User",
+        email: fbUser.email || "user@enterprise.com",
+        photoURL: fbUser.photoURL || undefined,
+        tenantId: "acme-core",
+        role: "Enterprise Engineer",
+        department: "Engineering & Architecture",
+        isFirebaseAuthenticated: true,
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("companymind_user", JSON.stringify(enterpriseUser));
+      }
+      callback(enterpriseUser);
+    } else {
+      callback(null);
+    }
+  });
 }
 
 /**

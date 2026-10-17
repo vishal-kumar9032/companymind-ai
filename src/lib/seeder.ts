@@ -259,6 +259,22 @@ export async function seedCompanyMindGraph(graphId = "companymind") {
       severity: 'WARNING'
     })`,
     "MATCH (f:AgentFinding {id: 'finding-001'}), (s:Service {name: 'auth-v1'}) CREATE (f)-[:ABOUT]->(s)",
+    `CREATE (:AgentFinding {
+      id: 'finding-002',
+      text: 'PR #214 blocked: Attempts to modify deprecated auth-v1 in violation of DEC-44 sunset mandate.',
+      at: '2026-10-16 09:15:00',
+      session_id: 'session-governance-watchdog',
+      severity: 'CRITICAL'
+    })`,
+    "MATCH (f:AgentFinding {id: 'finding-002'}), (s:Service {name: 'auth-v1'}) CREATE (f)-[:ABOUT]->(s)",
+    `CREATE (:AgentFinding {
+      id: 'finding-003',
+      text: 'Database pool exhaustion risk: PR #218 requested pool size 50 exceeding DEC-105 VM limits.',
+      at: '2026-10-16 11:45:00',
+      session_id: 'session-sre-audit',
+      severity: 'HIGH'
+    })`,
+    "MATCH (f:AgentFinding {id: 'finding-003'}), (s:Service {name: 'postgres-primary'}) CREATE (f)-[:ABOUT]->(s)",
   ]);
 
   return { success: true, message: "CompanyMind graph seeded with full enterprise dataset." };

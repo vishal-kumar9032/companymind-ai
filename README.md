@@ -45,7 +45,7 @@ Standard **SQL** fails because recursive traversals across dynamic entity graphs
    * Full decision provenance: traces any technical rule back to the exact meeting and author.
    * Cross-team blast-radius impact analysis across microservices.
 2. **Track 02: Agent Memory and Coordination (Secondary)**  
-   * Acts as a persistent, low-latency episodic and procedural memory layer across multiple autonomous agents (Ingestor, Watchdog, Oracle).
+   * Acts as a persistent episodic, semantic and procedural memory layer shared by the orchestrator and its specialist agents (Researcher, Governance Watchdog, Scribe), with hand-offs recorded as `Task` nodes.
    * Agents write newly verified findings into the graph to preserve context across sessions without context window bloat.
 
 ---
@@ -78,23 +78,43 @@ graph LR
 
 ---
 
-## ⚡ Key Capabilities
+## ⚡ What It Does
 
-* **🔗 Multi-Source Ingestion via MCP:** Seamlessly connects Google Workspace (Docs/Meet) and GitHub (PRs/Issues) through the Model Context Protocol (MCP).
-* **🔍 Decision Provenance:** Traces any production constraint back to the meeting, RFC document, and approving executive.
-* **💥 Recursive Blast-Radius Analysis:** Evaluates upstream and downstream impact using variable-depth Cypher traversals (`*1..$depth`).
-* **🛡️ Autonomous PR Governance Watchdog:** Automatically audits incoming pull requests against active architectural decisions in meeting notes.
-* **🧠 Persistent Agent Memory:** Writes agent conclusions into FalkorDB as `:AgentFinding` nodes, recallable across sessions.
-* **🧭 Path-Carried Explainability:** Returns `[n IN nodes(path) | n.name]` alongside answers to visually illustrate how the agent reached every conclusion.
+The Ask AI chat is a tool-calling agent loop (`src/lib/agent/loop.ts`) that answers from the graph and shows its work: every memory recall, tool call and hand-off streams to the UI as it happens.
+
+* **Multi-hop reasoning with Cypher tools.** Blast radius (`DEPENDS_ON*1..4`), decision provenance (service → decision → RFC → meeting → approver), PR governance audit, expert ranking, and a read-only `graph_query` for anything else. `graph_schema` tells the model the exact labels, relationships and properties first.
+* **Graph algorithms as agent tools.** `graph_algorithm` runs FalkorDB PageRank, betweenness (single points of failure), label-propagation communities and connected components. `shortest_path` explains how two entities are connected, hop by hop.
+* **Shared agent memory in the graph.** `Memory` (episodic / semantic / procedural), `AgentRun`, `Task` (hand-offs between agents) and `Approval` nodes live in the same FalkorDB graph and are recalled into later sessions.
+* **A small agent team.** An orchestrator delegates to a Researcher (graph + web), a Governance Watchdog (decisions vs. PRs) and a Scribe (drafts and performs actions). Hand-offs are recorded as `Task` nodes.
+* **Bring your own documents.** Signed-in users can upload PDF, Word, Excel, CSV, text and Markdown on the Connections page. Files are chunked into the user's own graph, searched with FalkorDB full-text search (`search_documents`, `read_document`), cited as `[document, part N]`, and can be turned into graph entities with one click ("Add to graph").
+* **Per-tenant isolation.** Each signed-in user gets their own graph (`org_<uid>`), derived from the verified Firebase token, never from client input. Anonymous visitors use the read-only sample workspace with their own private memory.
+* **Human-in-the-loop writes.** Any connector tool that is not clearly read-only (send email, create event, comment on a PR...) is queued as an `Approval` and only runs when the user approves it.
+* **Honest by default.** Empty graph, unconnected account or missing config returns a plain "no data / not connected" result instead of invented answers.
+
+### Agent tools
+
+| Tool | What it does |
+| :--- | :--- |
+| `graph_schema`, `graph_query`, `entity_neighborhood` | Discover the schema, run read-only OpenCypher (`GRAPH.RO_QUERY`), list everything connected to one entity |
+| `service_blast_radius`, `trace_decision_provenance`, `audit_pr_governance`, `find_subject_matter_experts` | Parameterised multi-hop Cypher tools |
+| `graph_algorithm`, `shortest_path` | PageRank, betweenness, communities, components; path explainer |
+| `list_documents`, `search_documents`, `read_document` | Search and read the user's uploaded files |
+| `graph_upsert` | Record sourced entities and relationships into the user's own graph |
+| `recall`, `remember` | Read / write shared memory |
+| `delegate` | Hand a sub-task to a specialist agent |
+| `web_search` | Public web (Tavily, optional) |
+| Composio tools | Gmail, Calendar, Drive, Docs, Sheets, GitHub for the user's connected accounts (writes need approval) |
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Graph Database:** [FalkorDB](https://falkordb.com) (in-memory GraphBLAS engine + Redis protocol)
-- **Backend API & Agent Loop:** Python 3.12, FastAPI, `falkordb` official client, LiteLLM / Gemini
-- **Protocol:** Model Context Protocol (MCP) for tool execution
-- **Frontend / Visualization:** Next.js / React, TailwindCSS, Cytoscape.js interactive graph canvas
+- **Graph database:** [FalkorDB](https://falkordb.com) (`falkordb` Node client, OpenCypher)
+- **App:** Next.js 15 (App Router, TypeScript), React 19, Tailwind CSS, Cytoscape.js graph canvas
+- **Agent loop & API routes:** TypeScript, streaming NDJSON from `/api/agent`
+- **LLMs:** OpenAI-compatible gateway (TrueFoundry) with a model fallback cascade, plus an optional direct Gemini key
+- **Connectors:** Composio (OAuth for Google Workspace and GitHub)
+- **Auth:** Firebase Authentication (ID tokens verified server-side with `jose`)
 
 ---
 
@@ -102,30 +122,43 @@ graph LR
 
 ### 1. Prerequisites
 - Docker
-- Python 3.12+
-- Node.js 20+
+- Node.js 20+ and [pnpm](https://pnpm.io)
 
 ### 2. Start FalkorDB
 ```bash
-# Starts FalkorDB on port 6379 and FalkorDB Browser on port 3000
+# FalkorDB on 6379, FalkorDB Browser on 3000
 docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest
 ```
-Access the visual graph inspector at [http://localhost:3000](http://localhost:3000).
 
-### 3. Setup Backend & Seed Graph
+### 3. Configure
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Seed the enterprise graph with realistic Google Workspace & GitHub data
-python scripts/seed_graph.py
+pnpm install
+cp .env.example .env.local   # then fill in the values below
 ```
 
-### 4. Run the API Server
+| Variable | Needed for |
+| :--- | :--- |
+| `FALKORDB_HOST` / `FALKORDB_PORT` (or `FALKORDB_URL` for FalkorDB Cloud) | Everything |
+| `TRUEFOUNDRY_API_KEY`, `TRUEFOUNDRY_BASE_URL` (or `GEMINI_API_KEY`) | The agent (an LLM is required) |
+| `NEXT_PUBLIC_FIREBASE_*` | Sign-in and per-user workspaces (without it everyone uses the demo workspace) |
+| `COMPOSIO_USER_API_KEY` or `COMPOSIO_API_KEY` | Connecting Google Workspace / GitHub |
+| `TAVILY_API_KEY` | `web_search` (optional) |
+| `ALLOW_DEMO_RESEED=true` | Lets the in-app "Reset" button re-seed the demo graph in production |
+
+### 4. Seed the sample graph and run
 ```bash
-uvicorn app.main:app --reload --port 8000
+pnpm seed      # loads the sample company graph into FalkorDB
+pnpm dev       # http://localhost:3000 (use `pnpm build && pnpm start -p 13050` for production)
 ```
+Open the app and try a demo question below.
+
+---
+
+## ✅ Status & Known Gaps
+
+Verified (see `BUILD_STATE.md` for dated evidence): multi-step tool use, memory write and cross-session recall, model fallback, graph algorithms, per-tenant graphs, atomic approvals.
+
+Not yet proven end to end: connecting a real Google / GitHub account and approving a queued write; the Researcher/Governance/Scribe hand-offs against live connectors. The sample company is synthetic seed data.
 
 ---
 

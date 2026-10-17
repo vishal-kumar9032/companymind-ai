@@ -20,13 +20,13 @@ export async function resolveEntity(name: string): Promise<string | null> {
  * Tool 1: Trace Decision Provenance
  * Traces why a service is constrained, what RFC proposed it, which meeting approved it, and who signed off.
  */
-export async function traceDecisionProvenance(serviceName: string): Promise<{
+export async function traceDecisionProvenance(serviceName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
   hops: string[];
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH path = (s:Service {name: $serviceName})<-[:GOVERNS]-(d:Decision)<-[:PROPOSES]-(doc:Doc)<-[:RECORDED_IN]-(m:Meeting)
     OPTIONAL MATCH (d)<-[:APPROVED]-(approver:Person)
@@ -65,13 +65,13 @@ export async function traceDecisionProvenance(serviceName: string): Promise<{
  * Tool 2: Service Blast Radius
  * Calculates variable-depth downstream impact and owning teams if a service fails or is sunset.
  */
-export async function serviceBlastRadius(serviceName: string, depth = 4): Promise<{
+export async function serviceBlastRadius(serviceName: string, depth = 4, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
   hops: string[];
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   
   // Notice: FalkorDB variable-length pattern with bounded depth
   const cypher = `
@@ -113,12 +113,12 @@ export async function serviceBlastRadius(serviceName: string, depth = 4): Promis
  * Tool 3: Find Subject Matter Experts
  * Ranks engineers by RFC authorship, team lead status, and PR contributions touching a service.
  */
-export async function findSubjectMatterExperts(serviceName: string): Promise<{
+export async function findSubjectMatterExperts(serviceName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (s:Service {name: $serviceName})
     OPTIONAL MATCH (s)<-[:OWNS]-(t:Team)<-[:MEMBER_OF]-(lead:Person {name: t.lead})
@@ -151,12 +151,12 @@ export async function findSubjectMatterExperts(serviceName: string): Promise<{
  * Tool 4: PR Governance Audit Watchdog
  * Audits incoming GitHub PRs to see if modified services violate active or superseded architectural decisions.
  */
-export async function auditPR(prNumber: number): Promise<{
+export async function auditPR(prNumber: number, graphId?: string): Promise<{
   violations: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (pr:GitHubPR {number: $prNumber})-[:TOUCHES]->(s:Service)<-[:GOVERNS]-(d:Decision)
     OPTIONAL MATCH (d)-[:SUPERSEDES]->(old:Decision)
@@ -189,13 +189,14 @@ export async function storeAgentFinding(
   targetName: string,
   text: string,
   severity = "INFO",
-  sessionId = "session-current"
+  sessionId = "session-current",
+  graphId?: string
 ): Promise<{ success: boolean; trace: ToolTrace }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const id = `finding-${Date.now()}`;
   const cypher = `
-    MATCH (target {name: $targetName})
+    MERGE (target:Service {name: $targetName})
     CREATE (f:AgentFinding {
       id: $id,
       text: $text,
@@ -207,36 +208,49 @@ export async function storeAgentFinding(
     RETURN f.id AS finding_id
   `;
 
-  const res = await graph.query(cypher, {
-    params: {
-      targetName,
-      id,
-      text,
-      severity,
-      sessionId,
-      timestamp: new Date().toISOString(),
-    },
-  });
-  const durationMs = Date.now() - start;
+  try {
+    const res = await graph.query(cypher, {
+      params: {
+        targetName,
+        id,
+        text,
+        severity,
+        sessionId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+    const durationMs = Date.now() - start;
 
-  return {
-    success: (res.data?.length || 0) > 0,
-    trace: {
-      tool: "store_agent_finding",
-      args: { targetName, text, severity, sessionId },
-      durationMs,
-      resultCount: res.data?.length || 0,
-      cypher,
-    },
-  };
+    return {
+      success: (res.data?.length || 0) > 0,
+      trace: {
+        tool: "store_agent_finding",
+        args: { targetName, text, severity, sessionId },
+        durationMs,
+        resultCount: res.data?.length || 0,
+        cypher,
+      },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      trace: {
+        tool: "store_agent_finding",
+        args: { targetName, text, severity, sessionId },
+        durationMs: Date.now() - start,
+        resultCount: 0,
+        cypher,
+      },
+    };
+  }
 }
 
-export async function recallAgentFindings(targetName: string): Promise<{
+export async function recallAgentFindings(targetName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (f:AgentFinding)-[:ABOUT]->(target {name: $targetName})
     RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS learned_at, f.session_id AS session_id
@@ -244,67 +258,88 @@ export async function recallAgentFindings(targetName: string): Promise<{
     LIMIT 5
   `;
 
-  const res = await graph.query(cypher, { params: { targetName } });
-  const durationMs = Date.now() - start;
+  try {
+    const res = await graph.query(cypher, { params: { targetName } });
+    const durationMs = Date.now() - start;
 
-  return {
-    data: res.data || [],
-    trace: {
-      tool: "recall_agent_findings",
-      args: { targetName },
-      durationMs,
-      resultCount: res.data?.length || 0,
-      cypher,
-    },
-  };
+    return {
+      data: res.data || [],
+      trace: {
+        tool: "recall_agent_findings",
+        args: { targetName },
+        durationMs,
+        resultCount: res.data?.length || 0,
+        cypher,
+      },
+    };
+  } catch {
+    return {
+      data: [],
+      trace: {
+        tool: "recall_agent_findings",
+        args: { targetName },
+        durationMs: Date.now() - start,
+        resultCount: 0,
+        cypher,
+      },
+    };
+  }
 }
 
-export async function getAllAgentFindings(): Promise<any[]> {
-  const graph = await getGraph();
-  const cypher = `
-    MATCH (f:AgentFinding)
-    OPTIONAL MATCH (f)-[:ABOUT]->(target)
-    RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS created_at, f.session_id AS session_id,
-           coalesce(target.name, target.title, toString(target.number), target.id, 'auth-v1') AS target_name,
-           labels(target)[0] AS target_type
-    ORDER BY f.at DESC
-    LIMIT 50
-  `;
-  const res = await graph.query(cypher);
-  return res.data || [];
+export async function getAllAgentFindings(graphId?: string): Promise<any[]> {
+  try {
+    const graph = await getGraph(graphId);
+    const cypher = `
+      MATCH (f:AgentFinding)
+      OPTIONAL MATCH (f)-[:ABOUT]->(target)
+      RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS created_at, f.session_id AS session_id,
+             coalesce(target.name, target.title, toString(target.number), target.id, 'service') AS target_name,
+             labels(target)[0] AS target_type
+      ORDER BY f.at DESC
+      LIMIT 50
+    `;
+    const res = await graph.query(cypher);
+    return res.data || [];
+  } catch {
+    return [];
+  }
 }
 
 /**
  * Full Graph Snapshot for Cytoscape.js Canvas
  */
-export async function getGraphOverview(): Promise<GraphData> {
-  const graph = await getGraph();
-  const nodesRes = await graph.query(`
-    MATCH (n)
-    RETURN id(n) AS id, labels(n)[0] AS label, 
-           coalesce(n.name, n.title, toString(n.number), n.id) AS name,
-           properties(n) AS props
-  `);
+export async function getGraphOverview(graphId?: string): Promise<GraphData> {
+  try {
+    const graph = await getGraph(graphId);
+    const nodesRes = await graph.query(`
+      MATCH (n) WHERE NOT n:Chunk
+      RETURN id(n) AS id, labels(n)[0] AS label, 
+             coalesce(n.name, n.title, toString(n.number), n.id) AS name,
+             properties(n) AS props
+    `);
 
-  const edgesRes = await graph.query(`
-    MATCH (a)-[r]->(b)
-    RETURN id(r) AS id, id(a) AS source, id(b) AS target, type(r) AS label, properties(r) AS props
-  `);
+    const edgesRes = await graph.query(`
+      MATCH (a)-[r]->(b) WHERE NOT a:Chunk AND NOT b:Chunk
+      RETURN id(r) AS id, id(a) AS source, id(b) AS target, type(r) AS label, properties(r) AS props
+    `);
 
-  const nodes = (nodesRes.data || []).map((row: any) => ({
-    id: String(row.id),
-    label: row.label || "Entity",
-    name: String(row.name || "Unnamed"),
-    properties: row.props || {},
-  }));
+    const nodes = (nodesRes.data || []).map((row: any) => ({
+      id: String(row.id),
+      label: row.label || "Entity",
+      name: String(row.name || "Unnamed"),
+      properties: row.props || {},
+    }));
 
-  const edges = (edgesRes.data || []).map((row: any) => ({
-    id: String(row.id),
-    source: String(row.source),
-    target: String(row.target),
-    label: row.label || "CONNECTED_TO",
-    properties: row.props || {},
-  }));
+    const edges = (edgesRes.data || []).map((row: any) => ({
+      id: String(row.id),
+      source: String(row.source),
+      target: String(row.target),
+      label: row.label || "CONNECTED_TO",
+      properties: row.props || {},
+    }));
 
-  return { nodes, edges };
+    return { nodes, edges };
+  } catch {
+    return { nodes: [], edges: [] };
+  }
 }

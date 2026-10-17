@@ -11,28 +11,52 @@ export interface ModelOption {
 
 export const AVAILABLE_MODELS: ModelOption[] = [
   {
+    id: "google-gemini/gemini-3.1-flash-lite",
+    name: "Gemini 3.1 Flash Lite",
+    provider: "Google AI",
+    tag: "Next-Gen • Recommended",
+    speed: "~600ms",
+    description: "Google's 1M+ token context multimodal model with robust tool calling and enterprise capacity.",
+  },
+  {
     id: "groq/qwen-qwen3.8-27b",
     name: "Groq Qwen 27B",
     provider: "Groq LPU Engine",
-    tag: "Ultra-Fast • Recommended",
+    tag: "Ultra-Fast LPU",
     speed: "~300ms",
     description: "High-throughput, ultra-low latency reasoning on Groq LPUs.",
   },
   {
-    id: "google-gemini/gemini-3.1-flash-lite",
-    name: "Gemini 3.1 Flash Lite",
-    provider: "Google AI",
-    tag: "Multimodal Reasoner",
-    speed: "~800ms",
-    description: "Google's next-generation lightweight reasoning and multimodal model.",
+    id: "groq/openai-gpt-oss-20b",
+    name: "Groq GPT-OSS 20B",
+    provider: "OpenAI Open-Weights",
+    tag: "High-Speed Agent",
+    speed: "~260ms",
+    description: "Accelerated open weights model on Groq hardware with rapid function calling.",
   },
   {
-    id: "groq/openai-gpt-oss-120b",
-    name: "Groq GPT-OSS 120B",
-    provider: "OpenAI Open-Weights",
-    tag: "Deep Reasoning",
-    speed: "~900ms",
-    description: "High-capacity 120B model on accelerated hardware with step-by-step thinking.",
+    id: "google-gemini/gemini-2.5-flash-lite",
+    name: "Gemini 2.5 Flash Lite",
+    provider: "Google Cloud",
+    tag: "Low-Cost Fallback",
+    speed: "~600ms",
+    description: "Google's ultra low-latency flash model, ideal for rapid tool dispatch and high concurrency.",
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    provider: "Google AI Direct",
+    tag: "Direct Key Fallback",
+    speed: "~350ms",
+    description: "Direct Google Gemini API endpoint with verified tool calling and high concurrency.",
+  },
+  {
+    id: "openrouter/openrouter-free",
+    name: "OpenRouter Free Router",
+    provider: "OpenRouter",
+    tag: "Multi-Model Router",
+    speed: "~1.8s",
+    description: "OpenRouter auto-routed free models with function calling enabled via TrueFoundry.",
   },
   {
     id: "falkordb-autonomous",
@@ -43,6 +67,24 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     description: "Deterministic OpenCypher graph traversals directly executed on FalkorDB.",
   },
 ];
+
+export const DEFAULT_FALLBACK_MODELS = [
+  "groq/qwen-qwen3.8-27b",
+  "google-gemini/gemini-2.5-flash-lite",
+  "openrouter/openrouter-free",
+  "groq/openai-gpt-oss-20b",
+];
+
+export function getGatewayFallbackModels(): string[] {
+  const envFallbacks = process.env.TRUEFOUNDRY_FALLBACK_MODELS || process.env.TFY_FALLBACK_MODELS;
+  if (envFallbacks) {
+    return envFallbacks
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return DEFAULT_FALLBACK_MODELS;
+}
 
 export function getTrueFoundryClient(): OpenAI | null {
   const apiKey = process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY;
@@ -62,6 +104,19 @@ export function isTrueFoundryGatewayConfigured(): boolean {
     (process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY) &&
     (process.env.TRUEFOUNDRY_BASE_URL || process.env.TFY_BASE_URL)
   );
+}
+
+export function getDirectGeminiClient(): OpenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({
+    apiKey,
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+  });
+}
+
+export function isDirectGeminiConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
 /**

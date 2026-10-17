@@ -10,22 +10,26 @@
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@composio/core": "^0.25.0",
     "@google/generative-ai": "^0.21.0",
-    "@truefoundry/trueforge-sdk": "^0.179.0",
     "clsx": "^2.1.1",
     "cytoscape": "^3.30.4",
     "falkordb": "^6.8.0",
     "firebase": "^13.0.0",
     "framer-motion": "^14.2.0",
+    "jose": "^6.2.12",
     "lucide-react": "^0.468.0",
+    "mammoth": "1.13.0",
     "next": "15.1.0",
     "openai": "^7.34.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "read-excel-file": "9.3.12",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "unpdf": "1.9.0"
   },
   "devDependencies": {
     "@types/cytoscape": "^3.21.9",
