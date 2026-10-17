@@ -1,4 +1,7 @@
 import { Composio } from "@composio/core";
+import fs from "fs";
+import path from "path";
+import os from "os";
 import type OpenAI from "openai";
 
 export const TOOLKITS = [
@@ -14,15 +17,78 @@ export type ToolkitSlug = (typeof TOOLKITS)[number]["slug"];
 
 let client: Composio | null | undefined;
 
+/** Read local user API key if available from Composio CLI session */
+function getCliUserApiKey(): string | null {
+  try {
+    const credPath = path.join(os.homedir(), ".composio", "user_data.json");
+    if (fs.existsSync(credPath)) {
+      const data = JSON.parse(fs.readFileSync(credPath, "utf8"));
+      return data.api_key || null;
+    }
+  } catch {}
+  return null;
+}
+
+export function formatComposioError(err: any): string {
+  const raw = String(err?.message || err || "");
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (parsed?.error?.message) {
+        return parsed.error.message;
+      }
+      if (parsed?.message) {
+        return parsed.message;
+      }
+    }
+  } catch {}
+  if (raw.includes("Invalid API key") || raw.includes("APIKey_InvalidAPIKey")) {
+    return "Invalid Composio API key. Please verify your API key in environment configuration.";
+  }
+  return raw.slice(0, 200);
+}
+
 export function getComposio(): Composio | null {
   if (client !== undefined) return client;
-  const apiKey = process.env.COMPOSIO_API_KEY;
-  client = apiKey ? new Composio({ apiKey }) : null;
-  return client;
+
+  const projectKey = process.env.COMPOSIO_API_KEY;
+  const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+
+  // If provided key is a user API key (uak_...)
+  if (projectKey && projectKey.startsWith("uak_")) {
+    client = new Composio({ apiKey: null as any, userApiKey: projectKey });
+    return client;
+  }
+
+  // If a project key is provided, prefer it
+  if (projectKey) {
+    try {
+      client = new Composio({ apiKey: projectKey });
+      return client;
+    } catch {
+      // Fall through to userKey
+    }
+  }
+
+  // Fall back to user key from env or CLI login
+  if (userKey) {
+    try {
+      client = new Composio({ apiKey: null as any, userApiKey: userKey });
+      return client;
+    } catch {}
+  }
+
+  client = null;
+  return null;
 }
 
 export function isComposioConfigured(): boolean {
-  return Boolean(process.env.COMPOSIO_API_KEY);
+  return Boolean(
+    process.env.COMPOSIO_API_KEY ||
+    process.env.COMPOSIO_USER_API_KEY ||
+    getCliUserApiKey()
+  );
 }
 
 export interface ToolkitStatus {
@@ -37,30 +103,93 @@ export async function connectionStatus(
   userId: string,
 ): Promise<{ configured: boolean; error?: string; toolkits: ToolkitStatus[] }> {
   const base = TOOLKITS.map((t) => ({ ...t, connected: false }));
-  const composio = getComposio();
+  let composio = getComposio();
   if (!composio) return { configured: false, toolkits: base };
+
   try {
-    const session: any = await composio.sessions.create(userId, { toolkits: TOOLKITS.map((t) => t.slug) as any });
+    const session: any = await composio.sessions.create(userId, {
+      toolkits: TOOLKITS.map((t) => t.slug) as any,
+    });
     const res = await session.toolkits({ toolkits: TOOLKITS.map((t) => t.slug) });
     const active = new Set<string>(
-      (res.items || []).filter((i: any) => i.connection?.isActive).map((i: any) => String(i.slug).toLowerCase()),
+      (res.items || [])
+        .filter((i: any) => i.connection?.isActive)
+        .map((i: any) => String(i.slug).toLowerCase()),
     );
-    return { configured: true, toolkits: base.map((t) => ({ ...t, connected: active.has(t.slug) })) };
+    return {
+      configured: true,
+      toolkits: base.map((t) => ({ ...t, connected: active.has(t.slug) })),
+    };
   } catch (err: any) {
-    return { configured: true, error: String(err?.message || err).slice(0, 300), toolkits: base };
+    // If project key gave 401 or invalid, try user key fallback
+    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+    if (userKey) {
+      try {
+        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
+        const session: any = await fallbackClient.sessions.create(userId, {
+          toolkits: TOOLKITS.map((t) => t.slug) as any,
+        });
+        const res = await session.toolkits({ toolkits: TOOLKITS.map((t) => t.slug) });
+        const active = new Set<string>(
+          (res.items || [])
+            .filter((i: any) => i.connection?.isActive)
+            .map((i: any) => String(i.slug).toLowerCase()),
+        );
+        client = fallbackClient;
+        return {
+          configured: true,
+          toolkits: base.map((t) => ({ ...t, connected: active.has(t.slug) })),
+        };
+      } catch {}
+    }
+
+    const cleanError = formatComposioError(err);
+    return {
+      configured: false,
+      error: cleanError,
+      toolkits: base,
+    };
   }
 }
 
 /** Start OAuth for one toolkit; returns the URL the user must visit. */
-export async function connectToolkit(userId: string, toolkit: string, callbackUrl?: string): Promise<string> {
-  const composio = getComposio();
-  if (!composio) throw new Error("COMPOSIO_API_KEY is not configured");
-  if (!TOOLKITS.some((t) => t.slug === toolkit)) throw new Error(`Unsupported toolkit: ${toolkit}`);
-  const session: any = await composio.sessions.create(userId, { toolkits: [toolkit] as any });
-  const req = await session.authorize(toolkit, callbackUrl ? { callbackUrl } : undefined);
-  const url = (req as any).redirectUrl;
-  if (!url) throw new Error("Composio did not return a redirect URL");
-  return url;
+export async function connectToolkit(
+  userId: string,
+  toolkit: string,
+  callbackUrl?: string,
+): Promise<string> {
+  let composio = getComposio();
+  if (!composio) throw new Error("Composio is not configured");
+  if (!TOOLKITS.some((t) => t.slug === toolkit)) {
+    throw new Error(`Unsupported toolkit: ${toolkit}`);
+  }
+
+  try {
+    const session: any = await composio.sessions.create(userId, {
+      toolkits: [toolkit] as any,
+    });
+    const req = await session.authorize(toolkit, callbackUrl ? { callbackUrl } : undefined);
+    const url = (req as any).redirectUrl;
+    if (!url) throw new Error("Composio did not return a redirect URL");
+    return url;
+  } catch (err: any) {
+    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+    if (userKey) {
+      try {
+        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
+        const session: any = await fallbackClient.sessions.create(userId, {
+          toolkits: [toolkit] as any,
+        });
+        const req = await session.authorize(toolkit, callbackUrl ? { callbackUrl } : undefined);
+        const url = (req as any).redirectUrl;
+        if (url) {
+          client = fallbackClient;
+          return url;
+        }
+      } catch {}
+    }
+    throw new Error(formatComposioError(err));
+  }
 }
 
 /** Slugs that change the outside world. These go through human approval. */
@@ -98,16 +227,18 @@ export async function executeComposioTool(
   args: Record<string, unknown>,
 ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
   const composio = getComposio();
-  if (!composio) return { ok: false, error: "COMPOSIO_API_KEY is not configured" };
+  if (!composio) return { ok: false, error: "Composio is not configured" };
   try {
     const res: any = await composio.tools.execute(slug, {
       userId,
       arguments: args,
       dangerouslySkipVersionCheck: true,
     } as any);
-    if (res?.successful === false) return { ok: false, error: String(res.error || "tool failed").slice(0, 500) };
+    if (res?.successful === false) {
+      return { ok: false, error: String(res.error || "tool failed").slice(0, 500) };
+    }
     return { ok: true, data: res?.data ?? res };
   } catch (err: any) {
-    return { ok: false, error: String(err?.message || err).slice(0, 500) };
+    return { ok: false, error: formatComposioError(err) };
   }
 }

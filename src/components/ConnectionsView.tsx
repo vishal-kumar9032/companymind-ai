@@ -92,8 +92,15 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
       )}
 
       {(error || state?.error) && (
-        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-          <CircleAlert size={16} className="mt-0.5 shrink-0" /> {error || state?.error}
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs text-rose-800 animate-in fade-in">
+          <CircleAlert size={16} className="mt-0.5 shrink-0 text-rose-600" />
+          <div className="space-y-1">
+            <p className="font-semibold text-rose-900">Connection Gateway Notice</p>
+            <p className="leading-relaxed">{error || state?.error}</p>
+            <p className="text-[11px] text-rose-600">
+              Ensure your <code className="bg-rose-100 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_API_KEY</code> or <code className="bg-rose-100 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_USER_API_KEY</code> is active from <a href="https://platform.composio.dev" target="_blank" rel="noreferrer" className="underline font-semibold">platform.composio.dev</a>.
+            </p>
+          </div>
         </div>
       )}
 

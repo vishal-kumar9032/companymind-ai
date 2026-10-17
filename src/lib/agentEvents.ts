@@ -209,7 +209,7 @@ export class AgentWorkforceRunner implements AgentRunner {
         approvalData: {
           id: "appr-214",
           action: "Merge PR #214 into main branch",
-          target: "GitHubPR: #214 (Alex Mercer)",
+          target: "GitHubPR: #214",
           reason:
             "PR touches deprecated auth-v1, directly violating architectural decision DEC-44 (Mandatory migration to identity-service).",
           riskLevel: "CRITICAL",
@@ -217,7 +217,7 @@ export class AgentWorkforceRunner implements AgentRunner {
         },
         rawJson: {
           prNumber: 214,
-          author: "Alex Mercer",
+          author: "Platform Contributor",
           targetService: "auth-v1",
           violatingDecision: "DEC-44",
           enforcement: "BLOCK_MERGE_UNTIL_APPROVED",

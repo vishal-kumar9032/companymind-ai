@@ -383,11 +383,13 @@ export default function Home() {
                 currentUser={currentUser}
                 onUserChange={setCurrentUser}
                 onRunQuery={handleSelectQueryAndSwitchToChat}
-                onOpenSource={setActiveSource}
                 onOpenGraph={() => setCurrentView("graph")}
                 onOpenMcp={() => setCurrentView("agents")}
                 onOpenMemory={() => setCurrentView("memory")}
+                onOpenRegistry={() => setCurrentView("registry")}
                 latencyMs={latencyMs}
+                nodeCount={graphData.nodes.length}
+                edgeCount={graphData.edges.length}
               />
             </div>
           )}
