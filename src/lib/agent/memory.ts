@@ -15,6 +15,9 @@ export type MemoryKind = "episodic" | "semantic" | "procedural";
 
 const id = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
+/** Authenticated orgs own their whole graph (""); anonymous visitors only see their own rows. */
+const scope = (c: Caller) => (c.authenticated ? "" : c.session || "anon");
+
 async function g(c: Caller) {
   // The demo workspace shares the seeded knowledge graph, so keep agent memory in a
   // sibling graph; otherwise runs would add nodes to the graph users are browsing.
@@ -32,8 +35,8 @@ export async function remember(
   const graph = await g(c);
   const memId = id("mem");
   await graph.query(
-    `CREATE (m:Memory {id: $id, kind: $kind, text: $text, agent: $agent, at: $at})`,
-    { params: { id: memId, kind, text, agent, at: new Date().toISOString() } },
+    `CREATE (m:Memory {id: $id, kind: $kind, text: $text, agent: $agent, at: $at, session: $session})`,
+    { params: { id: memId, kind, text, agent, at: new Date().toISOString(), session: scope(c) } },
   );
   for (const name of about.slice(0, 8)) {
     await graph.query(
@@ -60,10 +63,11 @@ export async function recall(c: Caller, query: string, limit = 6): Promise<any[]
     `MATCH (m:Memory)
      OPTIONAL MATCH (m)-[:ABOUT]->(e:Entity)
      WITH m, collect(e.name) AS about
-     WHERE size($words) = 0 OR any(w IN $words WHERE toLower(m.text) CONTAINS w OR any(a IN about WHERE toLower(a) CONTAINS w))
+     WHERE ($session = '' OR m.session = $session)
+       AND (size($words) = 0 OR any(w IN $words WHERE toLower(m.text) CONTAINS w OR any(a IN about WHERE toLower(a) CONTAINS w)))
      RETURN m.id AS id, m.kind AS kind, m.text AS text, m.agent AS agent, m.at AS at, about
      ORDER BY m.at DESC LIMIT $limit`,
-    { params: { words, limit } },
+    { params: { words, limit, session: scope(c) } },
   );
   return (res.data as any[]) || [];
 }
@@ -72,8 +76,8 @@ export async function startRun(c: Caller, agent: string, goal: string, parent?: 
   const graph = await g(c);
   const runId = id("run");
   await graph.query(
-    `CREATE (r:AgentRun {id: $id, agent: $agent, goal: $goal, status: 'running', at: $at, parent: $parent})`,
-    { params: { id: runId, agent, goal, at: new Date().toISOString(), parent: parent || "" } },
+    `CREATE (r:AgentRun {id: $id, agent: $agent, goal: $goal, status: 'running', at: $at, parent: $parent, session: $session})`,
+    { params: { id: runId, agent, goal, at: new Date().toISOString(), parent: parent || "", session: scope(c) } },
   );
   return runId;
 }
@@ -88,9 +92,10 @@ export async function finishRun(c: Caller, runId: string, status: "done" | "erro
 export async function recentRuns(c: Caller, limit = 20): Promise<any[]> {
   const graph = await g(c);
   const res = await graph.roQuery(
-    `MATCH (r:AgentRun) RETURN r.id AS id, r.agent AS agent, r.goal AS goal, r.status AS status, r.answer AS answer, r.at AS at, r.parent AS parent
+    `MATCH (r:AgentRun) WHERE $session = '' OR r.session = $session
+     RETURN r.id AS id, r.agent AS agent, r.goal AS goal, r.status AS status, r.answer AS answer, r.at AS at, r.parent AS parent
      ORDER BY r.at DESC LIMIT $limit`,
-    { params: { limit } },
+    { params: { limit, session: scope(c) } },
   );
   return (res.data as any[]) || [];
 }

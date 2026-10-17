@@ -1,4 +1,6 @@
+import { createHash } from "crypto";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { clientIp } from "@/lib/rateLimit";
 
 export interface Caller {
   /** Stable id used for the Composio user and the per-org FalkorDB graph. */
@@ -8,6 +10,8 @@ export interface Caller {
   email?: string;
   /** false for the unauthenticated demo workspace: read-only, no connector actions. */
   authenticated: boolean;
+  /** Demo workspace only: server-derived visitor key so anonymous memory and history are not shared. */
+  session?: string;
 }
 
 const JWKS = createRemoteJWKSet(
@@ -32,7 +36,11 @@ function safe(id: string): string {
 export async function resolveCaller(req: Request): Promise<Caller | null> {
   const header = req.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token) return DEMO_CALLER;
+  if (!token) {
+    const ua = req.headers.get("user-agent") || "";
+    const session = createHash("sha256").update(`${clientIp(req)}|${ua}`).digest("hex").slice(0, 16);
+    return { ...DEMO_CALLER, session };
+  }
 
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   if (!projectId) return null;
