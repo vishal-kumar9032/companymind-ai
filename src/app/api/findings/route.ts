@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllAgentFindings, storeAgentFinding } from "@/lib/tools";
 import { resolveCaller } from "@/lib/agent/identity";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const caller = await resolveCaller(req);
+    const rl = rateLimit(`findings:${caller?.authenticated ? caller.id : clientIp(req)}`, 10);
+    if (!rl.ok) {
+      return NextResponse.json({ error: "Too many requests; slow down" }, { status: 429, headers: { "retry-after": String(rl.retryAfter) } });
+    }
     const body = await req.json();
     const { targetName = "personal-service", text, severity = "HIGH", sessionId = "session-1" } = body;
 
-    if (!text) {
+    if (!text || typeof text !== "string") {
       return NextResponse.json({ error: "Finding text is required" }, { status: 400 });
+    }
+    if (text.length > 2000) {
+      return NextResponse.json({ error: "Finding text too long" }, { status: 400 });
     }
 
     const graphId = caller?.authenticated ? caller.graph : undefined;

@@ -73,12 +73,7 @@ const UNSUPPORTED_MODELS = new Set([
   "meta-llama/llama-3.3-70b-instruct",
 ]);
 
-function candidateModels(requested?: string): string[] {
-  let first = requested && requested !== "falkordb-autonomous" ? requested : process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-3.1-flash-lite";
-  if (UNSUPPORTED_MODELS.has(first)) {
-    first = "google-gemini/gemini-3.1-flash-lite";
-  }
-  const fallbacks = getGatewayFallbackModels().filter((m) => !UNSUPPORTED_MODELS.has(m) && m !== first);
+function allowedModels(): string[] {
   const extraModels = [
     "google-gemini/gemini-3.1-flash-lite",
     "groq/qwen-qwen3.8-27b",
@@ -89,8 +84,17 @@ function candidateModels(requested?: string): string[] {
     extraModels.push("gemini-2.5-flash-lite");
     extraModels.push("gemini-2.5-flash");
   }
-  const set = new Set<string>([first, ...fallbacks, ...extraModels]);
-  return Array.from(set);
+  const env = process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-3.1-flash-lite";
+  return Array.from(new Set([env, ...getGatewayFallbackModels(), ...extraModels])).filter((m) => !UNSUPPORTED_MODELS.has(m));
+}
+
+/** A client-requested model is honoured only if it is one the server already offers. */
+function candidateModels(requested?: string): string[] {
+  const allowed = allowedModels();
+  if (requested && allowed.includes(requested)) {
+    return [requested, ...allowed.filter((m) => m !== requested)];
+  }
+  return allowed;
 }
 
 function truncate(v: unknown): string {

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { resolveCaller } from "@/lib/agent/identity";
 import { runAgent, type AgentEvent } from "@/lib/agent/loop";
 import { listApprovals, recentRuns } from "@/lib/agent/memory";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -13,6 +14,14 @@ const json = (body: unknown, status = 200) =>
 export async function POST(req: NextRequest) {
   const caller = await resolveCaller(req);
   if (!caller) return json({ error: "Invalid or expired sign-in token" }, 401);
+
+  const rl = rateLimit(`agent:${caller.authenticated ? caller.id : clientIp(req)}`, caller.authenticated ? 20 : 6);
+  if (!rl.ok) {
+    return new Response(JSON.stringify({ error: "Too many requests; slow down" }), {
+      status: 429,
+      headers: { "content-type": "application/json", "retry-after": String(rl.retryAfter) },
+    });
+  }
 
   const body = await req.json().catch(() => ({}));
   const goal = typeof body.message === "string" ? body.message.trim() : "";
