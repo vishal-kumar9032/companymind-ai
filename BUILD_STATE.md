@@ -158,3 +158,19 @@
     - Added individual "Disconnect" action buttons on each connected toolkit card, allowing users to disconnect individual accounts or revoke all services.
     - Automatic state refresh via `load()` immediately after revocation completes.
   - **Production Verification:** `pnpm exec tsc --noEmit` clean (0 errors), `pnpm build` succeeded (11/11 routes, 504 kB), PM2 restarted (`companymind-ai`), unauthenticated `DELETE /api/connections` correctly returns 401 `{"error":"Sign in to manage accounts"}`, and `GET /api/connections` verified live.
+- `2026-10-17` (Branch `feat/connectors-memory` - Tool schema sanitization, balanced toolkit allocation & Gmail/Docs integration):
+  - **Root Cause Analysis:** Despite connecting Google tools, the agent responded that accounts were not connected because:
+    1. Composio parameter schemas included non-standard OpenAPI properties (`examples`, `file_uploadable`, `anyOf`, `oneOf`) and had unlisted properties in `required`, causing Google Gemini API to reject tool definitions with HTTP 400 (`Invalid JSON payload received. Unknown name "examples"...`).
+    2. A global `limit: 12` tool query across all connected toolkits was dominated by GitHub (alphabetically first with 100+ tools), leaving 0 tools for Gmail, Google Docs, Drive, Calendar, and Sheets.
+    3. `getComposio()` initialized with invalid `apiKey` format rather than `userApiKey` when configured with `COMPOSIO_USER_API_KEY` (`uak_...`).
+    4. Large MIME payloads from raw Gmail responses caused string truncation that broke JSON structures.
+  - **Gemini Schema Sanitization (`src/lib/agent/composio.ts`):** Implemented `sanitizeToolParameters(node)` to recursively filter parameter keys against strict OpenAPI/Gemini specifications (`type`, `description`, `properties`, `required`, `items`, `enum`, `nullable`), flatten `anyOf`/`oneOf`, ensure `type: 'object'` when `properties` exist, and strip unlisted property keys from `required`.
+  - **Balanced Toolkit Allocation & Prioritization (`src/lib/agent/composio.ts`):** Replaced monolithic tool query with parallel per-toolkit fetching with intelligent `scoreTool(name)` ranking, prioritizing key user actions (`FETCH_EMAILS`, `CREATE_DOCUMENT`, `EVENTS_LIST`, `FIND_FILE`, etc.) and taking the top 4 tools per connected service to ensure complete coverage.
+  - **Payload Sanitization (`src/lib/agent/loop.ts`):** Enhanced `truncate(v)` to parse Gmail response objects and extract clean summaries (`id`, `subject`, `sender`, `date`, `snippet`) for up to 8 messages, eliminating JSON corruption from MIME headers.
+  - **Production Verification:**
+    - `pnpm exec tsc --noEmit` passed with 0 errors.
+    - End-to-end CLI agent verification with live user session (`u_n7uiat3yTISH0P9yup2PbaALllO2`): successfully executed `GMAIL_FETCH_EMAILS` and summarized real inbox emails.
+    - Google Docs tool calling verified: queued `GOOGLEDRIVE_CREATE_FILE_FROM_TEXT` for human approval.
+    - Production build (`pnpm build`) compiled successfully (11/11 routes).
+    - PM2 service `companymind-ai` restarted online on port 13050 (`https://companymind.135-235-136-6.sslip.io`).
+

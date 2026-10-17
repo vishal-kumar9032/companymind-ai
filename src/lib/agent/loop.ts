@@ -88,13 +88,31 @@ function candidateModels(requested?: string): string[] {
 }
 
 function truncate(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") {
+    return v.length > MAX_TOOL_CHARS ? v.slice(0, MAX_TOOL_CHARS) + "…[truncated]" : v;
+  }
   let s: string;
   try {
-    s = typeof v === "string" ? v : JSON.stringify(v);
+    if (typeof v === "object" && v !== null) {
+      const dataObj = (v as any).data || v;
+      // If result contains Gmail messages, clean and extract essential fields without huge MIME payloads
+      if (Array.isArray(dataObj.messages)) {
+        const msgs = dataObj.messages.slice(0, 8).map((m: any) => ({
+          id: m.messageId || m.id,
+          subject: m.subject || "No Subject",
+          sender: m.sender || m.from,
+          date: m.messageTimestamp || m.date,
+          snippet: String(m.preview?.body || m.preview || m.messageText || m.snippet || "").slice(0, 300),
+        }));
+        return JSON.stringify({ messages: msgs, total: dataObj.messages.length });
+      }
+    }
+    s = JSON.stringify(v);
   } catch {
     s = String(v);
   }
-  return s.length > MAX_TOOL_CHARS ? s.slice(0, MAX_TOOL_CHARS) + `…[truncated ${s.length - MAX_TOOL_CHARS} chars]` : s;
+  return s.length > MAX_TOOL_CHARS ? s.slice(0, MAX_TOOL_CHARS) + `…[truncated]` : s;
 }
 
 async function chat(

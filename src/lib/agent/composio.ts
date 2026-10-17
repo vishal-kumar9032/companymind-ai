@@ -56,13 +56,23 @@ export function getComposio(): Composio | null {
   const projectKey = process.env.COMPOSIO_API_KEY;
   const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
 
-  // If provided key is a user API key (uak_...)
-  if (projectKey && projectKey.startsWith("uak_")) {
-    client = new Composio({ apiKey: null as any, userApiKey: projectKey });
-    return client;
+  // If user key is provided (uak_...), prefer it as it holds active authenticated user credentials
+  if (userKey && userKey.startsWith("uak_")) {
+    try {
+      client = new Composio({ apiKey: null as any, userApiKey: userKey });
+      return client;
+    } catch {}
   }
 
-  // If a project key is provided, prefer it
+  // If provided project key is a user API key (uak_...)
+  if (projectKey && projectKey.startsWith("uak_")) {
+    try {
+      client = new Composio({ apiKey: null as any, userApiKey: projectKey });
+      return client;
+    } catch {}
+  }
+
+  // Fall back to project key if provided
   if (projectKey) {
     try {
       client = new Composio({ apiKey: projectKey });
@@ -316,6 +326,82 @@ export function isWriteTool(slug: string): boolean {
   return slug.toUpperCase().split("_").some((w) => WRITE_WORDS.has(w));
 }
 
+const ALLOWED_PARAM_KEYS = new Set([
+  "type",
+  "description",
+  "properties",
+  "required",
+  "items",
+  "enum",
+  "nullable",
+]);
+
+/**
+ * Sanitize tool parameters schema so it strictly adheres to Google Gemini / OpenAPI 3.0 specification.
+ * Strips non-standard properties ('examples', 'file_uploadable', 'default', etc.) and ensures
+ * 'required' only includes properties actually present in the schema.
+ */
+export function sanitizeToolParameters(node: any): any {
+  if (!node || typeof node !== "object") return node;
+  if (Array.isArray(node)) return node.map(sanitizeToolParameters);
+
+  if (node.anyOf && Array.isArray(node.anyOf) && node.anyOf.length) {
+    return sanitizeToolParameters(node.anyOf[0]);
+  }
+  if (node.oneOf && Array.isArray(node.oneOf) && node.oneOf.length) {
+    return sanitizeToolParameters(node.oneOf[0]);
+  }
+
+  const clean: any = {};
+  for (const [k, v] of Object.entries(node)) {
+    if (ALLOWED_PARAM_KEYS.has(k)) {
+      clean[k] = sanitizeToolParameters(v);
+    }
+  }
+
+  if (!clean.type && clean.properties) {
+    clean.type = "object";
+  }
+
+  if (clean.required && Array.isArray(clean.required)) {
+    if (clean.properties && typeof clean.properties === "object") {
+      clean.required = clean.required.filter((p: string) => Boolean(clean.properties[p]));
+    } else {
+      delete clean.required;
+    }
+  }
+
+  return clean;
+}
+
+const PRIORITY_KEYWORDS = [
+  "FETCH_EMAILS", "LIST_MESSAGES", "FETCH_MESSAGE", "SEND_EMAIL", "CREATE_EMAIL", "REPLY",
+  "CREATE_DOCUMENT", "GET_DOCUMENT", "DOCUMENT_CONTENT",
+  "EVENTS_LIST", "FIND_EVENT", "CREATE_EVENT", "GET_CALENDAR",
+  "FIND_FILE", "SEARCH_FILES", "GET_FILE", "CREATE_FILE",
+  "GET_SPREADSHEET", "CREATE_SPREADSHEET", "APPEND",
+  "GET_A_REPOSITORY", "LIST_ISSUES", "CREATE_AN_ISSUE", "LIST_PULL", "GET_A_PULL", "SEARCH_REPOSITORIES",
+  "ADD_ASSIGNEES", "CLOSE_ISSUE", "CLOSE_PULL_REQUEST",
+];
+
+function scoreTool(name: string): number {
+  const upper = name.toUpperCase();
+  for (let i = 0; i < PRIORITY_KEYWORDS.length; i++) {
+    if (upper.includes(PRIORITY_KEYWORDS[i])) return -100 + i;
+  }
+  // Demote administrative ACL / migration tools
+  if (upper.includes("ACL") || upper.includes("MIGRATION") || upper.includes("CSE_") || upper.includes("SMIME")) {
+    return 100;
+  }
+  if (upper.includes("FETCH") || upper.includes("LIST") || upper.includes("GET") || upper.includes("FIND") || upper.includes("SEARCH")) {
+    return -10;
+  }
+  if (upper.includes("CREATE") || upper.includes("SEND") || upper.includes("REPLY")) {
+    return -5;
+  }
+  return 0;
+}
+
 const toolCache = new Map<string, { at: number; tools: OpenAI.Chat.Completions.ChatCompletionTool[] }>();
 
 /** OpenAI-format tool schemas for the toolkits this user has actually connected. */
@@ -328,10 +414,52 @@ export async function getConnectedTools(
   const key = `${userId}:${[...toolkits].sort().join(",")}`;
   const hit = toolCache.get(key);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.tools;
-  const tools = (await composio.tools.get(userId, { toolkits, limit: 12 } as any)) as any;
-  const list = (Array.isArray(tools) ? tools : []) as OpenAI.Chat.Completions.ChatCompletionTool[];
-  toolCache.set(key, { at: Date.now(), tools: list });
-  return list;
+
+  const fetchTools = async (c: Composio) => {
+    // If multiple toolkits are connected, fetch per toolkit to guarantee each service has tools available
+    const perToolkit = await Promise.all(
+      toolkits.map(async (toolkitSlug) => {
+        try {
+          const raw = (await c.tools.get(userId, { toolkits: [toolkitSlug], limit: 25 } as any)) as any;
+          const list = (Array.isArray(raw) ? raw : []) as any[];
+          return list
+            .filter((t: any) => t?.type === "function" && t?.function?.name)
+            .sort((a: any, b: any) => scoreTool(a.function?.name || "") - scoreTool(b.function?.name || ""))
+            .slice(0, 4);
+        } catch {
+          return [];
+        }
+      })
+    );
+    const combined = perToolkit.flat();
+    return combined.map((t: any) => ({
+      type: "function" as const,
+      function: {
+        name: t.function.name,
+        description: t.function.description || t.function.name,
+        parameters: sanitizeToolParameters(t.function.parameters),
+      },
+    }));
+  };
+
+  try {
+    const list = await fetchTools(composio);
+    toolCache.set(key, { at: Date.now(), tools: list });
+    return list;
+  } catch (err: any) {
+    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+    if (userKey) {
+      try {
+        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
+        const list = await fetchTools(fallbackClient);
+        client = fallbackClient;
+        toolCache.set(key, { at: Date.now(), tools: list });
+        return list;
+      } catch {}
+    }
+    console.error("Failed to get connected tools:", formatComposioError(err));
+    return [];
+  }
 }
 
 export async function executeComposioTool(
@@ -339,10 +467,11 @@ export async function executeComposioTool(
   slug: string,
   args: Record<string, unknown>,
 ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
-  const composio = getComposio();
+  let composio = getComposio();
   if (!composio) return { ok: false, error: "Composio is not configured" };
-  try {
-    const res: any = await composio.tools.execute(slug, {
+
+  const doExecute = async (c: Composio) => {
+    const res: any = await c.tools.execute(slug, {
       userId,
       arguments: args,
       dangerouslySkipVersionCheck: true,
@@ -351,7 +480,20 @@ export async function executeComposioTool(
       return { ok: false, error: String(res.error || "tool failed").slice(0, 500) };
     }
     return { ok: true, data: res?.data ?? res };
+  };
+
+  try {
+    return await doExecute(composio);
   } catch (err: any) {
+    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+    if (userKey) {
+      try {
+        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
+        const res = await doExecute(fallbackClient);
+        client = fallbackClient;
+        return res;
+      } catch {}
+    }
     return { ok: false, error: formatComposioError(err) };
   }
 }
