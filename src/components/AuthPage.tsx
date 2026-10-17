@@ -18,6 +18,8 @@ import {
   EnterpriseUser,
   DEMO_ENTERPRISE_USERS,
   signInWithGoogleAuth,
+  signUpWithEmail,
+  signInWithEmail,
   isFirebaseConfigured,
 } from "@/lib/firebase";
 import { TENANTS } from "@/lib/tenants";
@@ -56,32 +58,35 @@ export function AuthPage({
     }
   };
 
-  const handleEmailAuthSubmit = (e: React.FormEvent) => {
+  const handleEmailAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Please fill in both email and password.");
       return;
     }
 
-    setLoading(true);
-    setTimeout(() => {
-      const user: EnterpriseUser = {
-        uid: `user-${Date.now()}`,
-        displayName: name || (email.split("@")[0].replace(".", " ").replace(/\b\w/g, (l) => l.toUpperCase())),
-        email,
-        photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-        tenantId: selectedTenantId,
-        role: activeTab === "register" ? "Lead Systems Architect" : "Senior Staff Engineer",
-        department: orgName || "Engineering Platform",
-        isFirebaseAuthenticated: false,
-      };
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("companymind_user", JSON.stringify(user));
+    try {
+      setLoading(true);
+      setError(null);
+      let user: EnterpriseUser;
+      if (activeTab === "register") {
+        user = await signUpWithEmail(
+          email,
+          password,
+          name,
+          selectedTenantId,
+          orgName
+        );
+      } else {
+        user = await signInWithEmail(email, password, selectedTenantId);
       }
       onSuccess(user);
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      setError(err?.message || "Authentication failed. Please verify your credentials.");
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   const handleSelectPersona = (persona: EnterpriseUser) => {

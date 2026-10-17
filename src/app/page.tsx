@@ -19,7 +19,12 @@ import { AuthModal } from "@/components/AuthModal";
 import { GraphData, ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
 import { TENANTS, TenantConfig } from "@/lib/tenants";
-import { EnterpriseUser, DEMO_ENTERPRISE_USERS, signOutEnterpriseUser } from "@/lib/firebase";
+import {
+  EnterpriseUser,
+  DEMO_ENTERPRISE_USERS,
+  signOutEnterpriseUser,
+  onFirebaseAuthStateChanged,
+} from "@/lib/firebase";
 
 export default function Home() {
   const [appStage, setAppStage] = useState<"landing" | "auth" | "dashboard">("landing");
@@ -105,6 +110,23 @@ export default function Home() {
         setAppStage("landing");
       }
     }
+
+    // Subscribe to real-time Firebase Auth state changes
+    const unsubscribe = onFirebaseAuthStateChanged((fbUser) => {
+      if (fbUser) {
+        setCurrentUser(fbUser);
+        if (typeof window !== "undefined") {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get("stage") !== "landing") {
+            setAppStage("dashboard");
+          }
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Global keyboard shortcuts (⌘K for palette, Esc to close modals, 1-6 for view switching)
@@ -194,6 +216,11 @@ export default function Home() {
     setCurrentUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("companymind_user");
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("stage", "landing");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch {}
     }
     setAppStage("landing");
   };
@@ -202,6 +229,11 @@ export default function Home() {
     setCurrentUser(user);
     if (typeof window !== "undefined") {
       localStorage.setItem("companymind_user", JSON.stringify(user));
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("stage");
+        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+      } catch {}
     }
     setAppStage("dashboard");
   };
