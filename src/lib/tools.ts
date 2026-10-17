@@ -312,14 +312,14 @@ export async function getGraphOverview(graphId?: string): Promise<GraphData> {
   try {
     const graph = await getGraph(graphId);
     const nodesRes = await graph.query(`
-      MATCH (n)
+      MATCH (n) WHERE NOT n:Chunk
       RETURN id(n) AS id, labels(n)[0] AS label, 
              coalesce(n.name, n.title, toString(n.number), n.id) AS name,
              properties(n) AS props
     `);
 
     const edgesRes = await graph.query(`
-      MATCH (a)-[r]->(b)
+      MATCH (a)-[r]->(b) WHERE NOT a:Chunk AND NOT b:Chunk
       RETURN id(r) AS id, id(a) AS source, id(b) AS target, type(r) AS label, properties(r) AS props
     `);
 
