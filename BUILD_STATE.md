@@ -207,6 +207,29 @@
     - Implemented a dedicated Record Finding Modal Dialog triggered by the header "+ Record" action (`handleTriggerRecordModal`) with quick target tags (`postgres-primary`, `auth-v1`, `payments-api`), severity and reporting agent selectors, and optimistic state updates upon `/api/findings` submission.
     - Wired up interactive finding header badges and agent labels to filter and search findings on click.
     - Connected `onSelectModel` and `footerStatus` in `src/app/page.tsx`.
-  - **Verification:** Verified with `pnpm exec tsc --noEmit` (0 errors), `pnpm build` (all 11 routes successfully compiled), PM2 restart (`companymind-ai` online), and verified HTTP 200 response on `http://localhost:13050/`.
+- `2026-10-17` (Branch `feat/connectors-memory` - Elimination of hardcoded mock values & end-to-end dynamic graph data wiring):
+  - **Memory Ledger Real Data Only (`src/lib/memoryLedgerData.ts` & `src/components/MemoryTab.tsx`):**
+    - Stripped out all hardcoded mock finding records (`finding-001` through `finding-004`). Set `initialFindings` to a clean empty array `[]`.
+    - Findings are now exclusively hydrated live from FalkorDB via `/api/findings`. Added animated skeleton pulse loader during hydration and a clean empty state card ("No Memory Findings Recorded Yet") equipped with a "+ Record First Finding" CTA.
+  - **Dynamic Analytics & Gaps (`src/components/AnalyticsModal.tsx`):**
+    - Eliminated hardcoded counts (34 nodes, 59 edges, 42 asks) and mock gaps.
+    - Dynamically computes actual node and edge counts from live `graphData`.
+    - Dynamically generates architectural query suggestions from real graph entities (services, PRs, decisions) with interactive click-to-run handlers (`onSelectQuery`).
+    - Evaluates real topology risks based on actual graph nodes (sunsetting services, Tier 0 database single-point-of-failure risks).
+  - **Dynamic Command Palette (`src/components/CommandPalette.tsx`):**
+    - Replaced static document and query lists with dynamic categories populated from `graphData` (Enterprise Services, Documents & Decisions, Pull Requests).
+    - Selecting any item directly opens its source details or dispatches graph queries.
+  - **Dynamic Source Inspector Fallback (`src/app/page.tsx` & `src/components/SourceDrawer.tsx`):**
+    - Expanded `handleOpenSource(sourceId)`: when not found in `ENTERPRISE_SOURCES`, it dynamically resolves any entity from `graphData.nodes`, calculates connected hops from `graphData.edges`, and constructs a complete `SourceDetail`.
+    - Wired `onSelectNode` in `GraphCanvas` to `handleOpenSource`, allowing any node on the topology canvas to be inspected in `SourceDrawer`.
+  - **Dynamic Metrics & Counters across Layout:**
+    - `src/components/SaaSSidebar.tsx`: Replaced static badges with live `catalogCount` and `findingsCount` props.
+    - `src/components/SaaSHeader.tsx`: Replaced hardcoded "PR #214 Violation" string with dynamic outcome label.
+    - `src/components/RegistryTab.tsx`: Dynamically parsed PR numbers and metadata properties.
+    - `src/app/page.tsx`: Added `findingsCount` state with live fetching from `/api/findings`, wired `catalogCount` to `SaaSSidebar`, passed `graphData` and `onSelectQuery` to `AnalyticsModal` and `CommandPalette`.
+  - **Verification:**
+    - TypeScript typecheck (`pnpm exec tsc --noEmit`) passed with 0 errors.
+    - Production build (`pnpm build`) compiled successfully with all 11 routes.
+    - PM2 service `companymind-ai` restarted online; verified `HTTP 200 OK` on `http://localhost:13050/`.
 
 

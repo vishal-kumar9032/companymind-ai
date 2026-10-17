@@ -18,6 +18,7 @@ import {
   Cpu,
   ChevronDown,
   Filter,
+  RotateCcw,
 } from "lucide-react";
 import {
   FindingItem,
@@ -572,23 +573,66 @@ export function MemoryTab({
 
       {/* Findings List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8fafc]">
-        {filtered.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
-            <Brain size={28} className="stroke-1 opacity-40 text-purple-500" />
-            <p className="text-xs">No agent findings match your search filter.</p>
-            {(filterSeverity !== "ALL" || searchQuery) && (
+        {loading && findings.length === 0 ? (
+          <div className="space-y-3 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-4 rounded-xl bg-white border border-slate-200/80 space-y-3 shadow-xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-20 bg-slate-200 rounded" />
+                  <div className="h-3 w-16 bg-slate-200 rounded" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full bg-slate-200 rounded" />
+                  <div className="h-3 w-3/4 bg-slate-200 rounded" />
+                </div>
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <div className="h-4 w-32 bg-slate-200 rounded" />
+                  <div className="h-3 w-16 bg-slate-200 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          findings.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-3">
+              <div className="size-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+                <Brain size={24} />
+              </div>
+              <div className="space-y-1 max-w-sm">
+                <h3 className="text-sm font-bold text-slate-900">No Memory Findings Recorded Yet</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  FalkorDB stores episodic findings and governance reviews across sessions. Record your first architecture observation or policy finding.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleTriggerRecordModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Record First Finding</span>
+              </button>
+            </div>
+          ) : (
+            <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2.5">
+              <Brain size={28} className="stroke-1 opacity-40 text-purple-500" />
+              <p className="text-xs text-slate-600 font-medium">No findings match your active filter.</p>
               <button
                 type="button"
                 onClick={() => {
                   setFilterSeverity("ALL");
                   setSearchQuery("");
                 }}
-                className="text-2xs font-mono text-indigo-600 hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-2xs font-mono text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/70 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
               >
-                Reset filters
+                <RotateCcw size={11} />
+                <span>Reset search & filters</span>
               </button>
-            )}
-          </div>
+            </div>
+          )
         ) : (
           filtered.map((item) => {
             const serviceName = item.service || item.target_name || "postgres-primary";

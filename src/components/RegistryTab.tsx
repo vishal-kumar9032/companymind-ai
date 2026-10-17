@@ -256,7 +256,7 @@ export function RegistryTab({
                   </p>
                 </div>
                 <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
-                  <span>Sign-off: {d.properties?.date || "2026-08-15"}</span>
+                  <span>Sign-off: {d.properties?.date || d.properties?.created_at || "Recorded in Knowledge Graph"}</span>
                   <button
                     onClick={() => onOpenSource?.(d.name)}
                     className="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
@@ -297,11 +297,13 @@ export function RegistryTab({
                 <div className="text-xs text-slate-600">
                   Target Service:{" "}
                   <span className="font-mono font-medium text-slate-800">
-                    {doc.properties?.targetService || "auth-v1"}
+                    {doc.properties?.targetService || doc.properties?.target || "General Architecture"}
                   </span>
                 </div>
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400">Status: Approved</span>
+                  <span className="text-[10px] text-slate-400">
+                    Status: {doc.properties?.status || "Approved"}
+                  </span>
                   <button
                     onClick={() => onOpenSource?.(doc.name)}
                     className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
@@ -326,7 +328,13 @@ export function RegistryTab({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {filteredPrs.map((pr) => {
-              const isViolation = pr.name.includes("214");
+              const prNum =
+                parseInt(pr.name.replace(/\D/g, ""), 10) ||
+                (typeof pr.properties?.number === "number" ? pr.properties.number : 214);
+              const isViolation =
+                (pr.properties?.status || "").toLowerCase().includes("violation") ||
+                pr.properties?.blocked === true ||
+                pr.name.includes("214");
               return (
                 <div
                   key={pr.id}
@@ -347,14 +355,14 @@ export function RegistryTab({
                     </span>
                   </div>
                   <h4 className="font-semibold text-xs text-slate-900">
-                    {pr.properties?.title || "Update authentication endpoints"}
+                    {pr.properties?.title || "Pull Request"}
                   </h4>
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <span className="text-[10px] text-slate-500">
                       Author: {pr.properties?.author || "Platform Engineering"}
                     </span>
                     <button
-                      onClick={() => onAuditPR(214)}
+                      onClick={() => onAuditPR(prNum)}
                       className="text-xs font-semibold text-cyan-700 hover:text-cyan-800 cursor-pointer"
                     >
                       Run Governance Audit →

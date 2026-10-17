@@ -239,7 +239,7 @@ export function SaaSHeader({
         {hasGovernanceViolation ? (
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold animate-pulse">
             <ShieldAlert size={13} className="text-rose-600" />
-            <span className="hidden sm:inline">PR #214 Violation</span>
+            <span className="hidden sm:inline">Governance Alert</span>
           </div>
         ) : (
           <div className="hidden 2xl:flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">

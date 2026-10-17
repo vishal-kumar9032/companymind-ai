@@ -53,6 +53,8 @@ interface SaaSSidebarProps {
   latencyMs?: number;
   nodeCount: number;
   edgeCount: number;
+  catalogCount?: number;
+  findingsCount?: number;
   activeAgent?: {
     name: string;
     role: string;
@@ -76,8 +78,10 @@ export function SaaSSidebar({
   latencyMs = 2,
   nodeCount,
   edgeCount,
+  catalogCount,
+  findingsCount,
   activeAgent,
-  hasPolicyAlert = true,
+  hasPolicyAlert = false,
 }: SaaSSidebarProps) {
   const [tenantDropdownOpen, setTenantDropdownOpen] = useState(false);
 
@@ -110,7 +114,7 @@ export function SaaSSidebar({
           id: "graph" as SaaSView,
           label: "Knowledge Graph",
           icon: Network,
-          badge: `${nodeCount} nodes`,
+          badge: nodeCount > 0 ? `${nodeCount} nodes` : "Graph",
           description: "FalkorDB topology canvas",
         },
       ],
@@ -122,7 +126,7 @@ export function SaaSSidebar({
           id: "agents" as SaaSView,
           label: "Agent Workforce",
           icon: Cpu,
-          badge: "5 Active",
+          badge: "Ready",
           description: "MCP tools & PR governance",
           alert: hasPolicyAlert,
         },
@@ -130,14 +134,14 @@ export function SaaSSidebar({
           id: "memory" as SaaSView,
           label: "Episodic Memory",
           icon: Brain,
-          badge: null,
+          badge: findingsCount !== undefined && findingsCount > 0 ? `${findingsCount}` : null,
           description: "Cross-session shared findings",
         },
         {
           id: "registry" as SaaSView,
           label: "Document Catalog",
           icon: FileText,
-          badge: "24 items",
+          badge: catalogCount !== undefined ? `${catalogCount} items` : nodeCount > 0 ? `${nodeCount} items` : null,
           description: "RFCs, PRs & Architecture specs",
         },
       ],

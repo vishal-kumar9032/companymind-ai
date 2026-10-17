@@ -13,7 +13,10 @@ import {
   Activity,
   Brain,
   BarChart2,
+  Server,
+  GitPullRequest,
 } from "lucide-react";
+import { GraphData } from "@/lib/schema";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -24,6 +27,7 @@ interface CommandPaletteProps {
   onOpenGraph?: () => void;
   onOpenMemory?: () => void;
   onOpenAnalytics?: () => void;
+  graphData?: GraphData;
 }
 
 interface CommandItem {
@@ -49,8 +53,15 @@ export function CommandPalette({
   onOpenGraph,
   onOpenMemory,
   onOpenAnalytics,
+  graphData,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
+
+  const graphServices = graphData?.nodes?.filter((n) => n.label === "Service") || [];
+  const graphDocs = graphData?.nodes?.filter((n) =>
+    ["Doc", "Decision", "Meeting"].includes(n.label)
+  ) || [];
+  const graphPRs = graphData?.nodes?.filter((n) => n.label === "GitHubPR") || [];
 
   const items: CommandGroup[] = [
     {
@@ -101,55 +112,127 @@ export function CommandPalette({
     {
       category: "Suggested Graph Queries",
       items: [
-        {
-          title: "What services break if auth-v1 is shut down?",
-          type: "query",
-          icon: Network,
-          query: "What services break if auth-v1 is shut down?",
-        },
-        {
-          title: "Audit PR #214 for architecture violations",
-          type: "query",
-          icon: ShieldAlert,
-          query: "Audit PR #214 for architecture and meeting decision violations",
-        },
+        ...(graphServices.length > 0
+          ? [
+              {
+                title: `What services break if ${graphServices[0].name} is shut down?`,
+                type: "query" as const,
+                icon: Network,
+                query: `What services break if ${graphServices[0].name} is shut down?`,
+              },
+            ]
+          : [
+              {
+                title: "What services break if auth-v1 is shut down?",
+                type: "query" as const,
+                icon: Network,
+                query: "What services break if auth-v1 is shut down?",
+              },
+            ]),
+        ...(graphPRs.length > 0
+          ? [
+              {
+                title: `Audit ${graphPRs[0].name} for architecture violations`,
+                type: "query" as const,
+                icon: ShieldAlert,
+                query: `Audit ${graphPRs[0].name} for architecture and meeting decision violations`,
+              },
+            ]
+          : [
+              {
+                title: "Audit PR #214 for architecture violations",
+                type: "query" as const,
+                icon: ShieldAlert,
+                query: "Audit PR #214 for architecture and meeting decision violations",
+              },
+            ]),
         {
           title: "Why did we decide to use mTLS for identity-service?",
-          type: "query",
+          type: "query" as const,
           icon: Compass,
           query: "Why did we decide to use mTLS for identity-service?",
         },
-        {
-          title: "Who owns payments-api and who are the subject matter experts?",
-          type: "query",
-          icon: Users,
-          query: "Who owns payments-api and who are the subject matter experts?",
-        },
+        ...(graphServices.length > 1
+          ? [
+              {
+                title: `Who owns ${graphServices[1].name} and who are the subject matter experts?`,
+                type: "query" as const,
+                icon: Users,
+                query: `Who owns ${graphServices[1].name} and who are the subject matter experts?`,
+              },
+            ]
+          : [
+              {
+                title: "Who owns payments-api and who are the subject matter experts?",
+                type: "query" as const,
+                icon: Users,
+                query: "Who owns payments-api and who are the subject matter experts?",
+              },
+            ]),
       ],
     },
+    ...(graphServices.length > 0
+      ? [
+          {
+            category: "Enterprise Services",
+            items: graphServices.slice(0, 8).map((svc) => ({
+              title: `${svc.name} (${svc.properties?.tier ? `Tier ${svc.properties.tier}` : "Service"})`,
+              type: "source" as const,
+              sourceId: svc.id,
+              icon: Server,
+            })),
+          },
+        ]
+      : []),
     {
       category: "Documents & RFCs",
-      items: [
-        {
-          title: "RFC-102: Auth v1 Sunset & Gateway Migration",
-          type: "source",
-          sourceId: "RFC-102",
-          icon: FileText,
-        },
-        {
-          title: "DEC-44: Mandatory Deprecation of Auth-v1",
-          type: "source",
-          sourceId: "DEC-44",
-          icon: ShieldAlert,
-        },
-        {
-          title: "Q3 Global Architecture Review Meeting",
-          type: "source",
-          sourceId: "Q3-MEETING",
-          icon: Compass,
-        },
-      ],
+      items:
+        graphDocs.length > 0
+          ? graphDocs.slice(0, 8).map((doc) => ({
+              title: doc.name || doc.id,
+              type: "source" as const,
+              sourceId: doc.id,
+              icon:
+                doc.label === "Decision"
+                  ? ShieldAlert
+                  : doc.label === "Meeting"
+                  ? Compass
+                  : FileText,
+            }))
+          : [
+              {
+                title: "RFC-102: Auth v1 Sunset & Gateway Migration",
+                type: "source" as const,
+                sourceId: "RFC-102",
+                icon: FileText,
+              },
+              {
+                title: "DEC-44: Mandatory Deprecation of Auth-v1",
+                type: "source" as const,
+                sourceId: "DEC-44",
+                icon: ShieldAlert,
+              },
+              {
+                title: "Q3 Global Architecture Review Meeting",
+                type: "source" as const,
+                sourceId: "Q3-MEETING",
+                icon: Compass,
+              },
+            ],
     },
+    ...(graphPRs.length > 0
+      ? [
+          {
+            category: "Pull Requests",
+            items: graphPRs.slice(0, 5).map((pr) => ({
+              title: `${pr.name} - ${pr.properties?.title || "PR Audit"}`,
+              type: "source" as const,
+              sourceId: pr.id,
+              icon: GitPullRequest,
+            })),
+          },
+        ]
+      : []),
   ];
 
   useEffect(() => {

@@ -49,6 +49,7 @@ export default function Home() {
   const [lastQuery, setLastQuery] = useState("What services break if auth-v1 is shut down?");
   const [lastOutcome, setLastOutcome] = useState("answered_with_path");
   const [memoryRefreshTrigger, setMemoryRefreshTrigger] = useState(0);
+  const [findingsCount, setFindingsCount] = useState<number | undefined>(undefined);
   const [gatewayStatus, setGatewayStatus] = useState<any>({
     provider: "Enterprise AI Gateway",
     status: "online",
@@ -75,6 +76,24 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  const fetchFindingsCount = async () => {
+    try {
+      const res = await fetch("/api/findings");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.findings)) {
+          setFindingsCount(data.findings.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch findings count:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFindingsCount();
+  }, [memoryRefreshTrigger]);
 
   useEffect(() => {
     fetchGraph();
@@ -184,6 +203,51 @@ export default function Home() {
     const src = ENTERPRISE_SOURCES[sourceId];
     if (src) {
       setActiveSource(src);
+      return;
+    }
+
+    const node = graphData.nodes.find(
+      (n) =>
+        n.id.toLowerCase() === sourceId.toLowerCase() ||
+        n.name.toLowerCase() === sourceId.toLowerCase()
+    );
+
+    if (node) {
+      const connectedEdges = graphData.edges.filter(
+        (e) => e.source === node.id || e.target === node.id
+      );
+      const connectedNodeIds = new Set<string>();
+      connectedEdges.forEach((e) => {
+        if (e.source !== node.id) connectedNodeIds.add(e.source);
+        if (e.target !== node.id) connectedNodeIds.add(e.target);
+      });
+      const hops = [node.name || node.id, ...Array.from(connectedNodeIds).slice(0, 5)];
+
+      const typeMap: Record<string, SourceDetail["type"]> = {
+        Doc: "rfc",
+        Decision: "decision",
+        Meeting: "meeting",
+        GitHubPR: "pr",
+        Service: "service",
+      };
+
+      const dynamicSource: SourceDetail = {
+        id: node.id,
+        type: typeMap[node.label] || "service",
+        title: node.name || node.id,
+        author: node.properties?.owner || node.properties?.author || "Enterprise Graph",
+        date: node.properties?.created_at || node.properties?.updated_at || "Active in FalkorDB",
+        url: node.properties?.url || node.properties?.repo || "https://falkordb.com",
+        badge: `${node.label} • ${node.properties?.tier ? `Tier ${node.properties.tier}` : node.properties?.status || "Verified"}`,
+        snippet:
+          node.properties?.description ||
+          node.properties?.summary ||
+          `Active ${node.label} entity registered in ${currentTenant.name} topology. Metadata: ${JSON.stringify(node.properties, null, 2)}`,
+        falkorNode: `(:${node.label} {name: '${node.name || node.id}'})`,
+        graphHops: hops,
+      };
+
+      setActiveSource(dynamicSource);
     }
   };
 
@@ -296,6 +360,12 @@ export default function Home() {
           latencyMs={latencyMs}
           nodeCount={graphData.nodes.length}
           edgeCount={graphData.edges.length}
+          catalogCount={
+            graphData.nodes.filter((n) =>
+              ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
+            ).length
+          }
+          findingsCount={findingsCount}
           activeAgent={activeAgent}
           hasPolicyAlert={lastOutcome === "governance_violation"}
         />
@@ -341,6 +411,12 @@ export default function Home() {
               latencyMs={latencyMs}
               nodeCount={graphData.nodes.length}
               edgeCount={graphData.edges.length}
+              catalogCount={
+                graphData.nodes.filter((n) =>
+                  ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
+                ).length
+              }
+              findingsCount={findingsCount}
               activeAgent={activeAgent}
               hasPolicyAlert={lastOutcome === "governance_violation"}
             />
@@ -457,8 +533,7 @@ export default function Home() {
                     data={graphData}
                     highlightHops={highlightHops}
                     onSelectNode={(nodeId: string) => {
-                      const src = ENTERPRISE_SOURCES[nodeId];
-                      if (src) setActiveSource(src);
+                      handleOpenSource(nodeId);
                     }}
                     onAskAboutNode={handleSelectQueryAndSwitchToChat}
                   />
@@ -562,6 +637,7 @@ export default function Home() {
         onOpenGraph={() => setCurrentView("graph")}
         onOpenMemory={() => setCurrentView("memory")}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+        graphData={graphData}
       />
 
       {/* Analytics & Knowledge Gaps Modal */}
@@ -571,6 +647,8 @@ export default function Home() {
         latencyMs={latencyMs}
         nodeCount={graphData.nodes.length}
         edgeCount={graphData.edges.length}
+        graphData={graphData}
+        onSelectQuery={handleSelectQueryAndSwitchToChat}
       />
 
       {/* Enterprise Authentication Modal */}
