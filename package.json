@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@truefoundry/trueforge-sdk": "^0.179.0",
     "clsx": "^2.1.1",
     "cytoscape": "^3.30.4",
     "falkordb": "^6.8.0",

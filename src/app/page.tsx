@@ -206,7 +206,7 @@ export default function Home() {
   };
 
   /* =========================================================================
-     STAGE 1: HIGH-CONVERTING TRUEFORGE LANDING PAGE
+     STAGE 1: HIGH-CONVERTING COMPANYMIND LANDING PAGE
      ========================================================================= */
   if (appStage === "landing") {
     return (
@@ -241,7 +241,7 @@ export default function Home() {
   }
 
   /* =========================================================================
-     STAGE 3: THE TRUEFORGE AGENT HARNESS DASHBOARD & WORKSPACE
+     STAGE 3: THE COMPANYMIND AGENT HARNESS DASHBOARD & WORKSPACE
      ========================================================================= */
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#f8fafc] text-slate-800 font-sans select-none antialiased">

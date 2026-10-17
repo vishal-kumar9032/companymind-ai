@@ -187,7 +187,7 @@ export function AgentsTab({
           </h2>
           <span className="text-3xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 font-semibold">
             <Radio size={9} className="animate-pulse" />
-            Live TrueForge Harness
+            Live CompanyMind
           </span>
         </div>
 

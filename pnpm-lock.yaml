@@ -11,9 +11,6 @@ importers:
       '@google/generative-ai':
         specifier: ^0.21.0
         version: 0.21.0
-      '@truefoundry/trueforge-sdk':
-        specifier: ^0.179.0
-        version: 0.179.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -760,10 +757,6 @@ packages:
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
-
-  '@truefoundry/trueforge-sdk@0.179.0':
-    resolution: {integrity: sha512-Eb4cJtj1682R3am6tjlzqcVHpUiLjz+DP8oGaa/pBjSxCq+71/AwDf7ElluJEKn5R5T2ZAje2NfK3l2U3oY5EA==}
-    engines: {node: '>=22'}
 
   '@types/cytoscape@3.31.0':
     resolution: {integrity: sha512-EXHOHxqQjGxLDEh5cP4te6J0bi7LbCzmZkzsR6f703igUac8UGMdEohMyU3GHAayCTZrLQOMnaE/lqB2Ekh8Ww==}
@@ -2295,8 +2288,6 @@ snapshots:
   '@swc/helpers@0.5.15':
     dependencies:
       tslib: 2.8.1
-
-  '@truefoundry/trueforge-sdk@0.179.0': {}
 
   '@types/cytoscape@3.31.0':
     dependencies:

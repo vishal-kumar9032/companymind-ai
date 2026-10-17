@@ -8,7 +8,6 @@ import {
   recallAgentFindings,
   storeAgentFinding,
 } from "@/lib/tools";
-import { getTrueForgeClient, isTrueForgeEnabled } from "@/lib/trueforge";
 import {
   getTrueFoundryClient,
   isTrueFoundryGatewayConfigured,
@@ -784,25 +783,6 @@ export async function POST(req: NextRequest) {
           cypher: `FALLBACK_TRIGGERED: ${gatewayStatus.reason}`,
           path: hops,
         });
-      }
-    }
-
-    // Record turn in agent harness if available
-    if (isTrueForgeEnabled()) {
-      try {
-        const tf = getTrueForgeClient();
-        if (tf) {
-          traces.push({
-            tool: "agent_workforce_harness",
-            args: { sessionId, agentRole: agent.name },
-            durationMs: 4,
-            resultCount: 1,
-            cypher: `AGENT_WORKFORCE_SESSION: ${sessionId}`,
-            path: hops,
-          });
-        }
-      } catch (e) {
-        // Continue gracefully
       }
     }
 

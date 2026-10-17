@@ -60,11 +60,11 @@ export interface AgentRunner {
 }
 
 /**
- * TrueForge Agent Harness Runner:
+ * CompanyMind Runner:
  * Emits real-time execution loop telemetry from actual FalkorDB OpenCypher queries,
  * MCP tool invocations, and human-in-the-loop checkpoints.
  */
-export class TrueForgeAgentRunner implements AgentRunner {
+export class AgentWorkforceRunner implements AgentRunner {
 
   createSessionEvents(
     query: string,
@@ -108,7 +108,7 @@ export class TrueForgeAgentRunner implements AgentRunner {
           : isProvenance
           ? "decision_provenance_trace"
           : "entity_knowledge_resolution",
-        harness: "TrueForge Agent Execution Loop",
+        harness: "CompanyMind Agent Execution Loop",
         engine: "FalkorDB In-Memory Cypher",
       },
     });
@@ -236,7 +236,7 @@ export class TrueForgeAgentRunner implements AgentRunner {
       rawJson: {
         status: "SUCCESS",
         sessionState: "ACTIVE",
-        harness: "TrueForge Agent Harness",
+        harness: "CompanyMind",
       },
     });
 
@@ -245,5 +245,5 @@ export class TrueForgeAgentRunner implements AgentRunner {
 }
 
 export function getAgentRunner(): AgentRunner {
-  return new TrueForgeAgentRunner();
+  return new AgentWorkforceRunner();
 }

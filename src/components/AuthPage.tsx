@@ -104,7 +104,7 @@ export function AuthPage({
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft size={15} />
-          <span>Back to TrueForge</span>
+          <span>Back to CompanyMind</span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function AuthPage({
             <Brain size={18} />
           </div>
           <span className="font-bold text-sm tracking-tight text-white">
-            TrueForge Harness
+            CompanyMind
           </span>
         </div>
 
@@ -312,7 +312,7 @@ export function AuthPage({
             >
               <span>
                 {activeTab === "login"
-                  ? "Sign In to TrueForge"
+                  ? "Sign In to CompanyMind"
                   : "Launch Your Workspace"}
               </span>
               <ArrowRight size={14} />
@@ -363,9 +363,9 @@ export function AuthPage({
 
       {/* 3. Footer */}
       <footer className="h-12 border-t border-slate-800/80 px-4 sm:px-8 flex items-center justify-between text-xs text-slate-500">
-        <span>TrueForge Agent Harness · FalkorDB Platform</span>
+        <span>CompanyMind · FalkorDB Platform</span>
         <div className="flex items-center gap-4">
-          <a href="https://trueforge.dev" target="_blank" rel="noreferrer" className="hover:text-slate-400">
+          <a href="https://github.com/vishal-kumar9032/companymind-ai" target="_blank" rel="noreferrer" className="hover:text-slate-400">
             Docs
           </a>
           <span>Privacy & Security</span>

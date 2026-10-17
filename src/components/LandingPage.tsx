@@ -88,7 +88,7 @@ export function LandingPage({
           </div>
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base tracking-tight text-white">
-              TrueForge
+              CompanyMind
             </span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-semibold uppercase">
               Agent Harness
@@ -111,7 +111,7 @@ export function LandingPage({
             Pricing
           </a>
           <a
-            href="https://trueforge.dev"
+            href="https://github.com/vishal-kumar9032/companymind-ai"
             target="_blank"
             rel="noreferrer"
             className="hover:text-white transition-colors inline-flex items-center gap-1"
@@ -147,7 +147,7 @@ export function LandingPage({
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 shadow-inner">
           <span className="flex size-2 rounded-full bg-indigo-500 animate-pulse" />
           <span className="font-semibold text-indigo-400 font-mono text-[11px]">
-            TrueForge v1.0
+            CompanyMind v1.0
           </span>
           <span className="text-slate-600">|</span>
           <span>The Open-Source Agent Harness for Enterprise Knowledge</span>
@@ -232,7 +232,7 @@ export function LandingPage({
               <div className="size-3 rounded-full bg-amber-500/80" />
               <div className="size-3 rounded-full bg-emerald-500/80" />
               <span className="ml-2 font-mono text-[11px] text-slate-500">
-                trueforge-agent-harness — execution-loop: active
+                companymind-agent — execution-loop: active
               </span>
             </div>
             <span className="font-mono text-[10px] text-emerald-400 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
@@ -268,7 +268,7 @@ export function LandingPage({
           <div className="p-5 font-mono text-xs space-y-4">
             <div className="space-y-1">
               <div className="text-slate-500 text-[11px]">
-                // 1. User Inquiry dispatched to TrueForge Agent Harness
+                // 1. User Inquiry dispatched to CompanyMind
               </div>
               <div className="text-white flex items-center gap-2">
                 <span className="text-indigo-400 font-bold">$</span>
@@ -320,18 +320,18 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* 4. Harness Capabilities Grid (Based on trueforge.dev) */}
+      {/* 4. Harness Capabilities Grid (Based on GitHub) */}
       <section id="features" className="py-16 sm:py-24 border-t border-slate-800 bg-slate-950 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <h2 className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
-              The TrueForge Agent Harness
+              The CompanyMind Platform
             </h2>
             <h3 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
               Everything Needed to Run Agents in Production
             </h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              TrueForge runs the agent execution loop for you: model planning, MCP tools, sandboxing, approvals, context engineering, and session state.
+              CompanyMind runs the agent execution loop for you: model planning, MCP tools, sandboxing, approvals, context engineering, and session state.
             </p>
           </div>
 
@@ -430,7 +430,7 @@ export function LandingPage({
 
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
               <span className="font-mono text-xs font-bold text-emerald-400">03 / Orchestrate</span>
-              <h4 className="font-bold text-sm text-white">TrueForge Harness</h4>
+              <h4 className="font-bold text-sm text-white">CompanyMind</h4>
               <p className="text-xs text-slate-400">
                 Runs the agent loop, routes MCP tools, monitors context boundaries, and triggers human checkpoint approvals.
               </p>
@@ -473,7 +473,7 @@ export function LandingPage({
                 <ul className="text-xs text-slate-300 space-y-2.5">
                   <li className="flex items-center gap-2">
                     <Check size={14} className="text-indigo-400" />
-                    <span>Self-hosted TrueForge Harness</span>
+                    <span>Self-hosted CompanyMind</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check size={14} className="text-indigo-400" />
@@ -509,7 +509,7 @@ export function LandingPage({
                 <ul className="text-xs text-slate-200 space-y-2.5">
                   <li className="flex items-center gap-2">
                     <Check size={14} className="text-indigo-400" />
-                    <span>Hosted TrueForge Multi-Agent Studio</span>
+                    <span>Hosted CompanyMind Multi-Agent Studio</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check size={14} className="text-indigo-400" />
@@ -578,14 +578,14 @@ export function LandingPage({
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Brain size={16} className="text-indigo-500" />
-            <span className="font-semibold text-slate-400">TrueForge Agent Harness</span>
+            <span className="font-semibold text-slate-400">CompanyMind</span>
             <span>·</span>
             <span>Powered by FalkorDB Graph Engine</span>
           </div>
 
           <div className="flex items-center gap-6">
-            <a href="https://trueforge.dev" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">
-              trueforge.dev
+            <a href="https://github.com/vishal-kumar9032/companymind-ai" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">
+              GitHub
             </a>
             <a href="https://falkordb.com" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">
               FalkorDB

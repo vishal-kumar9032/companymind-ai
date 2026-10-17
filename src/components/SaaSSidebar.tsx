@@ -149,7 +149,7 @@ export function SaaSSidebar({
           <button
             onClick={onGoToLanding}
             className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group"
-            title="Return to TrueForge Public Portal"
+            title="Return to CompanyMind Public Portal"
           >
             <div className="size-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
               <Brain size={18} strokeWidth={2} />
@@ -158,7 +158,7 @@ export function SaaSSidebar({
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-sm tracking-tight text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
-                    TrueForge
+                    CompanyMind
                   </span>
                   <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold uppercase">
                     Harness
