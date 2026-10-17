@@ -173,13 +173,15 @@ export async function signInWithGoogleAuth(
     try {
       const firestore = getFirebaseFirestore();
       if (firestore) {
-        await addDoc(collection(firestore, "users"), {
+        // Fire-and-forget: login must never wait on a profile write (Firestore may be
+        // unprovisioned or offline, in which case the write promise never settles).
+        addDoc(collection(firestore, "users"), {
           uid: enterpriseUser.uid,
           email: enterpriseUser.email,
           displayName: enterpriseUser.displayName,
           tenantId: enterpriseUser.tenantId,
           lastLogin: serverTimestamp(),
-        });
+        }).catch(() => {});
       }
     } catch {
       // Local fallback if Firestore rules or offline
