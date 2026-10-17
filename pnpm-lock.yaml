@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@composio/core':
+        specifier: ^0.25.0
+        version: 0.25.0(zod@4.6.7)
       '@google/generative-ai':
         specifier: ^0.21.0
         version: 0.21.0
@@ -26,6 +29,9 @@ importers:
       framer-motion:
         specifier: ^14.2.0
         version: 14.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      jose:
+        specifier: ^6.2.12
+        version: 6.2.12
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.3.1)
@@ -34,7 +40,7 @@ importers:
         version: 15.1.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       openai:
         specifier: ^7.34.0
-        version: 7.34.0
+        version: 7.34.0(undici@7.30.1)(zod@4.6.7)
       react:
         specifier: ^19.0.0
         version: 19.3.1
@@ -87,6 +93,30 @@ packages:
   '@alloc/quick-lru@5.3.0':
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
     engines: {node: '>=10'}
+
+  '@cfworker/json-schema@4.1.1':
+    resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
+
+  '@composio/client@2.0.0-rc.17':
+    resolution: {integrity: sha512-j1fqyiAwAO6kOmbLwkLn4fb4//GNveV2yo0iMo4wTwOk9euRwQNK6lodVcRhJT6ZeRCSS2Xv8uUsJtmGsPTyiA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      effect: '*'
+    peerDependenciesMeta:
+      effect:
+        optional: true
+
+  '@composio/core@0.25.0':
+    resolution: {integrity: sha512-oxzr0etEDb2EzoyCQfyunoui0sRZq+v97w1l4Wj445cbks/VGauQsgVjVSxMqMc74MnSnzvvZ4saQbpkycBN+g==}
+    engines: {node: '>=22.22.3'}
+    peerDependencies:
+      zod: '>=3.25.76 <5'
+
+  '@composio/json-schema-to-zod@0.3.4':
+    resolution: {integrity: sha512-8MQUTBZ+r5ToY5lLaJCdOHLXjpqfyFKQuyruZbHnl4Mtp7LYjJP2k5KPyo521AmVSpugbyXiyNdCZWZQR2qGIw==}
+    engines: {node: '>=22.22.3'}
+    peerDependencies:
+      zod: '>=3.25.76 <5'
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
@@ -774,6 +804,9 @@ packages:
   '@types/hast@3.0.5':
     resolution: {integrity: sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==}
 
+  '@types/json-schema@7.0.15':
+    resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
 
@@ -1097,6 +1130,9 @@ packages:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
     engines: {node: '>=0.10.0'}
 
+  is-fs-case-sensitive@2.0.0:
+    resolution: {integrity: sha512-JoCsyGITdYPM+pUbeMQ4IiEuQ4wjPdeWORlG7n644isewbcxiQIr+9gmF5k7UabTP/jLBRkbgydEamR7JZBKHA==}
+
   is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
@@ -1119,6 +1155,9 @@ packages:
   jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jsbi@4.3.2:
     resolution: {integrity: sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==}
@@ -1448,6 +1487,9 @@ packages:
     resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
     engines: {node: '>=12.0.0'}
 
+  pusher-js@8.6.0:
+    resolution: {integrity: sha512-wShJPfCS/kYkCBVzVW67wa9cnQIgHTszEK2XHNrFkOgGruuGw081aERAxfRjfdFU+WcIt8x6dvbwkTW4iZuQ8Q==}
+
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -1622,6 +1664,9 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
@@ -1629,6 +1674,10 @@ packages:
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
+    engines: {node: '>=20.18.1'}
 
   unified@11.0.5:
     resolution: {integrity: sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==}
@@ -1690,12 +1739,51 @@ packages:
     resolution: {integrity: sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g==}
     engines: {node: '>=12'}
 
+  zod-to-json-schema@3.25.2:
+    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+    peerDependencies:
+      zod: ^3.25.28 || ^4
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
 
   '@alloc/quick-lru@5.3.0': {}
+
+  '@cfworker/json-schema@4.1.1': {}
+
+  '@composio/client@2.0.0-rc.17': {}
+
+  '@composio/core@0.25.0(zod@4.6.7)':
+    dependencies:
+      '@composio/client': 2.0.0-rc.17
+      '@composio/json-schema-to-zod': 0.3.4(zod@4.6.7)
+      '@types/json-schema': 7.0.15
+      is-fs-case-sensitive: 2.0.0
+      openai: 7.34.0(undici@7.30.1)(zod@4.6.7)
+      picocolors: 1.1.1
+      pusher-js: 8.6.0
+      semver: 7.8.5
+      undici: 7.30.1
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
+      - '@smithy/hash-node'
+      - '@smithy/signature-v4'
+      - effect
+      - ws
+
+  '@composio/json-schema-to-zod@0.3.4(zod@4.6.7)':
+    dependencies:
+      '@cfworker/json-schema': 4.1.1
+      dequal: 2.0.3
+      re2js: 2.8.6
+      zod: 4.6.7
 
   '@emnapi/runtime@1.11.3':
     dependencies:
@@ -2307,6 +2395,8 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
 
+  '@types/json-schema@7.0.15': {}
+
   '@types/mdast@4.0.4':
     dependencies:
       '@types/unist': 3.0.3
@@ -2662,6 +2752,8 @@ snapshots:
 
   is-extglob@2.1.1: {}
 
+  is-fs-case-sensitive@2.0.0: {}
+
   is-fullwidth-code-point@3.0.0: {}
 
   is-glob@4.0.3:
@@ -2675,6 +2767,8 @@ snapshots:
   is-plain-obj@4.1.0: {}
 
   jiti@1.21.7: {}
+
+  jose@6.2.12: {}
 
   jsbi@4.3.2: {}
 
@@ -3104,7 +3198,10 @@ snapshots:
 
   object-hash@3.0.0: {}
 
-  openai@7.34.0: {}
+  openai@7.34.0(undici@7.30.1)(zod@4.6.7):
+    optionalDependencies:
+      undici: 7.30.1
+      zod: 4.6.7
 
   parse-entities@4.0.2:
     dependencies:
@@ -3185,6 +3282,10 @@ snapshots:
       '@protobufjs/utf8': 1.1.2
       '@types/node': 22.20.5
       long: 5.3.2
+
+  pusher-js@8.6.0:
+    dependencies:
+      tweetnacl: 1.0.3
 
   queue-microtask@1.2.3: {}
 
@@ -3285,8 +3386,7 @@ snapshots:
 
   scheduler@0.28.0: {}
 
-  semver@7.8.5:
-    optional: true
+  semver@7.8.5: {}
 
   sharp@0.33.5:
     dependencies:
@@ -3431,9 +3531,13 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
+  tweetnacl@1.0.3: {}
+
   typescript@5.9.3: {}
 
   undici-types@6.21.0: {}
+
+  undici@7.30.1: {}
 
   unified@11.0.5:
     dependencies:
@@ -3515,5 +3619,11 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 21.1.1
+
+  zod-to-json-schema@3.25.2(zod@4.6.7):
+    dependencies:
+      zod: 4.6.7
+
+  zod@4.6.7: {}
 
   zwitch@2.0.4: {}
