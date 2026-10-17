@@ -431,7 +431,7 @@ export async function buildToolbox(caller: Caller, role: Role, connected: string
         const res = await executeComposioTool(ctx.caller.id, name, args);
         return res.ok ? res.data : { error: res.error };
       }
-      return { error: `unknown tool: ${name}` };
+      return { error: `unknown tool: ${name}. Only call tools from your tool list; if none fits, tell the user what you cannot do.` };
     },
   };
 }
