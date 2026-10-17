@@ -33,28 +33,6 @@ interface RegistryTabProps {
   onNavigateToConnections?: () => void;
 }
 
-const DEMO_ENTITY_NAMES = new Set([
-  "auth-v1",
-  "payments-api",
-  "api-gateway",
-  "mobile-app",
-  "web-checkout",
-  "identity-service",
-  "fraud-detector",
-  "postgres-primary",
-  "dec-44",
-  "dec-88",
-  "dec-105",
-  "dec-12",
-  "rfc-102",
-  "sec-404",
-  "sre-88",
-  "q3 global architecture review",
-  "pr #214",
-  "pr 214",
-  "pr-214",
-]);
-
 export function RegistryTab({
   graphData,
   onQueryService,
@@ -73,14 +51,8 @@ export function RegistryTab({
     isPersonalAccount ??
     Boolean(currentUser?.isFirebaseAuthenticated && currentUser?.uid !== "workspace-member");
 
-  // When personal account is logged in, strip out all demo entities
-  const activeNodes = isPersonal
-    ? (graphData.nodes || []).filter(
-        (n) =>
-          !DEMO_ENTITY_NAMES.has((n.name || "").toLowerCase().trim()) &&
-          !DEMO_ENTITY_NAMES.has((n.id || "").toLowerCase().trim())
-      )
-    : graphData.nodes || [];
+  // Signed-in workspaces only ever contain what the user connected, so nothing is filtered out here.
+  const activeNodes = graphData.nodes || [];
 
   // Group nodes by categories
   const services = activeNodes.filter((n) => n.label === "Service");

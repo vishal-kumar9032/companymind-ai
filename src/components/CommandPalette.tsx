@@ -1,5 +1,6 @@
 "use client";
 
+import { PERSONAL_HERO_PROMPTS } from "@/lib/examples";
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -19,6 +20,7 @@ import {
 import { GraphData } from "@/lib/schema";
 
 interface CommandPaletteProps {
+  personal?: boolean;
   isOpen: boolean;
   onClose: () => void;
   onSelectQuery: (query: string) => void;
@@ -45,6 +47,7 @@ interface CommandGroup {
 }
 
 export function CommandPalette({
+  personal = false,
   isOpen,
   onClose,
   onSelectQuery,
@@ -112,6 +115,9 @@ export function CommandPalette({
     {
       category: "Suggested Graph Queries",
       items: [
+        ...(personal
+          ? PERSONAL_HERO_PROMPTS.map((q) => ({ title: q, type: "query" as const, icon: Network, query: q }))
+          : []),
         ...(graphServices.length > 0
           ? [
               {
@@ -121,7 +127,7 @@ export function CommandPalette({
                 query: `What services break if ${graphServices[0].name} is shut down?`,
               },
             ]
-          : [
+          : personal ? [] : [
               {
                 title: "What services break if auth-v1 is shut down?",
                 type: "query" as const,
@@ -138,7 +144,7 @@ export function CommandPalette({
                 query: `Audit ${graphPRs[0].name} for architecture and meeting decision violations`,
               },
             ]
-          : [
+          : personal ? [] : [
               {
                 title: "Audit PR #214 for architecture violations",
                 type: "query" as const,
@@ -146,12 +152,16 @@ export function CommandPalette({
                 query: "Audit PR #214 for architecture and meeting decision violations",
               },
             ]),
-        {
-          title: "Why did we decide to use mTLS for identity-service?",
-          type: "query" as const,
-          icon: Compass,
-          query: "Why did we decide to use mTLS for identity-service?",
-        },
+        ...(personal
+          ? []
+          : [
+              {
+                title: "Why did we decide to use mTLS for identity-service?",
+                type: "query" as const,
+                icon: Compass,
+                query: "Why did we decide to use mTLS for identity-service?",
+              },
+            ]),
         ...(graphServices.length > 1
           ? [
               {
@@ -161,7 +171,7 @@ export function CommandPalette({
                 query: `Who owns ${graphServices[1].name} and who are the subject matter experts?`,
               },
             ]
-          : [
+          : personal ? [] : [
               {
                 title: "Who owns payments-api and who are the subject matter experts?",
                 type: "query" as const,
@@ -199,7 +209,7 @@ export function CommandPalette({
                   ? Compass
                   : FileText,
             }))
-          : [
+          : personal ? [] : [
               {
                 title: "RFC-102: Auth v1 Sunset & Gateway Migration",
                 type: "source" as const,

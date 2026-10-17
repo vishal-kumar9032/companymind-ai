@@ -22,11 +22,13 @@ import {
   Network,
 } from "lucide-react";
 import { TenantConfig } from "@/lib/tenants";
+import { DEMO_PRIMARY_QUERY, heroPrompts, personalPlaceholder } from "@/lib/examples";
 import { AVAILABLE_MODELS } from "@/lib/truefoundry";
 import { EnterpriseUser, signOutEnterpriseUser } from "@/lib/firebase";
 import { AuthModal } from "./AuthModal";
 
 interface DashboardViewProps {
+  isPersonalAccount?: boolean;
   currentTenant: TenantConfig;
   onSelectTenant: (tenant: TenantConfig) => void;
   selectedModel: string;
@@ -44,14 +46,8 @@ interface DashboardViewProps {
   edgeCount?: number;
 }
 
-const HERO_PROMPTS = [
-  "What breaks if auth-v1 is shut down?",
-  "Why was DEC-44 decided?",
-  "Who owns payments-api?",
-  "Audit PR #214",
-];
-
 export function DashboardView({
+  isPersonalAccount = false,
   currentTenant,
   selectedModel,
   onSelectModel,
@@ -110,7 +106,7 @@ export function DashboardView({
             <input
               value={askText}
               onChange={(e) => setAskText(e.target.value)}
-              placeholder="What services break if auth-v1 is shut down?"
+              placeholder={isPersonalAccount ? personalPlaceholder : DEMO_PRIMARY_QUERY}
               className="min-w-0 flex-1 bg-transparent px-2 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
             />
             <button
@@ -123,7 +119,7 @@ export function DashboardView({
           </form>
 
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {HERO_PROMPTS.map((q) => (
+            {heroPrompts(isPersonalAccount).map((q) => (
               <button
                 key={q}
                 onClick={() => onRunQuery(q)}
@@ -225,176 +221,178 @@ export function DashboardView({
         </div>
       </section>
 
-      {/* 3. The 4 Institutional Problem Solvers (One-Click Queries) */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Search className="w-5 h-5 text-indigo-600" />
-            Instant Institutional Questions &amp; Traversal Solvers
-          </h2>
-          <p className="text-xs text-slate-500">
-            Click any prompt to run a multi-hop traversal in FalkorDB with live AI synthesis and verifiable citations.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Task & Ownership */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Task &amp; Service Ownership</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Resolve who owns a component, who is on-call, and who authored the architecture.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => onRunQuery("Who owns web-checkout and who is the lead?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Who owns web-checkout?</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What services depend on auth-v1?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Services depending on auth-v1</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What is fraud-detector?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>What is fraud-detector?</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            </div>
+      {/* Sample-company example questions: demo workspace only */}
+      {!isPersonalAccount && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Search className="w-5 h-5 text-indigo-600" />
+              Instant Institutional Questions &amp; Traversal Solvers
+            </h2>
+            <p className="text-xs text-slate-500">
+              Click any prompt to run a multi-hop traversal in FalkorDB with live AI synthesis and verifiable citations.
+            </p>
           </div>
 
-          {/* Card 2: Decisions & Provenance */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                <ShieldCheck className="w-5 h-5" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Task & Ownership */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Task &amp; Service Ownership</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Resolve who owns a component, who is on-call, and who authored the architecture.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">What Was Decided &amp; Why?</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Trace architectural decisions back to meetings, approving executives, and source specs.
-                </p>
+
+              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => onRunQuery("Who owns web-checkout and who is the lead?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Who owns web-checkout?</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What services depend on auth-v1?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Services depending on auth-v1</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What is fraud-detector?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>What is fraud-detector?</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => onRunQuery("Explain DEC-88 and its origin")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Explain DEC-88 (Cookies &amp; XSS)</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What is DEC-105 regarding connection pooling?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>What is DEC-105 (DB Pool)?</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What was decided in the Q3 meeting?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Decisions in Q3 Meeting</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+            {/* Card 2: Decisions & Provenance */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">What Was Decided &amp; Why?</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Trace architectural decisions back to meetings, approving executives, and source specs.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => onRunQuery("Explain DEC-88 and its origin")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Explain DEC-88 (Cookies &amp; XSS)</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What is DEC-105 regarding connection pooling?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>What is DEC-105 (DB Pool)?</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What was decided in the Q3 meeting?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Decisions in Q3 Meeting</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Card 3: Project Delays & PR Blockers */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                  <GitPullRequest className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Why Delayed or Blocked?</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Discover policy violations, breaking dependencies, and cascading blast radii.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => onRunQuery("Audit GitHub PR #214")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Why is PR #214 blocked?</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What breaks if postgres-primary goes down?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Blast radius: postgres-primary</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What breaks if auth-v1 is shut down?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>4-Hop Blast radius: auth-v1</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Card 4: Service Catalog & Memory */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Service Catalog &amp; Memory</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Explore full enterprise inventory and prior autonomous agent audit findings.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => onRunQuery("Show all services in the catalog")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Show full service catalog</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => onRunQuery("What are the recent agent memory findings?")}
+                  className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Recall agent audit memory</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                <button
+                  onClick={onOpenMemory}
+                  className="w-full text-left text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Open Incident Memory Log</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Card 3: Project Delays & PR Blockers */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-                <GitPullRequest className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Why Delayed or Blocked?</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Discover policy violations, breaking dependencies, and cascading blast radii.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => onRunQuery("Audit GitHub PR #214")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Why is PR #214 blocked?</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What breaks if postgres-primary goes down?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Blast radius: postgres-primary</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What breaks if auth-v1 is shut down?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>4-Hop Blast radius: auth-v1</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Card 4: Service Catalog & Memory */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
-                <Database className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Service Catalog &amp; Memory</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Explore full enterprise inventory and prior autonomous agent audit findings.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => onRunQuery("Show all services in the catalog")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Show full service catalog</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => onRunQuery("What are the recent agent memory findings?")}
-                className="w-full text-left text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Recall agent audit memory</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={onOpenMemory}
-                className="w-full text-left text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 p-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <span>Open Incident Memory Log</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 4. Unified Enterprise Catalog Shortcut */}
       <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
@@ -407,7 +405,7 @@ export function DashboardView({
             Unified Enterprise RFCs, Decisions &amp; PR Specs
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
-            All institutional records are stored directly in FalkorDB with cryptographic commit hashes, authorship links, and council approvals.
+            Documents, decisions, pull requests and the people behind them are stored as graph entities in FalkorDB, each linked to its source.
           </p>
         </div>
 

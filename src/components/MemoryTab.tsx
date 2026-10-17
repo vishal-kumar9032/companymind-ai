@@ -109,7 +109,7 @@ export function MemoryTab({
   );
 
   // Form states for recording finding
-  const [newTarget, setNewTarget] = useState(isPersonal ? "user-service" : "postgres-primary");
+  const [newTarget, setNewTarget] = useState(isPersonal ? "" : "postgres-primary");
   const [newText, setNewText] = useState("");
   const [newSeverity, setNewSeverity] = useState<string>("CRITICAL");
   const [newAgent, setNewAgent] = useState("PolicyWatchdog");
@@ -140,14 +140,7 @@ export function MemoryTab({
       const res = await fetch("/api/findings", { headers });
       const data = await res.json();
       if (data.findings && Array.isArray(data.findings) && data.findings.length > 0) {
-        // If personal account, purge any demo finding entities
-        const rawList = isPersonal
-          ? data.findings.filter((f: any) => {
-              const target = (f.target_name || f.service || "").toLowerCase().trim();
-              const id = (f.id || "").toLowerCase().trim();
-              return !id.startsWith("finding-00") && target !== "auth-v1";
-            })
-          : data.findings;
+        const rawList = data.findings;
 
         const mapped: FindingItem[] = rawList.map((f: any) => ({
           id: f.id || `finding-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -461,7 +454,7 @@ export function MemoryTab({
                   onChange={(e) => setNewTarget(e.target.value)}
                   placeholder={
                     isPersonal
-                      ? "e.g. user-service, auth-api, billing"
+                      ? "Name of a service, project or document"
                       : "e.g. postgres-primary, auth-v1, payments-api"
                   }
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
@@ -470,7 +463,7 @@ export function MemoryTab({
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   <span className="text-3xs text-slate-400 font-mono">Quick:</span>
                   {(isPersonal
-                    ? ["user-service", "auth-api", "billing-gateway", "main-db"]
+                    ? []
                     : ["postgres-primary", "auth-v1", "payments-api", "identity-service"]
                   ).map((svc) => (
                     <button

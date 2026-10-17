@@ -58,6 +58,37 @@ interface EnterprisePrompt {
   subtitle: string;
 }
 
+const PERSONAL_PROMPTS: EnterprisePrompt[] = [
+  {
+    category: "INBOX & CALENDAR",
+    badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    icon: Layers,
+    prompt: "What needs my attention in my inbox and calendar this week?",
+    subtitle: "Reads your connected Gmail and Google Calendar",
+  },
+  {
+    category: "GITHUB",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+    icon: ShieldAlert,
+    prompt: "Which of my GitHub pull requests and issues are open, and which are blocked?",
+    subtitle: "Reads your connected GitHub repositories",
+  },
+  {
+    category: "DOCUMENTS",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    icon: FileText,
+    prompt: "Which documents in my Drive changed recently, and who edited them?",
+    subtitle: "Reads your connected Google Drive and Docs",
+  },
+  {
+    category: "BUILD MY GRAPH",
+    badgeClass: "bg-violet-50 text-violet-700 border-violet-200",
+    icon: Network,
+    prompt: "Read my recent emails and documents and record the people, documents and decisions you find in my knowledge graph",
+    subtitle: "Turns what you connected into a graph the agent can reason over",
+  },
+];
+
 const ENTERPRISE_PROMPTS: EnterprisePrompt[] = [
   {
     category: "BLAST RADIUS & TOPOLOGY",
@@ -134,11 +165,13 @@ function describe(e: Ev): { icon: React.ReactNode; text: string; badge?: string 
 
 export function AssistantView({
   signedIn,
+  personal = false,
   initialQuery,
   onInitialQueryUsed,
   model,
 }: {
   signedIn: boolean;
+  personal?: boolean;
   initialQuery?: string | null;
   onInitialQueryUsed?: () => void;
   model?: string;
@@ -336,7 +369,7 @@ export function AssistantView({
 
               {/* Categorized Enterprise Prompt Cards */}
               <div className="grid gap-3 sm:grid-cols-2 text-left">
-                {ENTERPRISE_PROMPTS.map((item, idx) => {
+                {(personal ? PERSONAL_PROMPTS : ENTERPRISE_PROMPTS).map((item, idx) => {
                   const Icon = item.icon;
                   return (
                     <button

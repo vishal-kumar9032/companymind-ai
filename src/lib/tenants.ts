@@ -26,3 +26,12 @@ export function getTenant(tenantId: string): TenantConfig {
   const found = TENANTS.find((t) => t.id === tenantId);
   return found || TENANTS[0];
 }
+
+/** Shown for signed-in users, whose graph holds only what they connect. */
+export const PERSONAL_TENANT: TenantConfig = {
+  id: "personal",
+  name: "Personal Workspace",
+  domain: "Your connected accounts",
+  badge: "Private",
+  description: "Your own isolated knowledge graph, built from the accounts you connect.",
+};

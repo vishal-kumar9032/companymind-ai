@@ -18,7 +18,8 @@ import { AnalyticsModal } from "@/components/AnalyticsModal";
 import { AuthModal } from "@/components/AuthModal";
 import { GraphData, ToolTrace } from "@/lib/schema";
 import { ENTERPRISE_SOURCES, SourceDetail } from "@/lib/sources";
-import { TENANTS, TenantConfig } from "@/lib/tenants";
+import { PERSONAL_TENANT, TENANTS, TenantConfig } from "@/lib/tenants";
+import { primaryQuery } from "@/lib/examples";
 import {
   EnterpriseUser,
   DEMO_ENTERPRISE_USERS,
@@ -42,6 +43,7 @@ export default function Home() {
     currentUser.isFirebaseAuthenticated &&
     currentUser.uid !== "workspace-member"
   );
+  const activeTenant = isPersonalAccount ? PERSONAL_TENANT : currentTenant;
 
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [highlightHops, setHighlightHops] = useState<string[]>([]);
@@ -95,16 +97,7 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data?.findings)) {
-          if (isPersonalAccount) {
-            const personalFindings = data.findings.filter((f: any) => {
-              const target = (f.target_name || f.service || "").toLowerCase().trim();
-              const id = (f.id || "").toLowerCase().trim();
-              return !id.startsWith("finding-00") && target !== "auth-v1";
-            });
-            setFindingsCount(personalFindings.length);
-          } else {
-            setFindingsCount(data.findings.length);
-          }
+          setFindingsCount(data.findings.length);
         }
       }
     } catch (err) {
@@ -221,7 +214,7 @@ export default function Home() {
   }, [appStage]);
 
   const handleOpenSource = (sourceId: string) => {
-    const src = ENTERPRISE_SOURCES[sourceId];
+    const src = isPersonalAccount ? undefined : ENTERPRISE_SOURCES[sourceId];
     if (src) {
       setActiveSource(src);
       return;
@@ -263,7 +256,7 @@ export default function Home() {
         snippet:
           node.properties?.description ||
           node.properties?.summary ||
-          `Active ${node.label} entity registered in ${currentTenant.name} topology. Metadata: ${JSON.stringify(node.properties, null, 2)}`,
+          `Active ${node.label} entity registered in ${activeTenant.name} topology. Metadata: ${JSON.stringify(node.properties, null, 2)}`,
         falkorNode: `(:${node.label} {name: '${node.name || node.id}'})`,
         graphHops: hops,
       };
@@ -368,7 +361,7 @@ export default function Home() {
         <SaaSSidebar
           currentView={currentView}
           onSelectView={setCurrentView}
-          currentTenant={currentTenant}
+          currentTenant={activeTenant}
           onSelectTenant={setCurrentTenant}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -409,7 +402,7 @@ export default function Home() {
                 setCurrentView(v);
                 setIsMobileSidebarOpen(false);
               }}
-              currentTenant={currentTenant}
+              currentTenant={activeTenant}
               onSelectTenant={setCurrentTenant}
               isCollapsed={false}
               onToggleCollapse={() => setIsMobileSidebarOpen(false)}
@@ -454,15 +447,13 @@ export default function Home() {
         {/* Top Header Bar */}
         <SaaSHeader
           currentView={currentView}
-          currentTenant={currentTenant}
+          currentTenant={activeTenant}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
           onRunDemo={() =>
-            handleSelectQueryAndSwitchToChat(
-              "What services break if auth-v1 is shut down?"
-            )
+            handleSelectQueryAndSwitchToChat(primaryQuery(isPersonalAccount))
           }
           onRefreshGraph={fetchGraph}
           onGoToLanding={() => setAppStage("landing")}
@@ -477,7 +468,8 @@ export default function Home() {
           {currentView === "dashboard" && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
               <DashboardView
-                currentTenant={currentTenant}
+                isPersonalAccount={isPersonalAccount}
+                currentTenant={activeTenant}
                 onSelectTenant={setCurrentTenant}
                 selectedModel={selectedModel}
                 onSelectModel={setSelectedModel}
@@ -500,6 +492,7 @@ export default function Home() {
             <div className="flex-1 min-h-0 flex flex-col w-full h-full overflow-hidden relative">
               <AssistantView
                 signedIn={Boolean(currentUser?.isFirebaseAuthenticated)}
+                personal={isPersonalAccount}
                 initialQuery={selectedQuery}
                 onInitialQueryUsed={() => setSelectedQuery(null)}
                 model={selectedModel}
@@ -524,20 +517,20 @@ export default function Home() {
                   </h2>
                   <p className="text-[11px] text-slate-500">
                     Live interactive graph with {graphData.nodes.length} nodes and{" "}
-                    {graphData.edges.length} edges across {currentTenant.name}
+                    {graphData.edges.length} edges across {activeTenant.name}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      handleSelectQueryAndSwitchToChat(
-                        "What services break if auth-v1 is shut down?"
-                      )
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition-colors cursor-pointer"
-                  >
-                    Analyze auth-v1 Path
-                  </button>
+                  {!isPersonalAccount && (
+                    <button
+                      onClick={() =>
+                        handleSelectQueryAndSwitchToChat(primaryQuery(false))
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition-colors cursor-pointer"
+                    >
+                      Analyze auth-v1 Path
+                    </button>
+                  )}
                   <button
                     onClick={fetchGraph}
                     className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors cursor-pointer"
@@ -663,6 +656,7 @@ export default function Home() {
 
       {/* Global Command Palette (⌘K) */}
       <CommandPalette
+        personal={isPersonalAccount}
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onSelectQuery={handleSelectQueryAndSwitchToChat}

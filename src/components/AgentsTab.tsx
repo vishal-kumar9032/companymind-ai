@@ -95,7 +95,7 @@ export function AgentsTab({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          targetName: approval.target.split("/")[0].trim() || "auth-v1",
+          targetName: approval.target.split("/")[0].trim() || "unknown",
           text: `[${decision.toUpperCase()}] ${approval.action}: ${approval.reason}`,
           severity: approval.riskLevel,
           sessionId,
@@ -393,7 +393,7 @@ export function AgentsTab({
                           <div>
                             <span className="text-slate-500 font-mono text-2xs uppercase">Target: </span>
                             <button
-                              onClick={() => onSelectNode?.(evt.approvalData?.target.split("/")[0].trim() || "auth-v1")}
+                              onClick={() => onSelectNode?.(evt.approvalData?.target.split("/")[0].trim() || "unknown")}
                               className="text-indigo-600 hover:underline font-mono text-2xs cursor-pointer font-medium"
                             >
                               {evt.approvalData.target}
