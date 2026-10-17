@@ -86,6 +86,7 @@ The Ask AI chat is a tool-calling agent loop (`src/lib/agent/loop.ts`) that answ
 * **Graph algorithms as agent tools.** `graph_algorithm` runs FalkorDB PageRank, betweenness (single points of failure), label-propagation communities and connected components. `shortest_path` explains how two entities are connected, hop by hop.
 * **Shared agent memory in the graph.** `Memory` (episodic / semantic / procedural), `AgentRun`, `Task` (hand-offs between agents) and `Approval` nodes live in the same FalkorDB graph and are recalled into later sessions.
 * **A small agent team.** An orchestrator delegates to a Researcher (graph + web), a Governance Watchdog (decisions vs. PRs) and a Scribe (drafts and performs actions). Hand-offs are recorded as `Task` nodes.
+* **Bring your own documents.** Signed-in users can upload PDF, Word, Excel, CSV, text and Markdown on the Connections page. Files are chunked into the user's own graph, searched with FalkorDB full-text search (`search_documents`, `read_document`), cited as `[document, part N]`, and can be turned into graph entities with one click ("Add to graph").
 * **Per-tenant isolation.** Each signed-in user gets their own graph (`org_<uid>`), derived from the verified Firebase token, never from client input. Anonymous visitors use the read-only sample workspace with their own private memory.
 * **Human-in-the-loop writes.** Any connector tool that is not clearly read-only (send email, create event, comment on a PR...) is queued as an `Approval` and only runs when the user approves it.
 * **Honest by default.** Empty graph, unconnected account or missing config returns a plain "no data / not connected" result instead of invented answers.
@@ -97,6 +98,8 @@ The Ask AI chat is a tool-calling agent loop (`src/lib/agent/loop.ts`) that answ
 | `graph_schema`, `graph_query`, `entity_neighborhood` | Discover the schema, run read-only OpenCypher (`GRAPH.RO_QUERY`), list everything connected to one entity |
 | `service_blast_radius`, `trace_decision_provenance`, `audit_pr_governance`, `find_subject_matter_experts` | Parameterised multi-hop Cypher tools |
 | `graph_algorithm`, `shortest_path` | PageRank, betweenness, communities, components; path explainer |
+| `list_documents`, `search_documents`, `read_document` | Search and read the user's uploaded files |
+| `graph_upsert` | Record sourced entities and relationships into the user's own graph |
 | `recall`, `remember` | Read / write shared memory |
 | `delegate` | Hand a sub-task to a specialist agent |
 | `web_search` | Public web (Tavily, optional) |
