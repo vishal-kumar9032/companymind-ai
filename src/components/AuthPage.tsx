@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   EnterpriseUser,
-  DEMO_ENTERPRISE_USERS,
   signInWithGoogleAuth,
   signUpWithEmail,
   signInWithEmail,
@@ -87,17 +86,6 @@ export function AuthPage({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelectPersona = (persona: EnterpriseUser) => {
-    setLoading(true);
-    setTimeout(() => {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("companymind_user", JSON.stringify(persona));
-      }
-      onSuccess(persona);
-      setLoading(false);
-    }, 200);
   };
 
   return (
@@ -230,7 +218,7 @@ export function AuthPage({
                   <input
                     type="text"
                     required
-                    placeholder="Sarah Chen"
+                    placeholder="Alex Morgan"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
@@ -323,46 +311,6 @@ export function AuthPage({
               <ArrowRight size={14} />
             </button>
           </form>
-
-          {/* Quick Demo Persona Pickers */}
-          <div className="pt-2 border-t border-slate-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-                Instant 1-Click Demo Personas:
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400">
-                Ready
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-1.5">
-              {DEMO_ENTERPRISE_USERS.map((persona) => (
-                <button
-                  key={persona.uid}
-                  type="button"
-                  onClick={() => handleSelectPersona(persona)}
-                  className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800/80 text-left transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="size-6 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-bold text-[10px] flex items-center justify-center shrink-0">
-                      {persona.displayName.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-200 group-hover:text-white truncate">
-                        {persona.displayName}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {persona.role} · {persona.department}
-                      </div>
-                    </div>
-                  </div>
-                  <ArrowRight
-                    size={12}
-                    className="text-slate-500 group-hover:text-indigo-400 transition-colors shrink-0"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </main>
 

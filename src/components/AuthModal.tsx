@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import {
   EnterpriseUser,
-  DEMO_ENTERPRISE_USERS,
   signInWithGoogleAuth,
   isFirebaseConfigured,
 } from "@/lib/firebase";
@@ -43,7 +42,7 @@ export function AuthModal({
       onClose();
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || "Failed to sign in. Falling back to enterprise demo.");
+      setError(err?.message || "Failed to sign in. Please verify your connection.");
     } finally {
       setLoading(false);
     }
@@ -123,43 +122,20 @@ export function AuthModal({
             </span>
           </button>
 
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <span className="relative bg-white px-3 text-[10px] font-mono uppercase tracking-wider text-slate-400">
-              Or Choose Enterprise Persona
-            </span>
-          </div>
-
-          {/* Quick Demo Personas */}
-          <div className="space-y-2">
-            {DEMO_ENTERPRISE_USERS.map((user) => (
-              <button
-                key={user.uid}
-                onClick={() => handleSignIn(user)}
-                disabled={loading}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 text-left transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="size-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
-                    {user.displayName.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      {user.displayName}
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate">
-                      {user.role} · {user.department}
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight
-                  size={14}
-                  className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0"
-                />
-              </button>
-            ))}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="text-slate-500">Need an enterprise account?</span>
+            <a
+              href="/?stage=register"
+              onClick={(e) => {
+                e.preventDefault();
+                onClose();
+                window.location.href = "/?stage=register";
+              }}
+              className="text-indigo-600 hover:text-indigo-700 font-semibold inline-flex items-center gap-1"
+            >
+              <span>Register workspace</span>
+              <ArrowRight size={12} />
+            </a>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 space-y-1">

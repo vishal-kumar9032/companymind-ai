@@ -351,7 +351,7 @@ export function RegistryTab({
                   </h4>
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <span className="text-[10px] text-slate-500">
-                      Author: {pr.properties?.author || "Alex Mercer"}
+                      Author: {pr.properties?.author || "Platform Engineering"}
                     </span>
                     <button
                       onClick={() => onAuditPR(214)}

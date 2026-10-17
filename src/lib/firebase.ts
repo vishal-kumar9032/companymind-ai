@@ -125,39 +125,19 @@ export interface EnterpriseUser {
   isFirebaseAuthenticated: boolean;
 }
 
-// Preset Enterprise Profiles for instant demo / verification
-export const DEMO_ENTERPRISE_USERS: EnterpriseUser[] = [
-  {
-    uid: "sarah-chen-infra",
-    displayName: "Sarah Chen",
-    email: "sarah.chen@acme.corp",
-    photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-    tenantId: "acme-core",
-    role: "Staff Principal Engineer",
-    department: "Core Infrastructure",
-    isFirebaseAuthenticated: false,
-  },
-  {
-    uid: "alex-mercer-payments",
-    displayName: "Alex Mercer",
-    email: "alex.mercer@finflow.io",
-    photoURL: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-    tenantId: "finflow-global",
-    role: "Lead Platform Engineer",
-    department: "Checkout & Payments",
-    isFirebaseAuthenticated: false,
-  },
-  {
-    uid: "elena-rostova-mobile",
-    displayName: "Elena Rostova",
-    email: "elena.rostova@acme.corp",
-    photoURL: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
-    tenantId: "acme-core",
-    role: "Lead Mobile Architect",
-    department: "Mobile Platform",
-    isFirebaseAuthenticated: false,
-  },
-];
+// Default workspace user identity for unauthenticated exploration
+export const GUEST_ENTERPRISE_USER: EnterpriseUser = {
+  uid: "workspace-member",
+  displayName: "Workspace Member",
+  email: "member@company.internal",
+  tenantId: "acme-core",
+  role: "Platform Engineer",
+  department: "Core Architecture",
+  isFirebaseAuthenticated: false,
+};
+
+// Clean reference array
+export const DEMO_ENTERPRISE_USERS: EnterpriseUser[] = [GUEST_ENTERPRISE_USER];
 
 /**
  * Signs in using Firebase Google Auth with popup.

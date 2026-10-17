@@ -165,14 +165,14 @@ export function SaaSHeader({
 
       {/* 3. Right: Quick Actions & Status Indicators */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Quick Demo Walkthrough Button */}
+        {/* Quick Blast Radius Analysis Action */}
         <button
           onClick={onRunDemo}
           className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer hover:shadow-indigo-500/20 active:scale-98"
-          title="Run 4-Hop Blast Radius Demo Query"
+          title="Run 4-Hop Blast Radius Causal Analysis"
         >
           <Play size={12} fill="currentColor" />
-          <span>Run 4-Hop Demo</span>
+          <span>Analyze Blast Radius</span>
         </button>
 
         {/* Model Gateway Selector Dropdown */}
