@@ -1,0 +1,50 @@
+import { NextRequest } from "next/server";
+import { resolveCaller } from "@/lib/agent/identity";
+import { runAgent, type AgentEvent } from "@/lib/agent/loop";
+import { listApprovals, recentRuns } from "@/lib/agent/memory";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+/** Stream the agent's work as newline-delimited JSON events. */
+export async function POST(req: NextRequest) {
+  const caller = await resolveCaller(req);
+  if (!caller) return json({ error: "Invalid or expired sign-in token" }, 401);
+
+  const body = await req.json().catch(() => ({}));
+  const goal = typeof body.message === "string" ? body.message.trim() : "";
+  if (!goal) return json({ error: "message is required" }, 400);
+  if (goal.length > 4000) return json({ error: "message too long" }, 400);
+
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (e: AgentEvent | { type: "done"; runId: string; steps: number }) =>
+        controller.enqueue(enc.encode(JSON.stringify(e) + "\n"));
+      try {
+        const r = await runAgent({ caller, goal, model: body.model, onEvent: send });
+        send({ type: "done", runId: r.runId, steps: r.steps });
+      } catch (err: any) {
+        send({ type: "error", message: String(err?.message || err).slice(0, 300) });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, { headers: { "content-type": "application/x-ndjson", "cache-control": "no-store" } });
+}
+
+/** Run history and pending approvals for the signed-in workspace. */
+export async function GET(req: NextRequest) {
+  const caller = await resolveCaller(req);
+  if (!caller) return json({ error: "Invalid or expired sign-in token" }, 401);
+  try {
+    const [runs, approvals] = await Promise.all([recentRuns(caller, 25), listApprovals(caller, 25)]);
+    return json({ workspace: caller.authenticated ? "personal" : "demo", runs, approvals });
+  } catch {
+    return json({ workspace: caller.authenticated ? "personal" : "demo", runs: [], approvals: [] });
+  }
+}
