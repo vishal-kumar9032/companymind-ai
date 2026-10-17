@@ -20,13 +20,13 @@ export async function resolveEntity(name: string): Promise<string | null> {
  * Tool 1: Trace Decision Provenance
  * Traces why a service is constrained, what RFC proposed it, which meeting approved it, and who signed off.
  */
-export async function traceDecisionProvenance(serviceName: string): Promise<{
+export async function traceDecisionProvenance(serviceName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
   hops: string[];
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH path = (s:Service {name: $serviceName})<-[:GOVERNS]-(d:Decision)<-[:PROPOSES]-(doc:Doc)<-[:RECORDED_IN]-(m:Meeting)
     OPTIONAL MATCH (d)<-[:APPROVED]-(approver:Person)
@@ -65,13 +65,13 @@ export async function traceDecisionProvenance(serviceName: string): Promise<{
  * Tool 2: Service Blast Radius
  * Calculates variable-depth downstream impact and owning teams if a service fails or is sunset.
  */
-export async function serviceBlastRadius(serviceName: string, depth = 4): Promise<{
+export async function serviceBlastRadius(serviceName: string, depth = 4, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
   hops: string[];
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   
   // Notice: FalkorDB variable-length pattern with bounded depth
   const cypher = `
@@ -113,12 +113,12 @@ export async function serviceBlastRadius(serviceName: string, depth = 4): Promis
  * Tool 3: Find Subject Matter Experts
  * Ranks engineers by RFC authorship, team lead status, and PR contributions touching a service.
  */
-export async function findSubjectMatterExperts(serviceName: string): Promise<{
+export async function findSubjectMatterExperts(serviceName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (s:Service {name: $serviceName})
     OPTIONAL MATCH (s)<-[:OWNS]-(t:Team)<-[:MEMBER_OF]-(lead:Person {name: t.lead})
@@ -151,12 +151,12 @@ export async function findSubjectMatterExperts(serviceName: string): Promise<{
  * Tool 4: PR Governance Audit Watchdog
  * Audits incoming GitHub PRs to see if modified services violate active or superseded architectural decisions.
  */
-export async function auditPR(prNumber: number): Promise<{
+export async function auditPR(prNumber: number, graphId?: string): Promise<{
   violations: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (pr:GitHubPR {number: $prNumber})-[:TOUCHES]->(s:Service)<-[:GOVERNS]-(d:Decision)
     OPTIONAL MATCH (d)-[:SUPERSEDES]->(old:Decision)

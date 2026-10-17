@@ -38,7 +38,13 @@ const fn = (name: string, description: string, properties: Record<string, unknow
 
 const MAX_ROWS = 50;
 
-const BUILTIN: { def: Def; run: Handler; roles?: Role[]; demoOnly?: boolean }[] = [
+/** An empty result is stated outright so the model reports it instead of inventing an answer. */
+const orEmpty = (rows: unknown[] | undefined, what: string) =>
+  rows && rows.length
+    ? rows
+    : { results: [], note: `No ${what} found in this workspace's graph. It may not contain that data yet (connect and sync sources in Connections), or the name may differ; try entity_neighborhood or graph_query.` };
+
+const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
   {
     def: fn("graph_schema", "List node labels, relationship types and node counts in this organization's knowledge graph.", {}),
     run: async (_a, ctx) => {
@@ -113,29 +119,29 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[]; demoOnly?: boolean }[] 
       serviceName: { type: "string" },
       depth: { type: "integer", default: 4 },
     }, ["serviceName"]),
-    run: async (a) => (await serviceBlastRadius(a.serviceName, a.depth || 4)).data,
-    demoOnly: true,
+    run: async (a, ctx) =>
+      orEmpty((await serviceBlastRadius(a.serviceName, a.depth || 4, ctx.caller.graph)).data, "dependent services"),
   },
   {
     def: fn("trace_decision_provenance", "Trace which decision governs a service, the RFC behind it, the meeting that approved it and who signed off.", {
       serviceName: { type: "string" },
     }, ["serviceName"]),
-    run: async (a) => (await traceDecisionProvenance(a.serviceName)).data,
-    demoOnly: true,
+    run: async (a, ctx) =>
+      orEmpty((await traceDecisionProvenance(a.serviceName, ctx.caller.graph)).data, "governing decision"),
   },
   {
     def: fn("audit_pr_governance", "Check whether a pull request touches services governed by active architectural decisions.", {
       prNumber: { type: "integer" },
     }, ["prNumber"]),
-    run: async (a) => (await auditPR(Number(a.prNumber))).violations,
-    demoOnly: true,
+    run: async (a, ctx) =>
+      orEmpty((await auditPR(Number(a.prNumber), ctx.caller.graph)).violations, "governance violations or that pull request"),
   },
   {
     def: fn("find_subject_matter_experts", "Rank people who know a service best (owners, RFC authors, PR contributors).", {
       serviceName: { type: "string" },
     }, ["serviceName"]),
-    run: async (a) => (await findSubjectMatterExperts(a.serviceName)).data,
-    demoOnly: true,
+    run: async (a, ctx) =>
+      orEmpty((await findSubjectMatterExperts(a.serviceName, ctx.caller.graph)).data, "experts"),
   },
   {
     def: fn("recall", "Search shared agent memory (what any agent learned in earlier sessions).", {
@@ -214,7 +220,6 @@ export async function buildToolbox(caller: Caller, role: Role, connected: string
   const definitions: Def[] = [];
 
   for (const t of BUILTIN) {
-    if (t.demoOnly && caller.authenticated) continue;
     if (t.roles && !t.roles.includes(role)) continue;
     if (t.def.type === "function") {
       handlers.set(t.def.function.name, t.run);
