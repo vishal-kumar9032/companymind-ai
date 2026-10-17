@@ -189,8 +189,8 @@
     - Added `openrouter/openrouter-free` to `AVAILABLE_MODELS` and `DEFAULT_FALLBACK_MODELS` in `src/lib/truefoundry.ts`.
     - Updated `src/lib/agent/loop.ts` to include `openrouter/openrouter-free` in candidate models and direct fallback to iterate across `gemini-2.5-flash-lite` and `gemini-2.5-flash`.
     - Updated `.env.local` with `GEMINI_MODEL=gemini-2.5-flash-lite` and added `openrouter/openrouter-free` to `TRUEFOUNDRY_FALLBACK_MODELS`.
-  - **Production Verification:**
     - Verified `openrouter/openrouter-free` end-to-end in `runAgent()`: successfully executed 3 reasoning steps (`graph_schema` -> `graph_query` -> Markdown table answer).
+    - Resolved OpenAI-compatible bridge quirk in `src/lib/agent/loop.ts` where models executing tools return empty content instead of a textual synthesis: added automatic follow-up synthesis without tools when tools finish. Verified with direct `gemini-2.5-flash-lite`: successfully retrieved node labels from FalkorDB (`AgentRun`, `Memory`, `Task`, `Entity`, `Approval`) and formatted clean answer.
     - `pnpm exec tsc --noEmit` passed with 0 errors.
     - `pnpm build` passed (11/11 routes).
     - PM2 service `companymind-ai` restarted on port 13050 (`https://companymind.135-235-136-6.sslip.io`).

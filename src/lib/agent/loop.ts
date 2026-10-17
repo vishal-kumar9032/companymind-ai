@@ -240,6 +240,12 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
       if (!calls.length) {
         answer = (message.content || "").trim();
+        if (!answer && messages.some((m) => m.role === "tool")) {
+          try {
+            const synth = await chat(client, [used, ...models], messages, []);
+            answer = (synth.message.content || "").trim();
+          } catch {}
+        }
         break;
       }
 
