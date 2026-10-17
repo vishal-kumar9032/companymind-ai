@@ -11,6 +11,7 @@ import {
 import {
   getTrueFoundryClient,
   isTrueFoundryGatewayConfigured,
+  getDirectGeminiClient,
   TRUEFOUNDRY_TOOL_DEFINITIONS,
   getGatewayFallbackModels,
 } from "@/lib/truefoundry";
@@ -122,7 +123,9 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    const requestedModel: string = body.model || process.env.TRUEFOUNDRY_MODEL || "groq/qwen-qwen3.8-27b";
+    const UNSUPPORTED = new Set(["groq/openai-gpt-oss-120b", "meta-llama/llama-3.3-70b-instruct"]);
+    const rawRequested: string = body.model || process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-3.1-flash-lite";
+    const requestedModel: string = UNSUPPORTED.has(rawRequested) ? "google-gemini/gemini-3.1-flash-lite" : rawRequested;
     const tenantId: string = body.tenantId || "acme-core";
 
     // Gateway Status Tracker
@@ -148,11 +151,10 @@ export async function POST(req: NextRequest) {
     if (isTrueFoundryGatewayConfigured() && !isGatewayInCooldown && requestedModel !== "falkordb-autonomous" && message) {
       const tfClient = getTrueFoundryClient();
       if (tfClient) {
-        const fallbackModels = getGatewayFallbackModels();
-        const candidateModels = [
-          requestedModel,
-          ...fallbackModels.filter((m) => m !== requestedModel),
-        ];
+        const fallbackModels = getGatewayFallbackModels().filter((m) => !UNSUPPORTED.has(m));
+        const candidateModels = Array.from(
+          new Set([requestedModel, ...fallbackModels, "google-gemini/gemini-3.1-flash-lite", "groq/qwen-qwen3.8-27b"])
+        );
 
         for (const candidateModel of candidateModels) {
           const gwStart = Date.now();
@@ -266,6 +268,8 @@ export async function POST(req: NextRequest) {
             lastGatewayFailureReason =
               err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")
                 ? `Quota Exceeded (429) on ${candidateModel}`
+                : err?.status === 413 || err?.message?.includes("413") || err?.message?.includes("too large")
+                ? `Token Limit Exceeded (413) on ${candidateModel}`
                 : err?.message || `Gateway error on ${candidateModel}`;
           }
         }
@@ -274,6 +278,45 @@ export async function POST(req: NextRequest) {
           lastGatewayFailureTime = Date.now();
           gatewayStatus.status = "fallback_active";
           gatewayStatus.reason = lastGatewayFailureReason;
+        }
+      }
+    }
+
+    // 1b. Direct Google Gemini Key Fallback
+    if (!answer && requestedModel !== "falkordb-autonomous" && message) {
+      const directGemini = getDirectGeminiClient();
+      if (directGemini) {
+        try {
+          const directStart = Date.now();
+          const directRes = await directGemini.chat.completions.create({
+            model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are CompanyMind AI, an autonomous enterprise intelligence agent powered by FalkorDB graph brain. Call the appropriate FalkorDB tool to answer the user query regarding services, blast radius, decisions, PR governance, or experts.",
+              },
+              { role: "user", content: message },
+            ],
+            tools: TRUEFOUNDRY_TOOL_DEFINITIONS,
+          });
+          const choice = directRes.choices[0];
+          if (choice?.message?.content && choice.message.content.trim().length > 15) {
+            answer = choice.message.content;
+            gatewayStatus.status = "online";
+            gatewayStatus.model = "gemini-2.5-flash (Google Direct)";
+            gatewayStatus.latencyMs = Date.now() - directStart;
+            traces.push({
+              tool: "enterprise_ai_gateway",
+              args: { model: "gemini-2.5-flash", fallback: "direct_gemini_key" },
+              durationMs: Date.now() - directStart,
+              resultCount: 1,
+              cypher: "ENTERPRISE_AI_GATEWAY [gemini-2.5-flash]: direct Google key inference",
+              path: hops,
+            });
+          }
+        } catch (directErr: any) {
+          console.warn("[Chat Gateway] Direct Gemini key fallback error:", directErr?.message || directErr);
         }
       }
     }

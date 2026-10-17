@@ -33,7 +33,7 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [currentTenant, setCurrentTenant] = useState<TenantConfig>(TENANTS[0]);
-  const [selectedModel, setSelectedModel] = useState<string>("groq/qwen-qwen3.8-27b");
+  const [selectedModel, setSelectedModel] = useState<string>("google-gemini/gemini-3.1-flash-lite");
   const [currentUser, setCurrentUser] = useState<EnterpriseUser | null>(null);
 
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
@@ -54,7 +54,7 @@ export default function Home() {
     status: "online",
     reason: "",
     fallbackEngine: "Autonomous FalkorDB Graph Engine",
-    model: "groq/qwen-qwen3.8-27b",
+    model: "google-gemini/gemini-3.1-flash-lite",
   });
   const [activeAgent, setActiveAgent] = useState<any>({
     name: "ArchitectureOracle",
@@ -498,6 +498,16 @@ export default function Home() {
                     setHighlightHops([nodeId]);
                     handleOpenSource(nodeId);
                   }}
+                  onSelectService={(serviceName: string) => {
+                    setHighlightHops([serviceName]);
+                    handleOpenSource(serviceName);
+                  }}
+                  onAnalyzeBlastRadius={(serviceName: string) =>
+                    handleSelectQueryAndSwitchToChat(
+                      `What services break if ${serviceName} is shut down?`
+                    )
+                  }
+                  selectedModel={selectedModel}
                   refreshTrigger={memoryRefreshTrigger}
                 />
               </div>

@@ -187,7 +187,7 @@ export function SaaSHeader({
               {activeModelObj.name}
             </span>
             <span className="xl:hidden font-mono text-[11px]">
-              {activeModelObj.id.includes("qwen") ? "Qwen 27B" : "Gemini 3.1"}
+              {activeModelObj.name}
             </span>
             <ChevronDown size={12} className="text-slate-400" />
           </button>

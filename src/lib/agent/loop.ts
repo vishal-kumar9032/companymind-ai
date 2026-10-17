@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import { getGatewayFallbackModels, getTrueFoundryClient } from "@/lib/truefoundry";
+import { getGatewayFallbackModels, getTrueFoundryClient, getDirectGeminiClient } from "@/lib/truefoundry";
 import type { Caller } from "./identity";
 import { connectionStatus } from "./composio";
 import { finishRun, recall, remember, startRun, createTask, completeTask } from "./memory";
@@ -35,7 +35,7 @@ export interface RunResult {
 
 const MAX_STEPS = 8;
 const MAX_DEPTH = 1;
-const MAX_TOOL_CHARS = 6000;
+const MAX_TOOL_CHARS = 4000;
 
 const ROLE_PROMPT: Record<Role, string> = {
   orchestrator:
@@ -60,9 +60,23 @@ async function connectedToolkits(caller: Caller): Promise<string[]> {
   return connected;
 }
 
+const UNSUPPORTED_MODELS = new Set([
+  "groq/openai-gpt-oss-120b",
+  "meta-llama/llama-3.3-70b-instruct",
+]);
+
 function candidateModels(requested?: string): string[] {
-  const first = requested && requested !== "falkordb-autonomous" ? requested : process.env.TRUEFOUNDRY_MODEL || "groq/qwen-qwen3.8-27b";
-  return [first, ...getGatewayFallbackModels().filter((m) => m !== first)];
+  let first = requested && requested !== "falkordb-autonomous" ? requested : process.env.TRUEFOUNDRY_MODEL || "google-gemini/gemini-3.1-flash-lite";
+  if (UNSUPPORTED_MODELS.has(first)) {
+    first = "google-gemini/gemini-3.1-flash-lite";
+  }
+  const fallbacks = getGatewayFallbackModels().filter((m) => !UNSUPPORTED_MODELS.has(m) && m !== first);
+  const extraModels = ["google-gemini/gemini-3.1-flash-lite", "groq/qwen-qwen3.8-27b"];
+  if (process.env.GEMINI_API_KEY) {
+    extraModels.push("gemini-2.5-flash");
+  }
+  const set = new Set<string>([first, ...fallbacks, ...extraModels]);
+  return Array.from(set);
 }
 
 function truncate(v: unknown): string {
@@ -82,17 +96,40 @@ async function chat(
   tools: OpenAI.Chat.Completions.ChatCompletionTool[],
 ) {
   let lastErr: unknown;
+  const directGemini = getDirectGeminiClient();
+
   for (const model of models) {
     try {
-      const res = await client.chat.completions.create(
+      const activeClient = model === "gemini-2.5-flash"
+        ? (directGemini || client)
+        : client;
+
+      const res = await activeClient.chat.completions.create(
         { model, messages, ...(tools.length ? { tools } : {}) },
-        { signal: AbortSignal.timeout(45_000) },
+        { signal: AbortSignal.timeout(30_000) },
       );
       return { model, message: res.choices[0].message };
-    } catch (err) {
+    } catch (err: any) {
+      console.warn(`[Agent Gateway] Model ${model} failed (${err?.status || err?.code || "error"}):`, err?.message || err);
       lastErr = err;
     }
   }
+
+  // Fallback to direct Gemini endpoint if all candidate models failed
+  if (directGemini) {
+    try {
+      const fallbackModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      console.warn(`[Agent Gateway] Falling back to direct Google Gemini key (${fallbackModel})`);
+      const res = await directGemini.chat.completions.create(
+        { model: fallbackModel, messages, ...(tools.length ? { tools } : {}) },
+        { signal: AbortSignal.timeout(30_000) },
+      );
+      return { model: fallbackModel, message: res.choices[0].message };
+    } catch (directErr: any) {
+      console.warn("[Agent Gateway] Direct Gemini fallback failed:", directErr?.message || directErr);
+    }
+  }
+
   throw new Error(`All models failed: ${String((lastErr as any)?.message || lastErr).slice(0, 200)}`);
 }
 
@@ -111,7 +148,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     const toolbox: Toolbox = await buildToolbox(caller, role, connected);
 
     // Cross-session memory: surface what agents already learned about this topic.
-    const memories = await recall(caller, goal, 5).catch(() => []);
+    const memories = await recall(caller, goal, 4).catch(() => []);
     onEvent({ type: "memory_recalled", count: memories.length });
 
     const system = [
@@ -122,7 +159,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         : "This is the read-only demo workspace: only the sample knowledge graph is available, no accounts are connected, and no actions can be taken.",
       "Rules: use tools to get facts, never guess. Cite where each fact came from (graph entity, document, email, PR). If you cannot find something, say so plainly. Keep answers concise and structured.",
       memories.length
-        ? "Relevant shared memory from earlier work:\n" + memories.map((m: any) => `- [${m.kind}] ${m.text}`).join("\n")
+        ? "Relevant shared memory from earlier work:\n" + memories.map((m: any) => `- [${m.kind}] ${String(m.text || "").slice(0, 240)}`).join("\n")
         : "",
       context ? `Context from the delegating agent:\n${context}` : "",
     ]
