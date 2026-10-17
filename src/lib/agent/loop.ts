@@ -24,6 +24,9 @@ export interface RunOptions {
   context?: string;
   depth?: number;
   parentRunId?: string;
+  /** Offer no connector write tools at all (used by sync, which must never change external accounts). */
+  readOnly?: boolean;
+  maxSteps?: number;
   onEvent?: (e: AgentEvent) => void;
 }
 
@@ -200,7 +203,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
   try {
     const connected = await connectedToolkits(caller);
-    const toolbox: Toolbox = await buildToolbox(caller, role, connected);
+    const toolbox: Toolbox = await buildToolbox(caller, role, connected, { readOnly: opts.readOnly });
 
     // Cross-session memory: surface what agents already learned about this topic.
     const memories = await recall(caller, goal, 4).catch(() => []);
@@ -252,7 +255,8 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     let steps = 0;
     const deadline = Date.now() + RUN_BUDGET_MS;
 
-    for (; steps < MAX_STEPS && Date.now() < deadline; steps++) {
+    const maxSteps = opts.maxSteps ?? MAX_STEPS;
+    for (; steps < maxSteps && Date.now() < deadline; steps++) {
       const { model: used, message } = await chat(client, models, messages, toolbox.definitions);
       models = [used, ...models.filter((m) => m !== used)];
       onEvent({ type: "model", model: used, step: steps + 1 });

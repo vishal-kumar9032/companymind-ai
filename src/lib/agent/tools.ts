@@ -382,7 +382,12 @@ export interface Toolbox {
   call: (name: string, args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>;
 }
 
-export async function buildToolbox(caller: Caller, role: Role, connected: string[]): Promise<Toolbox> {
+export async function buildToolbox(
+  caller: Caller,
+  role: Role,
+  connected: string[],
+  opts: { readOnly?: boolean } = {},
+): Promise<Toolbox> {
   const handlers = new Map<string, Handler>();
   const definitions: Def[] = [];
 
@@ -402,8 +407,9 @@ export async function buildToolbox(caller: Caller, role: Role, connected: string
       for (const def of await getConnectedTools(caller.id, toolkits)) {
         if (def.type !== "function") continue;
         const slug = def.function.name;
-        composioNames.add(slug);
         const write = isWriteTool(slug);
+        if (write && opts.readOnly) continue;
+        composioNames.add(slug);
         definitions.push({
           type: "function",
           function: {

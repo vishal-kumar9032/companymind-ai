@@ -31,6 +31,85 @@ interface State {
   toolkits: Toolkit[];
 }
 
+interface SyncLine {
+  text: string;
+  ok?: boolean;
+}
+
+/** Streams /api/sync: the agent reads recent items from connected accounts and records them in the user's graph. */
+function SyncPanel() {
+  const [running, setRunning] = useState(false);
+  const [lines, setLines] = useState<SyncLine[]>([]);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function run() {
+    setRunning(true);
+    setLines([]);
+    setSummary(null);
+    setErr(null);
+    try {
+      const res = await fetch("/api/sync", { method: "POST", headers: await authHeaders() });
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Sync failed (${res.status})`);
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const parts = buf.split("\n");
+        buf = parts.pop() || "";
+        for (const part of parts) {
+          if (!part.trim()) continue;
+          const e = JSON.parse(part);
+          if (e.type === "tool_call") setLines((l) => [...l, { text: `Reading ${e.name}` }]);
+          else if (e.type === "tool_result") setLines((l) => [...l, { text: `${e.name} ${e.ok ? "done" : "failed"}`, ok: e.ok }]);
+          else if (e.type === "answer") setSummary(e.text);
+          else if (e.type === "error") setErr(e.message);
+        }
+      }
+    } catch (e: any) {
+      setErr(e?.message || "Sync failed");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">Sync connected accounts into your graph</h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Reads recent email, calendar events, documents and GitHub activity (read-only) and records the people, documents and pull requests it finds, each linked to its source.
+          </p>
+        </div>
+        <button
+          onClick={run}
+          disabled={running}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition disabled:opacity-60 cursor-pointer"
+        >
+          {running ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {running ? "Syncing…" : "Sync now"}
+        </button>
+      </div>
+      {lines.length > 0 && (
+        <ul className="max-h-32 overflow-y-auto space-y-0.5 text-[11px] font-mono text-slate-500">
+          {lines.map((l, i) => (
+            <li key={i} className={l.ok === false ? "text-rose-600" : undefined}>{l.text}</li>
+          ))}
+        </ul>
+      )}
+      {summary && <p className="whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-700">{summary}</p>}
+      {err && <p className="text-xs text-rose-600">{err}</p>}
+    </div>
+  );
+}
+
 export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => void }) {
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -121,6 +200,8 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
           Connect your accounts so autonomous agents can securely index institutional knowledge and prepare actions with human-in-the-loop approval.
         </p>
       </div>
+
+      {state?.authenticated && state.toolkits.some((t) => t.connected) && <SyncPanel />}
 
       {signedOut && (
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
