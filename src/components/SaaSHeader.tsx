@@ -109,6 +109,8 @@ export function SaaSHeader({
       if (res.ok) {
         setSeedNotice("Graph Reset");
         onRefreshGraph();
+      } else {
+        setSeedNotice(res.status === 403 ? "Reset disabled" : "Reset failed");
       }
     } catch (err) {
       console.error(err);

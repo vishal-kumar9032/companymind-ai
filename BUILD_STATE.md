@@ -257,3 +257,5 @@
     - Verified `/api/findings` and `/api/graph` endpoints: unauthenticated/demo callers receive demo graph and findings; personal token callers receive isolated tenant memory.
 
 
+
+- `2026-10-17` (Branch `feat/connectors-memory` - Fix: lock down `/api/seed`): The route ran `MATCH (n) DETACH DELETE n` on the shared demo graph for any anonymous caller. It now returns 403 in production unless `ALLOW_DEMO_RESEED=true` (added to `.env.example`, default false) and enforces a 30s cooldown (429); the header "Reset" button shows "Reset disabled" / "Reset failed" instead of failing silently. Verified: `tsc --noEmit` clean. NOT verified: live route behaviour on the deployed PM2 instance (not rebuilt/restarted). Note: set `ALLOW_DEMO_RESEED=true` on the host if the public demo should keep its Reset button.
