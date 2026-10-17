@@ -350,51 +350,102 @@ export function isWriteTool(slug: string): boolean {
   return words.some((w) => WRITE_WORDS.has(w)) || !words.some((w) => READ_WORDS.has(w));
 }
 
-const ALLOWED_PARAM_KEYS = new Set([
-  "type",
-  "description",
-  "properties",
-  "required",
-  "items",
-  "enum",
-  "nullable",
-]);
-
 /**
- * Sanitize tool parameters schema so it strictly adheres to Google Gemini / OpenAPI 3.0 specification.
- * Strips non-standard properties ('examples', 'file_uploadable', 'default', etc.) and ensures
- * 'required' only includes properties actually present in the schema.
+ * Recursively sanitize a JSON Schema node so it strictly adheres to Google Gemini / OpenAPI 3.0 specification.
+ * Strips unsupported properties ('examples', 'default', 'additionalProperties', etc.), flattens anyOf/oneOf,
+ * and preserves parameter property dictionaries without treating property names as schema keywords.
  */
-export function sanitizeToolParameters(node: any): any {
+export function sanitizeSchemaNode(node: any): any {
   if (!node || typeof node !== "object") return node;
-  if (Array.isArray(node)) return node.map(sanitizeToolParameters);
+  if (Array.isArray(node)) return node.map(sanitizeSchemaNode);
 
-  if (node.anyOf && Array.isArray(node.anyOf) && node.anyOf.length) {
-    return sanitizeToolParameters(node.anyOf[0]);
+  // Flatten anyOf / oneOf to first non-null variant
+  const variants = node.anyOf || node.oneOf;
+  if (Array.isArray(variants) && variants.length > 0) {
+    const nonNull = variants.find((x: any) => x && x.type !== "null") || variants[0];
+    const isNullable = variants.some((x: any) => x && x.type === "null");
+    return sanitizeSchemaNode({
+      ...nonNull,
+      description: node.description || nonNull.description,
+      nullable: Boolean(isNullable || node.nullable || nonNull.nullable),
+    });
   }
-  if (node.oneOf && Array.isArray(node.oneOf) && node.oneOf.length) {
-    return sanitizeToolParameters(node.oneOf[0]);
+
+  // Normalize type
+  let type = node.type;
+  let nullable = Boolean(node.nullable);
+  if (Array.isArray(type)) {
+    const nonNullType = type.find((t: string) => t !== "null");
+    type = nonNullType || "string";
+    nullable = nullable || type.includes("null");
+  } else if (typeof type === "string") {
+    type = type.toLowerCase();
   }
 
   const clean: any = {};
-  for (const [k, v] of Object.entries(node)) {
-    if (ALLOWED_PARAM_KEYS.has(k)) {
-      clean[k] = sanitizeToolParameters(v);
+  if (type) clean.type = type;
+  if (nullable) clean.nullable = true;
+  if (typeof node.description === "string") clean.description = node.description;
+  if (typeof node.format === "string") clean.format = node.format;
+
+  if (Array.isArray(node.enum) && node.enum.length > 0) {
+    clean.enum = node.enum.map((e: any) => String(e));
+    if (!clean.type) clean.type = "string";
+  }
+
+  // Handle properties map: each key is an arbitrary parameter name; sanitize each value as a schema node
+  if (node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)) {
+    clean.properties = {};
+    for (const [propName, propSchema] of Object.entries(node.properties)) {
+      clean.properties[propName] = sanitizeSchemaNode(propSchema);
     }
   }
 
-  if (!clean.type && clean.properties) {
-    clean.type = "object";
+  if (node.items) {
+    clean.items = sanitizeSchemaNode(node.items);
   }
 
-  if (clean.required && Array.isArray(clean.required)) {
-    if (clean.properties && typeof clean.properties === "object") {
-      clean.required = clean.required.filter((p: string) => Boolean(clean.properties[p]));
-    } else {
-      delete clean.required;
+  // Default missing types
+  if (!clean.type) {
+    if (clean.properties) clean.type = "object";
+    else if (clean.items) clean.type = "array";
+    else clean.type = "string";
+  }
+
+  // Ensure object types have a valid properties dictionary
+  if (clean.type === "object" && !clean.properties) {
+    clean.properties = {};
+  }
+
+  // Ensure array types have items
+  if (clean.type === "array" && !clean.items) {
+    clean.items = { type: "string" };
+  }
+
+  // Ensure required only contains property names that exist in clean.properties
+  if (Array.isArray(node.required) && clean.properties) {
+    const validRequired = node.required.filter(
+      (p: unknown) => typeof p === "string" && Object.prototype.hasOwnProperty.call(clean.properties, p),
+    );
+    if (validRequired.length > 0) {
+      clean.required = validRequired;
     }
   }
 
+  return clean;
+}
+
+export function sanitizeToolParameters(node: any): any {
+  if (!node || typeof node !== "object") {
+    return { type: "object", properties: {} };
+  }
+  const clean = sanitizeSchemaNode(node);
+  if (clean.type !== "object") {
+    return { type: "object", properties: {} };
+  }
+  if (!clean.properties) {
+    clean.properties = {};
+  }
   return clean;
 }
 
