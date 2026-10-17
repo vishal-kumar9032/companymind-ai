@@ -167,10 +167,32 @@
   - **Gemini Schema Sanitization (`src/lib/agent/composio.ts`):** Implemented `sanitizeToolParameters(node)` to recursively filter parameter keys against strict OpenAPI/Gemini specifications (`type`, `description`, `properties`, `required`, `items`, `enum`, `nullable`), flatten `anyOf`/`oneOf`, ensure `type: 'object'` when `properties` exist, and strip unlisted property keys from `required`.
   - **Balanced Toolkit Allocation & Prioritization (`src/lib/agent/composio.ts`):** Replaced monolithic tool query with parallel per-toolkit fetching with intelligent `scoreTool(name)` ranking, prioritizing key user actions (`FETCH_EMAILS`, `CREATE_DOCUMENT`, `EVENTS_LIST`, `FIND_FILE`, etc.) and taking the top 4 tools per connected service to ensure complete coverage.
   - **Payload Sanitization (`src/lib/agent/loop.ts`):** Enhanced `truncate(v)` to parse Gmail response objects and extract clean summaries (`id`, `subject`, `sender`, `date`, `snippet`) for up to 8 messages, eliminating JSON corruption from MIME headers.
+- `2026-10-17` (Branch `feat/connectors-memory` - Live LLM audit, OpenRouter integration & multi-tier fallback verification):
+  - **Live LLM Endpoint Probing:**
+    - TrueFoundry listed 11 models for account `vishalkumar9032374977@gmail.com`.
+    - Tested chat completion & function calling live:
+      - `google-gemini/gemini-3.1-flash-lite`: operational via TrueFoundry, but high latency (15–35s per turn).
+      - `google-gemini/gemini-2.5-flash-lite`: operational via TrueFoundry (1,108ms chat, 3,001ms tool call).
+      - `groq/qwen-qwen3.8-27b`: ultra-fast LPU inference (259ms chat, 336ms tool call).
+      - `groq/openai-gpt-oss-20b`: operational (548ms).
+      - `openrouter/openrouter-free`: operational via TrueFoundry (1,816ms, successfully returned tool call).
+      - `openrouter/nvidia-nemotron-3-super-120b-a12b-free`: operational (3,293ms).
+      - `openrouter/dots-studio-dots-3-note-preview-free`: operational (1,731ms).
+      - `openrouter/liquid-lfm-2.5-2.6b-free`: operational (793ms).
+      - Unprovisioned OpenRouter models (e.g. `openrouter/anthropic/claude-3.5-sonnet`): 403 unauthorized.
+    - Direct Google Gemini key (`[REDACTED_GEMINI_KEY]`):
+      - `gemini-2.5-flash` had hit the 20 requests/day free tier quota (429).
+      - `gemini-2.5-flash-lite` has active quota and passed directly in 1,412ms with full function calling.
+  - **Dynamic Fallback Verification:**
+    - Tested live autonomous run with `payments-api` lookup: when `google-gemini/gemini-3.1-flash-lite` timed out on Step 1, the engine dynamically fell back to `groq/qwen-qwen3.8-27b`, which executed in 250ms and called `entity_neighborhood`. Subsequent steps alternated smoothly.
+  - **Integration & Resilience Updates:**
+    - Added `openrouter/openrouter-free` to `AVAILABLE_MODELS` and `DEFAULT_FALLBACK_MODELS` in `src/lib/truefoundry.ts`.
+    - Updated `src/lib/agent/loop.ts` to include `openrouter/openrouter-free` in candidate models and direct fallback to iterate across `gemini-2.5-flash-lite` and `gemini-2.5-flash`.
+    - Updated `.env.local` with `GEMINI_MODEL=gemini-2.5-flash-lite` and added `openrouter/openrouter-free` to `TRUEFOUNDRY_FALLBACK_MODELS`.
   - **Production Verification:**
+    - Verified `openrouter/openrouter-free` end-to-end in `runAgent()`: successfully executed 3 reasoning steps (`graph_schema` -> `graph_query` -> Markdown table answer).
     - `pnpm exec tsc --noEmit` passed with 0 errors.
-    - End-to-end CLI agent verification with live user session (`u_n7uiat3yTISH0P9yup2PbaALllO2`): successfully executed `GMAIL_FETCH_EMAILS` and summarized real inbox emails.
-    - Google Docs tool calling verified: queued `GOOGLEDRIVE_CREATE_FILE_FROM_TEXT` for human approval.
-    - Production build (`pnpm build`) compiled successfully (11/11 routes).
-    - PM2 service `companymind-ai` restarted online on port 13050 (`https://companymind.135-235-136-6.sslip.io`).
+    - `pnpm build` passed (11/11 routes).
+    - PM2 service `companymind-ai` restarted on port 13050 (`https://companymind.135-235-136-6.sslip.io`).
+
 

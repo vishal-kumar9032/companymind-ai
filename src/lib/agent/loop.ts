@@ -79,8 +79,14 @@ function candidateModels(requested?: string): string[] {
     first = "google-gemini/gemini-3.1-flash-lite";
   }
   const fallbacks = getGatewayFallbackModels().filter((m) => !UNSUPPORTED_MODELS.has(m) && m !== first);
-  const extraModels = ["google-gemini/gemini-3.1-flash-lite", "groq/qwen-qwen3.8-27b"];
+  const extraModels = [
+    "google-gemini/gemini-3.1-flash-lite",
+    "groq/qwen-qwen3.8-27b",
+    "google-gemini/gemini-2.5-flash-lite",
+    "openrouter/openrouter-free",
+  ];
   if (process.env.GEMINI_API_KEY) {
+    extraModels.push("gemini-2.5-flash-lite");
     extraModels.push("gemini-2.5-flash");
   }
   const set = new Set<string>([first, ...fallbacks, ...extraModels]);
@@ -126,7 +132,7 @@ async function chat(
 
   for (const model of models) {
     try {
-      const activeClient = model === "gemini-2.5-flash"
+      const activeClient = (model === "gemini-2.5-flash" || model === "gemini-2.5-flash-lite")
         ? (directGemini || client)
         : client;
 
@@ -143,16 +149,22 @@ async function chat(
 
   // Fallback to direct Gemini endpoint if all candidate models failed
   if (directGemini) {
-    try {
-      const fallbackModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-      console.warn(`[Agent Gateway] Falling back to direct Google Gemini key (${fallbackModel})`);
-      const res = await directGemini.chat.completions.create(
-        { model: fallbackModel, messages, ...(tools.length ? { tools } : {}) },
-        { signal: AbortSignal.timeout(30_000) },
-      );
-      return { model: fallbackModel, message: res.choices[0].message };
-    } catch (directErr: any) {
-      console.warn("[Agent Gateway] Direct Gemini fallback failed:", directErr?.message || directErr);
+    const directCandidates = [
+      process.env.GEMINI_MODEL || "gemini-2.5-flash-lite",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash",
+    ];
+    for (const fallbackModel of Array.from(new Set(directCandidates))) {
+      try {
+        console.warn(`[Agent Gateway] Falling back to direct Google Gemini key (${fallbackModel})`);
+        const res = await directGemini.chat.completions.create(
+          { model: fallbackModel, messages, ...(tools.length ? { tools } : {}) },
+          { signal: AbortSignal.timeout(30_000) },
+        );
+        return { model: fallbackModel, message: res.choices[0].message };
+      } catch (directErr: any) {
+        console.warn(`[Agent Gateway] Direct Gemini (${fallbackModel}) fallback failed:`, directErr?.message || directErr);
+      }
     }
   }
 

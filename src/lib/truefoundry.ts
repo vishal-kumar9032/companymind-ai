@@ -51,6 +51,14 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     description: "Direct Google Gemini API endpoint with verified tool calling and high concurrency.",
   },
   {
+    id: "openrouter/openrouter-free",
+    name: "OpenRouter Free Router",
+    provider: "OpenRouter",
+    tag: "Multi-Model Router",
+    speed: "~1.8s",
+    description: "OpenRouter auto-routed free models with function calling enabled via TrueFoundry.",
+  },
+  {
     id: "falkordb-autonomous",
     name: "Autonomous FalkorDB Engine",
     provider: "FalkorDB Native",
@@ -62,8 +70,9 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 
 export const DEFAULT_FALLBACK_MODELS = [
   "groq/qwen-qwen3.8-27b",
-  "groq/openai-gpt-oss-20b",
   "google-gemini/gemini-2.5-flash-lite",
+  "openrouter/openrouter-free",
+  "groq/openai-gpt-oss-20b",
 ];
 
 export function getGatewayFallbackModels(): string[] {
