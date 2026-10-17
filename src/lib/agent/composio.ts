@@ -543,3 +543,80 @@ export async function executeComposioTool(
     return { ok: false, error: formatComposioError(err) };
   }
 }
+
+
+export interface AppToolInfo {
+  tool: string;
+  app: string;
+  description: string;
+  write: boolean;
+  required: string[];
+  params: Record<string, string>;
+}
+
+const summarize = (t: any): AppToolInfo => {
+  const props = (t.inputParameters?.properties || {}) as Record<string, any>;
+  const required: string[] = (t.inputParameters?.required || []).filter((k: string) => k in props);
+  const names = [...required, ...Object.keys(props).filter((k) => !required.includes(k))].slice(0, 14);
+  return {
+    tool: t.slug,
+    app: t.toolkit?.slug || "",
+    description: String(t.description || "").slice(0, 220),
+    write: isWriteTool(t.slug),
+    required,
+    params: Object.fromEntries(
+      names.map((k) => [k, `${props[k]?.type || "any"}${required.includes(k) ? " (required)" : ""}: ${String(props[k]?.description || "").slice(0, 90)}`]),
+    ),
+  };
+};
+
+const READ_QUERY = /\b(list|find|get|search|read|fetch|show|view|look|check|retrieve)\b/i;
+
+/** Composio's own ranking is loose, so over-fetch and re-rank by how well the name and description match the query. */
+function rank(tools: AppToolInfo[], query: string): AppToolInfo[] {
+  const words = query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  const wantsRead = READ_QUERY.test(query);
+  const score = (t: AppToolInfo) => {
+    const name = t.tool.toLowerCase().split("_");
+    const desc = t.description.toLowerCase();
+    let sc = 0;
+    for (const w of words) {
+      if (name.includes(w) || name.includes(w.replace(/s$/, ""))) sc += 3;
+      else if (desc.includes(w)) sc += 1;
+    }
+    if (wantsRead && !t.write) sc += 2;
+    if (wantsRead && t.write) sc -= 2;
+    return sc;
+  };
+  return tools.map((t) => ({ t, s: score(t) })).sort((x, y) => y.s - x.s).map((x) => x.t);
+}
+
+/** Search the FULL tool catalogue of the given apps (hundreds per app), not just the few offered directly. */
+export async function searchAppTools(toolkits: string[], query: string, limit = 8): Promise<AppToolInfo[]> {
+  const composio: any = getComposio();
+  if (!composio) return [];
+  const perApp = await Promise.all(
+    toolkits.map(async (toolkit) => {
+      try {
+        const raw: any = await composio.tools.getRawComposioTools({ toolkits: [toolkit], search: query, limit: 40 });
+        const list = ((Array.isArray(raw) ? raw : raw?.items || []) as any[]).filter((t) => !t.isDeprecated).map(summarize);
+        return rank(list, query).slice(0, limit);
+      } catch {
+        return [];
+      }
+    }),
+  );
+  return perApp.flat();
+}
+
+/** One tool's metadata straight from the catalogue; null if the slug does not exist. */
+export async function getAppTool(slug: string): Promise<AppToolInfo | null> {
+  const composio: any = getComposio();
+  if (!composio) return null;
+  try {
+    const t: any = await composio.tools.getRawComposioToolBySlug(slug);
+    return t?.slug ? summarize(t) : null;
+  } catch {
+    return null;
+  }
+}

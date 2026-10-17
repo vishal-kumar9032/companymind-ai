@@ -8,7 +8,7 @@ import {
 } from "@/lib/tools";
 import type { Caller } from "./identity";
 import { createApproval, recall, remember } from "./memory";
-import { executeComposioTool, getConnectedTools, isWriteTool } from "./composio";
+import { executeComposioTool, getAppTool, getConnectedTools, isWriteTool, searchAppTools } from "./composio";
 import { listDocuments, readDocument, searchDocuments } from "./documents";
 
 export type Role = "orchestrator" | "researcher" | "governance" | "scribe";
@@ -25,6 +25,8 @@ export interface ToolContext {
   role: Role;
   runId: string;
   connected: string[];
+  /** Sync runs must never change an external account. */
+  readOnly?: boolean;
   delegate?: (role: Role, goal: string, context: string) => Promise<string>;
   emit: (e: ToolEvent) => void;
 }
@@ -460,6 +462,55 @@ export async function buildToolbox(
     } catch {
       // Connected-tool discovery failed: continue with built-ins only; the agent is told what it has.
     }
+  }
+
+  if (caller.authenticated && toolkits.length) {
+    definitions.push(
+      fn(
+        "find_app_tools",
+        `Search the FULL tool catalogue of the user's connected apps (${toolkits.join(", ")}); each has hundreds of tools beyond the few listed directly. Use it whenever the tools you already have cannot do the task (e.g. list calendar events, find GitHub issues, read a sheet range). Returns tool names with required parameters; then call run_app_tool. Tools marked write=true need the user's approval.`,
+        {
+          query: { type: "string", description: "What you want to do, e.g. 'list pull requests' or 'search spreadsheets'" },
+          app: { type: "string", enum: toolkits, description: "Limit the search to one connected app" },
+        },
+        ["query"],
+      ),
+      fn(
+        "run_app_tool",
+        "Run a tool found with find_app_tools (or listed directly) with its arguments. Only tools of the user's connected apps run. Write tools are queued for human approval, not run.",
+        {
+          tool: { type: "string", description: "Exact tool name, e.g. GITHUB_LIST_PULL_REQUESTS" },
+          arguments: { type: "object", description: "Arguments as {name: value}; see required parameters from find_app_tools" },
+        },
+        ["tool"],
+      ),
+    );
+    handlers.set("find_app_tools", async (a: any) => {
+      if (a.app && !toolkits.includes(a.app)) return { error: `"${a.app}" is not connected for this user. Connected: ${toolkits.join(", ")}.` };
+      const apps = a.app ? [a.app] : toolkits;
+      const found = await searchAppTools(apps, String(a.query || ""), 8);
+      return found.length
+        ? { tools: found }
+        : { tools: [], note: "No matching tool. Try other keywords, or tell the user this app cannot do that." };
+    });
+    handlers.set("run_app_tool", async (a: any, ctx: ToolContext) => {
+      const slug = String(a.tool || "").trim();
+      const info = await getAppTool(slug);
+      if (!info) return { error: `No tool named ${slug}. Use find_app_tools to get exact names.` };
+      if (!toolkits.includes(info.app)) return { error: `${slug} belongs to "${info.app}", which is not connected for you.` };
+      let args: Record<string, unknown> = {};
+      if (a.arguments && typeof a.arguments === "object" && !Array.isArray(a.arguments)) args = a.arguments;
+      const missing = info.required.filter((k) => args[k] === undefined || args[k] === null || args[k] === "");
+      if (missing.length) return { error: `Missing required parameters: ${missing.join(", ")}. Ask the user for them or find them with a read tool first.`, parameters: info.params };
+      if (info.write) {
+        if (ctx.readOnly) return { error: "This run is read-only; writes are not allowed." };
+        const approvalId = await createApproval(ctx.caller, ctx.role, slug, args);
+        ctx.emit({ type: "approval", approvalId, tool: slug, args });
+        return { status: "pending_approval", approvalId, note: "Queued. The user must approve before this runs. Tell them what you prepared." };
+      }
+      const res = await executeComposioTool(ctx.caller.id, slug, args);
+      return res.ok ? res.data : { error: res.error };
+    });
   }
 
   return {
