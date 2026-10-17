@@ -12,6 +12,7 @@ import {
   getTrueFoundryClient,
   isTrueFoundryGatewayConfigured,
   TRUEFOUNDRY_TOOL_DEFINITIONS,
+  getGatewayFallbackModels,
 } from "@/lib/truefoundry";
 import { ToolTrace } from "@/lib/schema";
 
@@ -143,122 +144,137 @@ export async function POST(req: NextRequest) {
       gatewayStatus.reason = lastGatewayFailureReason || "Rate Limit / Quota Exceeded (429)";
     }
 
-    // 1. TrueFoundry LLM Gateway Dispatch (if active and not cooling down)
+    // 1. TrueFoundry LLM Gateway Dispatch with Multi-Model Fallback Cascade
     if (isTrueFoundryGatewayConfigured() && !isGatewayInCooldown && requestedModel !== "falkordb-autonomous" && message) {
-      const gwStart = Date.now();
-      try {
-        const tfClient = getTrueFoundryClient();
-        if (tfClient) {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4500);
+      const tfClient = getTrueFoundryClient();
+      if (tfClient) {
+        const fallbackModels = getGatewayFallbackModels();
+        const candidateModels = [
+          requestedModel,
+          ...fallbackModels.filter((m) => m !== requestedModel),
+        ];
 
-          const firstStep = await tfClient.chat.completions.create(
-            {
-              model: requestedModel,
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are CompanyMind AI, an autonomous enterprise intelligence agent powered by FalkorDB graph brain. Call the appropriate FalkorDB tool to answer the user query regarding services, blast radius, decisions, PR governance, or experts.",
-                },
-                { role: "user", content: message },
-              ],
-              tools: TRUEFOUNDRY_TOOL_DEFINITIONS,
-            },
-            { signal: controller.signal }
-          );
-          clearTimeout(timeoutId);
+        for (const candidateModel of candidateModels) {
+          const gwStart = Date.now();
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4500);
 
-          gatewayStatus.latencyMs = Date.now() - gwStart;
-          const choice = firstStep.choices[0];
-          const toolCalls = choice?.message?.tool_calls;
-          
-          if (toolCalls && toolCalls.length > 0) {
-            let toolEvidence = "";
-            for (const tc of toolCalls) {
-              if (tc.type !== "function" || !tc.function) continue;
-              const fn = tc.function.name;
-              const args = JSON.parse(tc.function.arguments || "{}");
-              mcpToolsInvoked.push(fn);
-
-              if (fn === "service_blast_radius") {
-                const res = await serviceBlastRadius(args.serviceName || matchedService?.id || "auth-v1", args.depth || 4);
-                traces.push(res.trace);
-                hops.push(...res.hops);
-                outcome = "answered_with_path";
-                toolEvidence += JSON.stringify(res.data) + "\n";
-              } else if (fn === "trace_decision_provenance") {
-                const res = await traceDecisionProvenance(args.serviceName || matchedService?.id || "auth-v1");
-                traces.push(res.trace);
-                hops.push(...res.hops);
-                outcome = "answered_with_path";
-                toolEvidence += JSON.stringify(res.data) + "\n";
-              } else if (fn === "audit_pr_governance") {
-                const prNum = parseInt(args.prNumber) || 214;
-                const res = await auditPR(prNum);
-                traces.push(res.trace);
-                hops.push(`GitHubPR #${prNum}`, "auth-v1", "DEC-44", "RFC-102", "Sarah Chen");
-                outcome = res.violations.length > 0 ? "governance_violation" : "answered_with_path";
-                toolEvidence += JSON.stringify(res.violations) + "\n";
-              } else if (fn === "find_subject_matter_experts") {
-                const res = await findSubjectMatterExperts(args.serviceName || matchedService?.id || "payments-api");
-                traces.push(res.trace);
-                hops.push(args.serviceName || matchedService?.id || "payments-api", ...res.data.map((e: any) => e.expert));
-                outcome = "answered_with_path";
-                toolEvidence += JSON.stringify(res.data) + "\n";
-              }
-            }
-
-            if (toolEvidence) {
-              const synthRes = await tfClient.chat.completions.create({
-                model: requestedModel,
+            const firstStep = await tfClient.chat.completions.create(
+              {
+                model: candidateModel,
                 messages: [
                   {
                     role: "system",
                     content:
-                      "You are CompanyMind AI, powered by FalkorDB graph brain. Synthesize the verified OpenCypher graph evidence into a concise executive answer with clear supporting evidence.",
+                      "You are CompanyMind AI, an autonomous enterprise intelligence agent powered by FalkorDB graph brain. Call the appropriate FalkorDB tool to answer the user query regarding services, blast radius, decisions, PR governance, or experts.",
                   },
-                  {
-                    role: "user",
-                    content: `User query: "${message}"\nVerified FalkorDB Graph Results:\n${toolEvidence}`,
-                  },
+                  { role: "user", content: message },
                 ],
-              });
+                tools: TRUEFOUNDRY_TOOL_DEFINITIONS,
+              },
+              { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
 
-              const synth = synthRes.choices[0]?.message?.content;
-              if (synth && synth.length > 20) {
-                answer = synth;
-                traces.push({
-                  tool: "enterprise_ai_gateway",
-                  args: { model: requestedModel, tool_calls_count: toolCalls.length },
-                  durationMs: Date.now() - gwStart,
-                  resultCount: 1,
-                  cypher: `ENTERPRISE_AI_GATEWAY: synthesized from ${mcpToolsInvoked.join(", ")}`,
-                  path: hops,
-                });
+            gatewayStatus.latencyMs = Date.now() - gwStart;
+            gatewayStatus.model = candidateModel;
+            const choice = firstStep.choices[0];
+            const toolCalls = choice?.message?.tool_calls;
+
+            if (toolCalls && toolCalls.length > 0) {
+              let toolEvidence = "";
+              for (const tc of toolCalls) {
+                if (tc.type !== "function" || !tc.function) continue;
+                const fn = tc.function.name;
+                const args = JSON.parse(tc.function.arguments || "{}");
+                mcpToolsInvoked.push(fn);
+
+                if (fn === "service_blast_radius") {
+                  const res = await serviceBlastRadius(args.serviceName || matchedService?.id || "auth-v1", args.depth || 4);
+                  traces.push(res.trace);
+                  hops.push(...res.hops);
+                  outcome = "answered_with_path";
+                  toolEvidence += JSON.stringify(res.data) + "\n";
+                } else if (fn === "trace_decision_provenance") {
+                  const res = await traceDecisionProvenance(args.serviceName || matchedService?.id || "auth-v1");
+                  traces.push(res.trace);
+                  hops.push(...res.hops);
+                  outcome = "answered_with_path";
+                  toolEvidence += JSON.stringify(res.data) + "\n";
+                } else if (fn === "audit_pr_governance") {
+                  const prNum = parseInt(args.prNumber) || 214;
+                  const res = await auditPR(prNum);
+                  traces.push(res.trace);
+                  hops.push(`GitHubPR #${prNum}`, "auth-v1", "DEC-44", "RFC-102", "Sarah Chen");
+                  outcome = res.violations.length > 0 ? "governance_violation" : "answered_with_path";
+                  toolEvidence += JSON.stringify(res.violations) + "\n";
+                } else if (fn === "find_subject_matter_experts") {
+                  const res = await findSubjectMatterExperts(args.serviceName || matchedService?.id || "payments-api");
+                  traces.push(res.trace);
+                  hops.push(args.serviceName || matchedService?.id || "payments-api", ...res.data.map((e: any) => e.expert));
+                  outcome = "answered_with_path";
+                  toolEvidence += JSON.stringify(res.data) + "\n";
+                }
               }
+
+              if (toolEvidence) {
+                const synthRes = await tfClient.chat.completions.create({
+                  model: candidateModel,
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        "You are CompanyMind AI, powered by FalkorDB graph brain. Synthesize the verified OpenCypher graph evidence into a concise executive answer with clear supporting evidence.",
+                    },
+                    {
+                      role: "user",
+                      content: `User query: "${message}"\nVerified FalkorDB Graph Results:\n${toolEvidence}`,
+                    },
+                  ],
+                });
+
+                const synth = synthRes.choices[0]?.message?.content;
+                if (synth && synth.length > 20) {
+                  answer = synth;
+                  traces.push({
+                    tool: "enterprise_ai_gateway",
+                    args: { model: candidateModel, tool_calls_count: toolCalls.length, fallbackUsed: candidateModel !== requestedModel },
+                    durationMs: Date.now() - gwStart,
+                    resultCount: 1,
+                    cypher: `ENTERPRISE_AI_GATEWAY [${candidateModel}]: synthesized from ${mcpToolsInvoked.join(", ")}`,
+                    path: hops,
+                  });
+                  break; // Successful synthesis, exit candidate models loop
+                }
+              }
+            } else if (choice?.message?.content && choice.message.content.trim().length > 15) {
+              // Direct generation from candidate model
+              answer = choice.message.content;
+              traces.push({
+                tool: "enterprise_ai_gateway",
+                args: { model: candidateModel, type: "direct_generation", fallbackUsed: candidateModel !== requestedModel },
+                durationMs: Date.now() - gwStart,
+                resultCount: 1,
+                cypher: `ENTERPRISE_AI_GATEWAY [${candidateModel}]: direct inference`,
+                path: hops,
+              });
+              break; // Successful response, exit candidate models loop
             }
-          } else if (choice?.message?.content && choice.message.content.trim().length > 15) {
-            // Direct generation from Groq / Gemini model
-            answer = choice.message.content;
-            traces.push({
-              tool: "enterprise_ai_gateway",
-              args: { model: requestedModel, type: "direct_generation" },
-              durationMs: Date.now() - gwStart,
-              resultCount: 1,
-              cypher: `ENTERPRISE_AI_GATEWAY [${requestedModel}]: direct inference`,
-              path: hops,
-            });
+          } catch (err: any) {
+            console.warn(`Gateway model ${candidateModel} failed, trying next candidate:`, err?.message || err);
+            lastGatewayFailureReason =
+              err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")
+                ? `Quota Exceeded (429) on ${candidateModel}`
+                : err?.message || `Gateway error on ${candidateModel}`;
           }
         }
-      } catch (err: any) {
-        lastGatewayFailureTime = Date.now();
-        lastGatewayFailureReason =
-          err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")
-            ? "Quota Exceeded (429) · Rate limit reached"
-            : err?.message || "Gateway unreachable / high demand";
-        gatewayStatus.status = "fallback_active";
-        gatewayStatus.reason = lastGatewayFailureReason;
+
+        if (!answer && lastGatewayFailureReason) {
+          lastGatewayFailureTime = Date.now();
+          gatewayStatus.status = "fallback_active";
+          gatewayStatus.reason = lastGatewayFailureReason;
+        }
       }
     }
 

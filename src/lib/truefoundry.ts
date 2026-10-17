@@ -19,12 +19,28 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     description: "High-throughput, ultra-low latency reasoning on Groq LPUs.",
   },
   {
+    id: "google-gemini/gemini-2.5-flash-lite",
+    name: "Gemini 2.5 Flash Lite",
+    provider: "Google Cloud",
+    tag: "Low-Cost Fallback",
+    speed: "~600ms",
+    description: "Google's ultra low-latency flash model, ideal for rapid tool dispatch and high concurrency.",
+  },
+  {
     id: "google-gemini/gemini-3.1-flash-lite",
     name: "Gemini 3.1 Flash Lite",
     provider: "Google AI",
     tag: "Multimodal Reasoner",
     speed: "~800ms",
     description: "Google's next-generation lightweight reasoning and multimodal model.",
+  },
+  {
+    id: "meta-llama/llama-3.3-70b-instruct",
+    name: "Llama 3.3 70B",
+    provider: "Meta AI",
+    tag: "Open Weights Tier-1",
+    speed: "~750ms",
+    description: "Meta's flagship 70B open model for structured logic and complex reasoning.",
   },
   {
     id: "groq/openai-gpt-oss-120b",
@@ -43,6 +59,24 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     description: "Deterministic OpenCypher graph traversals directly executed on FalkorDB.",
   },
 ];
+
+export const DEFAULT_FALLBACK_MODELS = [
+  "google-gemini/gemini-2.5-flash-lite",
+  "google-gemini/gemini-3.1-flash-lite",
+  "meta-llama/llama-3.3-70b-instruct",
+  "groq/openai-gpt-oss-120b",
+];
+
+export function getGatewayFallbackModels(): string[] {
+  const envFallbacks = process.env.TRUEFOUNDRY_FALLBACK_MODELS || process.env.TFY_FALLBACK_MODELS;
+  if (envFallbacks) {
+    return envFallbacks
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return DEFAULT_FALLBACK_MODELS;
+}
 
 export function getTrueFoundryClient(): OpenAI | null {
   const apiKey = process.env.TRUEFOUNDRY_API_KEY || process.env.TFY_API_KEY;
