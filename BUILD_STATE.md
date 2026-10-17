@@ -295,3 +295,28 @@
 - `2026-10-17` (Branch `feat/connectors-memory` - Fix: remove fallback Firebase credentials): Removed hardcoded Firebase API key and fallback config from `src/lib/firebase.ts`, strictly loading all credentials from environment variables. Lazy-initialized Firebase app only when environment variables are configured. Verified: `tsc --noEmit` and `next build` passed clean with 0 errors.
 
 - `2026-10-17` (Branch `feat/connectors-memory` - CI: add GitHub Actions continuous integration workflow): Added `.github/workflows/ci.yml` running Node 20, pnpm 9, frozen lockfile install, `tsc --noEmit` typecheck, and Next.js production build verification on pushes and pull requests.
+
+- `2026-10-17` (Branch `feat/connectors-memory` - Feat: Google Workspace tool expansion, ephemeral chat upload, and dynamic graph synchronization):
+  - **Composio Scope & Resilient Execution (`src/lib/agent/composio.ts`, `src/lib/agent/tools.ts`):**
+    - Configured Composio user API key client with CLI project/org scoping (`orgId: ok_GFqnwxjh2ln6`, `projectId: pr_vPqxsU9hlOkI`) and `dangerouslyAllowAutoUploadDownloadFiles: true`.
+    - Added curated tools for Google Drive (`GOOGLEDRIVE_DOWNLOAD_FILE`, `GOOGLEDRIVE_EXPORT_GOOGLE_WORKSPACE_FILE`, `GOOGLEDRIVE_FIND_FILE`), Google Docs (`GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN`, `GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT`), and Google Sheets (`GOOGLESHEETS_CREATE_GOOGLE_SHEET1`, `GOOGLESHEETS_VALUES_UPDATE`).
+    - Added automatic content extraction in `enrichDownloadedContent` for S3 URLs returned by Drive download/export across all document formats (PDF, DOCX, XLSX, CSV, JSON, TXT).
+    - Hardened `toolbox.call` with `try/catch` and safe error formatting.
+  - **Flexible Knowledge Graph Upsert (`src/lib/agent/tools.ts`):**
+    - Expanded `UPSERT_LABELS` and `UPSERT_RELS` to accept user and organizational entities (`User`, `Project`, `Company`, `Skill`, `Task`, `Memory`, `Entity`, `Role`, `Client`) and relationships (`WORKS_AT`, `HAS_SKILL`, `LEADS`, `MANAGES`, `KNOWS`, `PART_OF`, `ASSIGNED_TO`, `ABOUT`, `CREATED`, `ASSOCIATED_WITH`).
+    - Allowed dynamic PascalCase labels and uppercase relationships while enforcing clean string property values.
+  - **Direct Ephemeral File Upload in Chat (`src/app/api/extract/route.ts`, `src/components/AssistantView.tsx`):**
+    - Implemented `POST /api/extract` for in-memory text extraction across PDF, Word, Excel, CSV, TSV, JSON, HTML, TXT, MD without creating permanent `Doc` catalog nodes.
+    - Added paperclip upload button and attachment preview pill in the `AssistantView` input dock.
+    - Updated `/api/agent` and `runAgent` to prepend user knowledge context with system prompt guidance on learning user facts into the graph.
+  - **Dynamic Real-Time Graph Synchronization (`src/components/GraphCanvas.tsx`, `src/app/page.tsx`, `src/components/DashboardView.tsx`):**
+    - Added `onGraphUpdate` callback connecting `AssistantView` to `fetchGraph()` and `fetchFindingsCount()` upon turn completion and approval decisions.
+    - Added auto-refresh on `currentView === "graph"`.
+    - Updated `GraphCanvas` to dynamically extract all node labels, display live node counts in the interactive legend, and deterministically color custom/dynamic labels.
+    - Displayed dynamic recent instructions from FalkorDB (`AgentRun` nodes) on both the Dashboard hero and Assistant greeting state.
+  - **Verification:**
+    - TypeScript compilation (`pnpm exec tsc --noEmit`) passed with 0 errors.
+    - Production build (`pnpm build`) compiled successfully with all static and dynamic routes.
+    - Verified live `/api/extract` endpoint with `curl` (returned 200 with extracted JSON text).
+    - Verified live `/api/graph` endpoint (returned live nodes and edges).
+    - Reloaded PM2 service `companymind-ai` (`HTTP 200 OK`).

@@ -30,6 +30,30 @@ function getCliUserApiKey(): string | null {
   return null;
 }
 
+/** Read organization and project ID from environment or Composio CLI configuration */
+function getCliProjectScope(): { orgId?: string; projectId?: string } {
+  try {
+    if (process.env.COMPOSIO_ORG_ID && process.env.COMPOSIO_PROJECT_ID) {
+      return { orgId: process.env.COMPOSIO_ORG_ID, projectId: process.env.COMPOSIO_PROJECT_ID };
+    }
+    const localProj = path.join(process.cwd(), ".composio", "project.json");
+    if (fs.existsSync(localProj)) {
+      const data = JSON.parse(fs.readFileSync(localProj, "utf8"));
+      if (data.org_id && data.project_id) {
+        return { orgId: data.org_id, projectId: data.project_id };
+      }
+    }
+    const userJson = path.join(os.homedir(), ".composio", "user_data.json");
+    if (fs.existsSync(userJson)) {
+      const data = JSON.parse(fs.readFileSync(userJson, "utf8"));
+      if (data.org_id) {
+        return { orgId: data.org_id, projectId: data.project_id };
+      }
+    }
+  } catch {}
+  return {};
+}
+
 export function formatComposioError(err: any): string {
   const raw = String(err?.message || err || "");
   try {
@@ -50,48 +74,44 @@ export function formatComposioError(err: any): string {
   return raw.slice(0, 200);
 }
 
-export function getComposio(): Composio | null {
-  if (client !== undefined) return client;
-
+/** Create a fully scoped Composio client supporting both userApiKey and project apiKey */
+export function createComposioClient(): Composio | null {
   const projectKey = process.env.COMPOSIO_API_KEY;
   const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
+  const scope = getCliProjectScope();
 
-  // If user key is provided (uak_...), prefer it as it holds active authenticated user credentials
-  if (userKey && userKey.startsWith("uak_")) {
-    try {
-      client = new Composio({ apiKey: null as any, userApiKey: userKey });
-      return client;
-    } catch {}
-  }
-
-  // If provided project key is a user API key (uak_...)
-  if (projectKey && projectKey.startsWith("uak_")) {
-    try {
-      client = new Composio({ apiKey: null as any, userApiKey: projectKey });
-      return client;
-    } catch {}
-  }
-
-  // Fall back to project key if provided
-  if (projectKey) {
-    try {
-      client = new Composio({ apiKey: projectKey });
-      return client;
-    } catch {
-      // Fall through to userKey
-    }
-  }
-
-  // Fall back to user key from env or CLI login
+  // 1. Try userKey with project & org scope (required for uak_... keys)
   if (userKey) {
     try {
-      client = new Composio({ apiKey: null as any, userApiKey: userKey });
-      return client;
+      return new Composio({
+        apiKey: null as any,
+        userApiKey: userKey,
+        orgId: scope.orgId,
+        projectId: scope.projectId,
+        dangerouslyAllowAutoUploadDownloadFiles: true,
+      });
     } catch {}
   }
 
-  client = null;
+  // 2. Try project key if available and not a uak key
+  if (projectKey && !projectKey.startsWith("uak_")) {
+    try {
+      return new Composio({
+        apiKey: projectKey,
+        orgId: scope.orgId,
+        projectId: scope.projectId,
+        dangerouslyAllowAutoUploadDownloadFiles: true,
+      });
+    } catch {}
+  }
+
   return null;
+}
+
+export function getComposio(): Composio | null {
+  if (client !== undefined) return client;
+  client = createComposioClient();
+  return client;
 }
 
 export function isComposioConfigured(): boolean {
@@ -142,11 +162,9 @@ export async function connectionStatus(
       toolkits: base.map((t) => ({ ...t, connected: isConnected(t.slug) })),
     };
   } catch (err: any) {
-    // If project key gave 401 or invalid, try user key fallback
-    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
-    if (userKey) {
+    const fallbackClient = createComposioClient();
+    if (fallbackClient) {
       try {
-        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
         const session: any = await fallbackClient.sessions.create(userId, {
           toolkits: TOOLKITS.map((t) => t.slug) as any,
         });
@@ -202,10 +220,9 @@ export async function connectToolkit(
     if (!url) throw new Error("Composio did not return a redirect URL");
     return url;
   } catch (err: any) {
-    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
-    if (userKey) {
+    const fallbackClient = createComposioClient();
+    if (fallbackClient) {
       try {
-        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
         const session: any = await fallbackClient.sessions.create(userId, {
           toolkits: [toolkit] as any,
         });
@@ -301,10 +318,9 @@ export async function disconnectToolkit(
     invalidateToolCache(userId);
     return { ok: true, count };
   } catch (err: any) {
-    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
-    if (userKey) {
+    const fallbackClient = createComposioClient();
+    if (fallbackClient) {
       try {
-        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
         const count = await executeDelete(fallbackClient);
         client = fallbackClient;
         invalidateToolCache(userId);
@@ -325,7 +341,7 @@ const WRITE_WORDS = new Set([
 /** Verbs that only read. A tool must carry one of these to skip approval (fail closed). */
 const READ_WORDS = new Set([
   "GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "QUERY", "LOOKUP", "RETRIEVE", "CHECK",
-  "DESCRIBE", "VIEW", "SHOW", "COUNT", "DOWNLOAD",
+  "DESCRIBE", "VIEW", "SHOW", "COUNT", "DOWNLOAD", "EXPORT",
 ]);
 
 /** A tool runs without approval only if it has a read verb and no write verb; anything unrecognised is gated. */
@@ -426,15 +442,20 @@ const CURATED_TOOLS: Record<string, string[]> = {
   ],
   googledrive: [
     "GOOGLEDRIVE_LIST_FILES", "GOOGLEDRIVE_FIND_FILE", "GOOGLEDRIVE_FIND_FOLDER",
-    "GOOGLEDRIVE_GET_FILE_METADATA", "GOOGLEDRIVE_LIST_COMMENTS",
+    "GOOGLEDRIVE_GET_FILE_METADATA", "GOOGLEDRIVE_DOWNLOAD_FILE", "GOOGLEDRIVE_EXPORT_GOOGLE_WORKSPACE_FILE",
+    "GOOGLEDRIVE_CREATE_FILE_FROM_TEXT", "GOOGLEDRIVE_CREATE_FOLDER", "GOOGLEDRIVE_UPLOAD_FILE",
+    "GOOGLEDRIVE_LIST_COMMENTS",
   ],
   googledocs: [
     "GOOGLEDOCS_SEARCH_DOCUMENTS", "GOOGLEDOCS_GET_DOCUMENT_BY_ID", "GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT",
-    "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN",
+    "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN", "GOOGLEDOCS_CREATE_DOCUMENT", "GOOGLEDOCS_UPDATE_DOCUMENT_MARKDOWN",
+    "GOOGLEDOCS_UPDATE_DOCUMENT_SECTION_MARKDOWN", "GOOGLEDOCS_INSERT_TEXT_ACTION",
   ],
   googlesheets: [
-    "GOOGLESHEETS_SEARCH_SPREADSHEETS", "GOOGLESHEETS_GET_SPREADSHEET_INFO", "GOOGLESHEETS_VALUES_GET",
-    "GOOGLESHEETS_BATCH_GET", "GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW", "GOOGLESHEETS_CREATE_SPREADSHEET_ROW",
+    "GOOGLESHEETS_CREATE_GOOGLE_SHEET1", "GOOGLESHEETS_SEARCH_SPREADSHEETS", "GOOGLESHEETS_GET_SPREADSHEET_INFO",
+    "GOOGLESHEETS_GET_SHEET_NAMES", "GOOGLESHEETS_VALUES_GET", "GOOGLESHEETS_VALUES_UPDATE",
+    "GOOGLESHEETS_UPDATE_VALUES_BATCH", "GOOGLESHEETS_CREATE_SPREADSHEET_ROW", "GOOGLESHEETS_ADD_SHEET",
+    "GOOGLESHEETS_SHEET_FROM_JSON", "GOOGLESHEETS_BATCH_GET", "GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW",
   ],
   github: [
     "GITHUB_GET_THE_AUTHENTICATED_USER", "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
@@ -443,6 +464,14 @@ const CURATED_TOOLS: Record<string, string[]> = {
     "GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS", "GITHUB_GET_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT",
   ],
 };
+
+CURATED_TOOLS.googlesuper = Array.from(new Set([
+  ...CURATED_TOOLS.gmail,
+  ...CURATED_TOOLS.googlecalendar,
+  ...CURATED_TOOLS.googledrive,
+  ...CURATED_TOOLS.googledocs,
+  ...CURATED_TOOLS.googlesheets,
+]));
 
 const toolCache = new Map<string, { at: number; tools: OpenAI.Chat.Completions.ChatCompletionTool[] }>();
 
@@ -493,10 +522,9 @@ export async function getConnectedTools(
     toolCache.set(key, { at: Date.now(), tools: list });
     return list;
   } catch (err: any) {
-    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
-    if (userKey) {
+    const fallbackClient = createComposioClient();
+    if (fallbackClient) {
       try {
-        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
         const list = await fetchTools(fallbackClient);
         client = fallbackClient;
         toolCache.set(key, { at: Date.now(), tools: list });
@@ -506,6 +534,54 @@ export async function getConnectedTools(
     console.error("Failed to get connected tools:", formatComposioError(err));
     return [];
   }
+}
+
+async function enrichDownloadedContent(resultData: any): Promise<any> {
+  if (!resultData || typeof resultData !== "object") return resultData;
+  const fileObj =
+    resultData.downloaded_file_content ||
+    resultData.file ||
+    resultData.data?.downloaded_file_content ||
+    resultData;
+  const s3url =
+    fileObj?.s3url ||
+    fileObj?.s3_url ||
+    resultData?.s3url ||
+    resultData?.s3_url ||
+    fileObj?.downloadUrl ||
+    fileObj?.download_url ||
+    resultData?.downloadUrl ||
+    resultData?.download_url ||
+    (typeof fileObj?.url === "string" && fileObj.url.startsWith("http") ? fileObj.url : undefined) ||
+    (typeof resultData?.url === "string" && resultData.url.startsWith("http") ? resultData.url : undefined);
+  const filename =
+    fileObj?.name ||
+    fileObj?.filename ||
+    resultData?.name ||
+    "downloaded-file";
+  const ext = (filename.split(".").pop() || "").toLowerCase();
+
+  if (typeof s3url === "string" && s3url.startsWith("http")) {
+    try {
+      const res = await fetch(s3url, { signal: AbortSignal.timeout(20_000) });
+      if (res.ok) {
+        const arrayBuf = await res.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        const { extractText } = await import("./documents");
+        const extracted = await extractText(ext || "pdf", buf);
+        return {
+          ...resultData,
+          file_name: filename,
+          extracted_text: extracted.slice(0, 15_000),
+          extracted_chars: extracted.length,
+          note: "File content was successfully downloaded and extracted from Google Drive.",
+        };
+      }
+    } catch (err: any) {
+      console.warn("Could not enrich downloaded file content:", err?.message || err);
+    }
+  }
+  return resultData;
 }
 
 export async function executeComposioTool(
@@ -525,16 +601,17 @@ export async function executeComposioTool(
     if (res?.successful === false) {
       return { ok: false, error: String(res.error || "tool failed").slice(0, 500) };
     }
-    return { ok: true, data: res?.data ?? res };
+    const rawData = res?.data ?? res;
+    const enriched = await enrichDownloadedContent(rawData);
+    return { ok: true, data: enriched };
   };
 
   try {
     return await doExecute(composio);
   } catch (err: any) {
-    const userKey = process.env.COMPOSIO_USER_API_KEY || getCliUserApiKey();
-    if (userKey) {
+    const fallbackClient = createComposioClient();
+    if (fallbackClient) {
       try {
-        const fallbackClient = new Composio({ apiKey: null as any, userApiKey: userKey });
         const res = await doExecute(fallbackClient);
         client = fallbackClient;
         return res;

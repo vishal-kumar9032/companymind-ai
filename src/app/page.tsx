@@ -108,7 +108,7 @@ export default function Home() {
   useEffect(() => {
     fetchFindingsCount();
     fetchGraph();
-  }, [currentUser, memoryRefreshTrigger]);
+  }, [currentUser, memoryRefreshTrigger, currentView]);
 
   useEffect(() => {
     // Hydrate saved user session & URL search parameters
@@ -496,6 +496,10 @@ export default function Home() {
                 initialQuery={selectedQuery}
                 onInitialQueryUsed={() => setSelectedQuery(null)}
                 model={selectedModel}
+                onGraphUpdate={() => {
+                  fetchGraph();
+                  fetchFindingsCount();
+                }}
               />
             </div>
           )}

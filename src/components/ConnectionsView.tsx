@@ -121,7 +121,7 @@ interface UploadedDoc {
   chunks: number;
 }
 
-const ACCEPT = ".pdf,.docx,.xlsx,.csv,.txt,.md";
+const ACCEPT = ".pdf,.docx,.doc,.xlsx,.xls,.csv,.tsv,.txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.htm,.rtf,.log";
 
 /** Upload PDF / Word / Excel / CSV / text. The agent searches them and can turn them into graph entities. */
 function DocumentsPanel() {
@@ -197,7 +197,7 @@ function DocumentsPanel() {
       <div>
         <h3 className="text-sm font-bold text-slate-900">Upload documents</h3>
         <p className="text-xs text-slate-500 mt-0.5">
-          PDF, Word, Excel, CSV, text or Markdown (up to 10 MB each). The agent can search and cite them, and you can add what they state to your graph.
+          PDF, Word, Excel, CSV, TSV, text, JSON, HTML, or Markdown (up to 10 MB each). The agent can search and cite them, and you can add what they state to your graph.
         </p>
       </div>
       <label

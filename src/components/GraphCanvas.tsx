@@ -26,6 +26,7 @@ interface GraphCanvasProps {
 
 const LABEL_COLORS: Record<string, string> = {
   Person: "#60a5fa",       // Blue
+  User: "#38bdf8",         // Sky
   Team: "#818cf8",         // Indigo
   Service: "#a78bfa",      // Violet
   Decision: "#fb7185",     // Rose
@@ -34,10 +35,36 @@ const LABEL_COLORS: Record<string, string> = {
   GitHubPR: "#22d3ee",     // Cyan
   GitHubIssue: "#facc15",  // Yellow
   AgentFinding: "#f472b6", // Pink
+  AgentRun: "#6366f1",     // Indigo
+  Memory: "#ec4899",       // Fuchsia
+  Task: "#8b5cf6",         // Purple
+  Entity: "#14b8a6",       // Teal
+  Approval: "#f59e0b",     // Amber
+  Project: "#10b981",      // Emerald
+  Company: "#f97316",      // Orange
+  Skill: "#d946ef",        // Magenta
+  Role: "#06b6d4",         // Cyan
+  Client: "#eab308",       // Yellow
+  Topic: "#64748b",        // Slate
 };
+
+const PALETTE = [
+  "#60a5fa", "#818cf8", "#a78bfa", "#fb7185", "#34d399",
+  "#fbbf24", "#22d3ee", "#facc15", "#f472b6", "#6366f1",
+  "#ec4899", "#8b5cf6", "#14b8a6", "#f59e0b", "#10b981",
+  "#f97316", "#d946ef", "#06b6d4", "#eab308", "#64748b",
+];
+
+export function getLabelColor(label: string): string {
+  if (LABEL_COLORS[label]) return LABEL_COLORS[label];
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) hash = label.charCodeAt(i) + ((hash << 5) - hash);
+  return PALETTE[Math.abs(hash) % PALETTE.length];
+}
 
 const NODE_SHAPES: Record<string, cytoscape.Css.NodeShape> = {
   Person: "ellipse",
+  User: "ellipse",
   Team: "round-rectangle",
   Service: "round-rectangle",
   Decision: "diamond",
@@ -46,6 +73,11 @@ const NODE_SHAPES: Record<string, cytoscape.Css.NodeShape> = {
   GitHubPR: "round-rectangle",
   GitHubIssue: "tag",
   AgentFinding: "hexagon",
+  AgentRun: "round-rectangle",
+  Memory: "ellipse",
+  Task: "diamond",
+  Entity: "hexagon",
+  Approval: "round-rectangle",
 };
 
 const STORAGE_KEY = "falkordb_graph_positions_v1";
@@ -97,7 +129,7 @@ export function GraphCanvas({
           id: node.id,
           label: node.name,
           category: node.label,
-          color: LABEL_COLORS[node.label] || "#a1a1aa",
+          color: getLabelColor(node.label),
           shape: NODE_SHAPES[node.label] || "round-rectangle",
           props: node.properties,
         },
@@ -441,21 +473,24 @@ export function GraphCanvas({
         </button>
       </div>
 
-      {/* Interactive Legend & Category Filter (Requirement #5) */}
-      <div className="absolute bottom-3 left-3 p-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl text-2xs font-mono flex flex-wrap gap-x-2.5 gap-y-1.5 max-w-lg z-10 shadow-sm">
-        {Object.entries(LABEL_COLORS).map(([label, color]) => {
+      {/* Interactive Legend & Category Filter */}
+      <div className="absolute bottom-3 left-3 p-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl text-2xs font-mono flex flex-wrap gap-x-2 gap-y-1.5 max-w-xl z-10 shadow-sm max-h-36 overflow-y-auto">
+        {Array.from(new Set(data.nodes.map((n) => n.label || "Entity"))).sort().map((label) => {
+          const color = getLabelColor(label);
+          const count = data.nodes.filter((n) => (n.label || "Entity") === label).length;
           const isActive = activeFilters[label] !== false;
           return (
             <button
               key={label}
               onClick={() => toggleFilter(label)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                isActive ? "opacity-100" : "opacity-35 line-through"
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+                isActive ? "opacity-100 bg-slate-50 border border-slate-200/80 hover:bg-slate-100" : "opacity-35 line-through bg-transparent border border-transparent"
               }`}
-              title={`Toggle ${label} visibility`}
+              title={`Toggle ${label} visibility (${count} nodes)`}
             >
-              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-slate-600 font-medium">{label}</span>
+              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-slate-700 font-medium">{label}</span>
+              <span className="text-[10px] text-slate-400 font-mono">({count})</span>
             </button>
           );
         })}

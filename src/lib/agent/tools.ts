@@ -41,12 +41,22 @@ const fn = (name: string, description: string, properties: Record<string, unknow
 
 const MAX_ROWS = 50;
 
-const UPSERT_LABELS = ["Person", "Team", "Meeting", "Doc", "Decision", "Service", "GitHubPR", "GitHubIssue"];
+const UPSERT_LABELS = [
+  "Person", "Team", "Meeting", "Doc", "Decision", "Service", "GitHubPR", "GitHubIssue",
+  "User", "Project", "Company", "Skill", "Task", "Memory", "Entity", "Role", "Client",
+  "Repository", "Topic", "Note", "Product",
+];
 const UPSERT_RELS = [
   "MEMBER_OF", "ATTENDED", "AUTHORED", "RECORDED_IN", "PROPOSES", "APPROVED", "SUPERSEDES", "GOVERNS",
   "OWNS", "DEPENDS_ON", "TRACKS", "RESOLVES", "TOUCHES", "AUTHORED_PR",
+  "WORKS_AT", "HAS_SKILL", "LEADS", "MANAGES", "KNOWS", "PART_OF", "ASSIGNED_TO", "ABOUT", "CREATED", "ASSOCIATED_WITH", "PRODUCED",
 ];
-const UPSERT_PROPS = ["title", "date", "url", "status", "summary", "email", "role", "rationale", "tier", "type"];
+const UPSERT_PROPS = [
+  "title", "date", "url", "status", "summary", "email", "role", "rationale", "tier", "type",
+  "name", "description", "experience", "skills", "location", "department", "company", "level", "note",
+];
+const isValidLabel = (l: string) => Boolean(l && (UPSERT_LABELS.includes(l) || /^[A-Za-z][A-Za-z0-9_]{1,30}$/.test(l)));
+const isValidRel = (r: string) => Boolean(r && (UPSERT_RELS.includes(r) || /^[A-Z0-9_]{2,40}$/.test(r)));
 const str = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 
 /** An empty result is stated outright so the model reports it instead of inventing an answer. */
@@ -287,27 +297,36 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       const skipped: string[] = [];
       for (const e of (Array.isArray(entities) ? entities : []).slice(0, 25)) {
         const name = str(e?.name, 200).trim();
-        if (!UPSERT_LABELS.includes(e?.label) || !name || !str(e?.source, 200).trim()) {
+        const label = str(e?.label, 50).trim();
+        if (!isValidLabel(label) || !name || !str(e?.source, 200).trim()) {
           skipped.push(`entity ${name || "?"}: needs a valid label, name and source`);
           continue;
         }
         const props: Record<string, string> = { source: str(e.source, 200), updated_at: new Date().toISOString() };
-        for (const k of UPSERT_PROPS) if (e.properties?.[k] != null) props[k] = str(e.properties[k], 500);
-        await graph.query(`MERGE (n:\`${e.label}\` {name: $name}) SET n += $props`, { params: { name, props } });
+        if (e.properties && typeof e.properties === "object") {
+          for (const [k, v] of Object.entries(e.properties)) {
+            if (/^[a-zA-Z0-9_]{1,40}$/.test(k) && v != null) {
+              props[k] = str(v, 500);
+            }
+          }
+        }
+        await graph.query(`MERGE (n:\`${label}\` {name: $name}) SET n += $props`, { params: { name, props } });
         nodes++;
       }
       for (const r of (Array.isArray(relationships) ? relationships : []).slice(0, 40)) {
-        const fl = r?.from?.label, tl = r?.to?.label;
-        if (!UPSERT_RELS.includes(r?.type) || !UPSERT_LABELS.includes(fl) || !UPSERT_LABELS.includes(tl) || !r.from?.name || !r.to?.name) {
+        const fl = str(r?.from?.label, 50).trim();
+        const tl = str(r?.to?.label, 50).trim();
+        const relType = str(r?.type, 50).trim().toUpperCase();
+        if (!isValidRel(relType) || !isValidLabel(fl) || !isValidLabel(tl) || !r.from?.name || !r.to?.name) {
           skipped.push(`relationship ${str(r?.type, 40)}: needs valid labels, names and type`);
           continue;
         }
         const res = await graph.query(
-          `MATCH (a:\`${fl}\` {name: $from}), (b:\`${tl}\` {name: $to}) MERGE (a)-[x:\`${r.type}\`]->(b) RETURN count(x) AS c`,
+          `MATCH (a:\`${fl}\` {name: $from}), (b:\`${tl}\` {name: $to}) MERGE (a)-[x:\`${relType}\`]->(b) RETURN count(x) AS c`,
           { params: { from: str(r.from.name, 200), to: str(r.to.name, 200) } },
         );
         if (Number((res.data as any[])?.[0]?.c) > 0) edges++;
-        else skipped.push(`relationship ${r.type}: ${r.from.name} or ${r.to.name} not in the graph`);
+        else skipped.push(`relationship ${relType}: ${r.from.name} or ${r.to.name} not in the graph`);
       }
       return { entitiesWritten: nodes, relationshipsWritten: edges, skipped };
     },
@@ -516,18 +535,22 @@ export async function buildToolbox(
   return {
     definitions,
     call: async (name, args, ctx) => {
-      const h = handlers.get(name);
-      if (h) return h(args, ctx);
-      if (composioNames.has(name)) {
-        if (isWriteTool(name)) {
-          const approvalId = await createApproval(ctx.caller, ctx.role, name, args);
-          ctx.emit({ type: "approval", approvalId, tool: name, args });
-          return { status: "pending_approval", approvalId, note: "Queued. The user must approve before this runs. Tell them what you prepared." };
+      try {
+        const h = handlers.get(name);
+        if (h) return await h(args, ctx);
+        if (composioNames.has(name)) {
+          if (isWriteTool(name)) {
+            const approvalId = await createApproval(ctx.caller, ctx.role, name, args);
+            ctx.emit({ type: "approval", approvalId, tool: name, args });
+            return { status: "pending_approval", approvalId, note: "Queued. The user must approve before this runs. Tell them what you prepared." };
+          }
+          const res = await executeComposioTool(ctx.caller.id, name, args);
+          return res.ok ? res.data : { error: res.error };
         }
-        const res = await executeComposioTool(ctx.caller.id, name, args);
-        return res.ok ? res.data : { error: res.error };
+        return { error: `unknown tool: ${name}. Only call tools from your tool list; if none fits, tell the user what you cannot do.` };
+      } catch (err: any) {
+        return { error: `Tool ${name} execution failed: ${err?.message || err}` };
       }
-      return { error: `unknown tool: ${name}. Only call tools from your tool list; if none fits, tell the user what you cannot do.` };
     },
   };
 }
