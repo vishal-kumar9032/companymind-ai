@@ -28,6 +28,8 @@ import {
   SeverityFilter,
 } from "@/lib/memoryLedgerData";
 import { AVAILABLE_MODELS } from "@/lib/truefoundry";
+import { EnterpriseUser } from "@/lib/firebase";
+import { authHeaders } from "@/lib/clientAuth";
 
 export type { FindingItem, SeverityFilter };
 export { SEVERITY_FILTERS };
@@ -64,6 +66,8 @@ export interface MemoryTabProps {
   severityFilters?: readonly string[] | string[];
   initialFindingsData?: FindingItem[];
   footerStatus?: MemoryTabFooterStatus;
+  currentUser?: EnterpriseUser | null;
+  isPersonalAccount?: boolean;
 }
 
 export function MemoryTab({
@@ -84,10 +88,17 @@ export function MemoryTab({
   severityFilters = SEVERITY_FILTERS,
   initialFindingsData,
   footerStatus,
+  currentUser,
+  isPersonalAccount,
 }: MemoryTabProps) {
-  // 1. Move Dummy Data to External Constants / State:
-  // Dynamically initialize findings state from external initialFindings or props
-  const [findings, setFindings] = useState<FindingItem[]>(initialFindingsData || initialFindings);
+  const isPersonal =
+    isPersonalAccount ??
+    Boolean(currentUser?.isFirebaseAuthenticated && currentUser?.uid !== "workspace-member");
+
+  // Dynamically initialize findings state
+  const [findings, setFindings] = useState<FindingItem[]>(
+    isPersonal ? [] : (initialFindingsData || initialFindings)
+  );
   const [loading, setLoading] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +109,7 @@ export function MemoryTab({
   );
 
   // Form states for recording finding
-  const [newTarget, setNewTarget] = useState("postgres-primary");
+  const [newTarget, setNewTarget] = useState(isPersonal ? "user-service" : "postgres-primary");
   const [newText, setNewText] = useState("");
   const [newSeverity, setNewSeverity] = useState<string>("CRITICAL");
   const [newAgent, setNewAgent] = useState("PolicyWatchdog");
@@ -125,30 +136,40 @@ export function MemoryTab({
   const fetchFindings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/findings");
+      const headers = await authHeaders();
+      const res = await fetch("/api/findings", { headers });
       const data = await res.json();
       if (data.findings && Array.isArray(data.findings) && data.findings.length > 0) {
-        const mapped: FindingItem[] = data.findings.map((f: any) => ({
+        // If personal account, purge any demo finding entities
+        const rawList = isPersonal
+          ? data.findings.filter((f: any) => {
+              const target = (f.target_name || f.service || "").toLowerCase().trim();
+              const id = (f.id || "").toLowerCase().trim();
+              return !id.startsWith("finding-00") && target !== "auth-v1";
+            })
+          : data.findings;
+
+        const mapped: FindingItem[] = rawList.map((f: any) => ({
           id: f.id || `finding-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           severity: f.severity || "MEDIUM",
           agent: f.agent || "PolicyWatchdog",
           timestamp: f.created_at || f.at || new Date().toISOString(),
           message: f.text || f.message || "",
-          service: f.target_name || f.service || "postgres-primary",
+          service: f.target_name || f.service || (isPersonal ? "service" : "postgres-primary"),
           sessionId: f.session_id || f.sessionId || "session-1",
           text: f.text || f.message || "",
           created_at: f.created_at || f.at || new Date().toISOString(),
-          target_name: f.target_name || f.service || "postgres-primary",
+          target_name: f.target_name || f.service || (isPersonal ? "service" : "postgres-primary"),
           target_type: f.target_type || "service",
         }));
         setFindings(mapped);
       } else {
-        setFindings(initialFindings);
+        setFindings([]);
       }
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     } catch (err) {
-      console.error("Failed to fetch findings from FalkorDB, retaining dynamic initial state:", err);
-      setFindings(initialFindings);
+      console.error("Failed to fetch findings from FalkorDB:", err);
+      setFindings([]);
     } finally {
       setLoading(false);
     }
@@ -156,7 +177,7 @@ export function MemoryTab({
 
   useEffect(() => {
     fetchFindings();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, isPersonal]);
 
   const handleFilterSeverity = (sev: string) => {
     setFilterSeverity(sev);
@@ -200,14 +221,17 @@ export function MemoryTab({
     };
 
     try {
+      const authHead = await authHeaders();
       const res = await fetch("/api/findings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHead },
         body: JSON.stringify({
           targetName: newTarget.trim(),
           text: newText.trim(),
           severity: newSeverity,
-          sessionId: newSessionId.trim() || "manual-input",
+          sessionId:
+            newSessionId.trim() ||
+            (isPersonal ? `personal-${currentUser?.uid || "session"}` : "manual-input"),
         }),
       });
 
@@ -313,12 +337,12 @@ export function MemoryTab({
         <div className="flex items-center gap-2 flex-wrap">
           <Brain size={15} strokeWidth={1.75} className="text-purple-600 shrink-0" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900 font-mono">
-            {headerTitle}
+            {isPersonal ? "Personal Memory Ledger" : headerTitle}
           </h2>
 
           {/* Dynamic Header Badges */}
           <span className="text-3xs font-mono text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-xs">
-            {headerBadge || `${findings.length} findings`}
+            {headerBadge || (isPersonal ? `${findings.length} personal findings` : `${findings.length} findings`)}
           </span>
 
           {filterSeverity !== "ALL" && (
@@ -435,13 +459,20 @@ export function MemoryTab({
                   type="text"
                   value={newTarget}
                   onChange={(e) => setNewTarget(e.target.value)}
-                  placeholder="e.g. postgres-primary, auth-v1, payments-api"
+                  placeholder={
+                    isPersonal
+                      ? "e.g. user-service, auth-api, billing"
+                      : "e.g. postgres-primary, auth-v1, payments-api"
+                  }
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
                   required
                 />
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   <span className="text-3xs text-slate-400 font-mono">Quick:</span>
-                  {["postgres-primary", "auth-v1", "payments-api", "identity-service"].map((svc) => (
+                  {(isPersonal
+                    ? ["user-service", "auth-api", "billing-gateway", "main-db"]
+                    : ["postgres-primary", "auth-v1", "payments-api", "identity-service"]
+                  ).map((svc) => (
                     <button
                       key={svc}
                       type="button"
@@ -602,9 +633,15 @@ export function MemoryTab({
                 <Brain size={24} />
               </div>
               <div className="space-y-1 max-w-sm">
-                <h3 className="text-sm font-bold text-slate-900">No Memory Findings Recorded Yet</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {isPersonal
+                    ? "Personal Episodic Memory Clean"
+                    : "No Memory Findings Recorded Yet"}
+                </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  FalkorDB stores episodic findings and governance reviews across sessions. Record your first architecture observation or policy finding.
+                  {isPersonal
+                    ? "Welcome to your personal workspace. All demo memory findings have been removed. As you interact with AI agents or record manual findings, your cross-session memory will populate here."
+                    : "FalkorDB stores episodic findings and governance reviews across sessions. Record your first architecture observation or policy finding."}
                 </p>
               </div>
               <button

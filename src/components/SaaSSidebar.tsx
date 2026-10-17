@@ -141,7 +141,7 @@ export function SaaSSidebar({
           id: "registry" as SaaSView,
           label: "Document Catalog",
           icon: FileText,
-          badge: catalogCount !== undefined ? `${catalogCount} items` : nodeCount > 0 ? `${nodeCount} items` : null,
+          badge: catalogCount !== undefined && catalogCount > 0 ? `${catalogCount} items` : null,
           description: "RFCs, PRs & Architecture specs",
         },
       ],

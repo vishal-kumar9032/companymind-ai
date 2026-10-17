@@ -231,5 +231,29 @@
     - TypeScript typecheck (`pnpm exec tsc --noEmit`) passed with 0 errors.
     - Production build (`pnpm build`) compiled successfully with all 11 routes.
     - PM2 service `companymind-ai` restarted online; verified `HTTP 200 OK` on `http://localhost:13050/`.
+- `2026-10-17` (Branch `feat/connectors-memory` - Personal Account Workspace Isolation for Episodic Memory and Document Catalog):
+  - **Isolated Personal Graph & Findings (`src/lib/tools.ts`, `src/app/api/findings/route.ts`, `src/app/api/graph/route.ts`):**
+    - Updated `getAllAgentFindings`, `storeAgentFinding`, and `getGraphOverview` in `src/lib/tools.ts` to accept an optional `graphId` targeting isolated per-user FalkorDB graphs (`org_u_<uid>`), with graceful fallback on empty or uninitialized graphs.
+    - Updated `storeAgentFinding` to use `MERGE (target:Service {name: $targetName})` so findings can be recorded into newly provisioned personal graphs.
+    - Updated `/api/findings` and `/api/graph` routes to resolve caller identity using `resolveCaller(req)` from `src/lib/agent/identity.ts`. Authenticated personal callers interact strictly with their isolated graph, while unauthenticated or demo users access the default demo dataset for evaluation.
+  - **Personal Account Clean State in Document Catalog (`src/components/RegistryTab.tsx`):**
+    - Filtered out all mock and demo entities (`auth-v1`, `payments-api`, `dec-44`, `dec-88`, `dec-105`, `rfc-102`, `pr #214`, etc.) when `isPersonalAccount` is active.
+    - Rendered a clean personal empty state with title "Personal Catalog Empty", description explaining that no documents, services, or pull requests have been indexed yet, and a direct action button "+ Connect Google Workspace & GitHub" that navigates to the Connections tab.
+    - Updated catalog headers and subtitles to reflect isolated personal workspace context.
+  - **Personal Account Clean State in Episodic Memory (`src/components/MemoryTab.tsx`):**
+    - Attached verified user auth headers (`authHeaders()`) to all `/api/findings` GET and POST requests.
+    - Filtered out demo finding entities when `isPersonalAccount` is true.
+    - Rendered a clean personal empty state ("Personal Episodic Memory Clean") with "+ Record First Finding" action button.
+    - Updated modal suggestions and footer status to display "FalkorDB Personal Isolated Memory" and "Isolated Personal Session".
+  - **Sidebar & App Orchestration (`src/components/SaaSSidebar.tsx`, `src/app/page.tsx`):**
+    - Dynamically computed `isPersonalAccount` in `src/app/page.tsx` (`currentUser?.isFirebaseAuthenticated && currentUser?.uid !== "workspace-member"`).
+    - Passed dynamic `catalogCount` and `findingsCount` (0 for new personal accounts until items are connected or added) to `SaaSSidebar`.
+    - Updated `SaaSSidebar` to hide the Document Catalog badge when `catalogCount === 0`.
+    - Passed `currentUser`, `isPersonalAccount`, and `onNavigateToConnections` to `RegistryTab` and `MemoryTab`.
+  - **Verification:**
+    - TypeScript compilation (`pnpm exec tsc --noEmit`) passed with 0 errors.
+    - Production build (`pnpm build`) compiled successfully with all 11 static and dynamic routes.
+    - Restarted PM2 service `companymind-ai` (ID 1, port 13050); verified `HTTP 200 OK` via `curl -I http://localhost:13050/`.
+    - Verified `/api/findings` and `/api/graph` endpoints: unauthenticated/demo callers receive demo graph and findings; personal token callers receive isolated tenant memory.
 
 

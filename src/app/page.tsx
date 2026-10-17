@@ -25,6 +25,7 @@ import {
   signOutEnterpriseUser,
   onFirebaseAuthStateChanged,
 } from "@/lib/firebase";
+import { authHeaders } from "@/lib/clientAuth";
 
 export default function Home() {
   const [appStage, setAppStage] = useState<"landing" | "auth" | "dashboard">("landing");
@@ -35,6 +36,12 @@ export default function Home() {
   const [currentTenant, setCurrentTenant] = useState<TenantConfig>(TENANTS[0]);
   const [selectedModel, setSelectedModel] = useState<string>("google-gemini/gemini-3.1-flash-lite");
   const [currentUser, setCurrentUser] = useState<EnterpriseUser | null>(null);
+
+  const isPersonalAccount = Boolean(
+    currentUser &&
+    currentUser.isFirebaseAuthenticated &&
+    currentUser.uid !== "workspace-member"
+  );
 
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [highlightHops, setHighlightHops] = useState<string[]>([]);
@@ -65,10 +72,14 @@ export default function Home() {
   const fetchGraph = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/graph");
+      const headers = await authHeaders();
+      const res = await fetch("/api/graph", { headers });
       if (res.ok) {
         const data = await res.json();
-        setGraphData(data);
+        setGraphData({
+          nodes: Array.isArray(data.nodes) ? data.nodes : [],
+          edges: Array.isArray(data.edges) ? data.edges : [],
+        });
       }
     } catch (err) {
       console.error("Failed to load graph data:", err);
@@ -79,11 +90,21 @@ export default function Home() {
 
   const fetchFindingsCount = async () => {
     try {
-      const res = await fetch("/api/findings");
+      const headers = await authHeaders();
+      const res = await fetch("/api/findings", { headers });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data?.findings)) {
-          setFindingsCount(data.findings.length);
+          if (isPersonalAccount) {
+            const personalFindings = data.findings.filter((f: any) => {
+              const target = (f.target_name || f.service || "").toLowerCase().trim();
+              const id = (f.id || "").toLowerCase().trim();
+              return !id.startsWith("finding-00") && target !== "auth-v1";
+            });
+            setFindingsCount(personalFindings.length);
+          } else {
+            setFindingsCount(data.findings.length);
+          }
         }
       }
     } catch (err) {
@@ -93,10 +114,10 @@ export default function Home() {
 
   useEffect(() => {
     fetchFindingsCount();
-  }, [memoryRefreshTrigger]);
+    fetchGraph();
+  }, [currentUser, memoryRefreshTrigger]);
 
   useEffect(() => {
-    fetchGraph();
     // Hydrate saved user session & URL search parameters
     if (typeof window !== "undefined") {
       try {
@@ -361,9 +382,11 @@ export default function Home() {
           nodeCount={graphData.nodes.length}
           edgeCount={graphData.edges.length}
           catalogCount={
-            graphData.nodes.filter((n) =>
-              ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
-            ).length
+            isPersonalAccount
+              ? 0
+              : graphData.nodes.filter((n) =>
+                  ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
+                ).length
           }
           findingsCount={findingsCount}
           activeAgent={activeAgent}
@@ -412,9 +435,11 @@ export default function Home() {
               nodeCount={graphData.nodes.length}
               edgeCount={graphData.edges.length}
               catalogCount={
-                graphData.nodes.filter((n) =>
-                  ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
-                ).length
+                isPersonalAccount
+                  ? 0
+                  : graphData.nodes.filter((n) =>
+                      ["Service", "Decision", "Doc", "Meeting", "GitHubPR"].includes(n.label)
+                    ).length
               }
               findingsCount={findingsCount}
               activeAgent={activeAgent}
@@ -585,9 +610,15 @@ export default function Home() {
                   selectedModel={selectedModel}
                   onSelectModel={setSelectedModel}
                   refreshTrigger={memoryRefreshTrigger}
+                  currentUser={currentUser}
+                  isPersonalAccount={isPersonalAccount}
                   footerStatus={{
-                    engine: "FalkorDB Institutional Graph Memory",
-                    syncState: "Synced across Sessions",
+                    engine: isPersonalAccount
+                      ? "FalkorDB Personal Isolated Memory"
+                      : "FalkorDB Institutional Graph Memory",
+                    syncState: isPersonalAccount
+                      ? "Isolated Personal Session"
+                      : "Synced across Sessions",
                     isSynced: true,
                   }}
                 />
@@ -600,6 +631,9 @@ export default function Home() {
             <div className="flex-1 min-h-0 overflow-y-auto">
               <RegistryTab
                 graphData={graphData}
+                currentUser={currentUser}
+                isPersonalAccount={isPersonalAccount}
+                onNavigateToConnections={() => setCurrentView("connections")}
                 onQueryService={(serviceName) =>
                   handleSelectQueryAndSwitchToChat(
                     `What services break if ${serviceName} is shut down?`

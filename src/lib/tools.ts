@@ -189,13 +189,14 @@ export async function storeAgentFinding(
   targetName: string,
   text: string,
   severity = "INFO",
-  sessionId = "session-current"
+  sessionId = "session-current",
+  graphId?: string
 ): Promise<{ success: boolean; trace: ToolTrace }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const id = `finding-${Date.now()}`;
   const cypher = `
-    MATCH (target {name: $targetName})
+    MERGE (target:Service {name: $targetName})
     CREATE (f:AgentFinding {
       id: $id,
       text: $text,
@@ -207,36 +208,49 @@ export async function storeAgentFinding(
     RETURN f.id AS finding_id
   `;
 
-  const res = await graph.query(cypher, {
-    params: {
-      targetName,
-      id,
-      text,
-      severity,
-      sessionId,
-      timestamp: new Date().toISOString(),
-    },
-  });
-  const durationMs = Date.now() - start;
+  try {
+    const res = await graph.query(cypher, {
+      params: {
+        targetName,
+        id,
+        text,
+        severity,
+        sessionId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+    const durationMs = Date.now() - start;
 
-  return {
-    success: (res.data?.length || 0) > 0,
-    trace: {
-      tool: "store_agent_finding",
-      args: { targetName, text, severity, sessionId },
-      durationMs,
-      resultCount: res.data?.length || 0,
-      cypher,
-    },
-  };
+    return {
+      success: (res.data?.length || 0) > 0,
+      trace: {
+        tool: "store_agent_finding",
+        args: { targetName, text, severity, sessionId },
+        durationMs,
+        resultCount: res.data?.length || 0,
+        cypher,
+      },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      trace: {
+        tool: "store_agent_finding",
+        args: { targetName, text, severity, sessionId },
+        durationMs: Date.now() - start,
+        resultCount: 0,
+        cypher,
+      },
+    };
+  }
 }
 
-export async function recallAgentFindings(targetName: string): Promise<{
+export async function recallAgentFindings(targetName: string, graphId?: string): Promise<{
   data: any[];
   trace: ToolTrace;
 }> {
   const start = Date.now();
-  const graph = await getGraph();
+  const graph = await getGraph(graphId);
   const cypher = `
     MATCH (f:AgentFinding)-[:ABOUT]->(target {name: $targetName})
     RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS learned_at, f.session_id AS session_id
@@ -244,67 +258,88 @@ export async function recallAgentFindings(targetName: string): Promise<{
     LIMIT 5
   `;
 
-  const res = await graph.query(cypher, { params: { targetName } });
-  const durationMs = Date.now() - start;
+  try {
+    const res = await graph.query(cypher, { params: { targetName } });
+    const durationMs = Date.now() - start;
 
-  return {
-    data: res.data || [],
-    trace: {
-      tool: "recall_agent_findings",
-      args: { targetName },
-      durationMs,
-      resultCount: res.data?.length || 0,
-      cypher,
-    },
-  };
+    return {
+      data: res.data || [],
+      trace: {
+        tool: "recall_agent_findings",
+        args: { targetName },
+        durationMs,
+        resultCount: res.data?.length || 0,
+        cypher,
+      },
+    };
+  } catch {
+    return {
+      data: [],
+      trace: {
+        tool: "recall_agent_findings",
+        args: { targetName },
+        durationMs: Date.now() - start,
+        resultCount: 0,
+        cypher,
+      },
+    };
+  }
 }
 
-export async function getAllAgentFindings(): Promise<any[]> {
-  const graph = await getGraph();
-  const cypher = `
-    MATCH (f:AgentFinding)
-    OPTIONAL MATCH (f)-[:ABOUT]->(target)
-    RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS created_at, f.session_id AS session_id,
-           coalesce(target.name, target.title, toString(target.number), target.id, 'auth-v1') AS target_name,
-           labels(target)[0] AS target_type
-    ORDER BY f.at DESC
-    LIMIT 50
-  `;
-  const res = await graph.query(cypher);
-  return res.data || [];
+export async function getAllAgentFindings(graphId?: string): Promise<any[]> {
+  try {
+    const graph = await getGraph(graphId);
+    const cypher = `
+      MATCH (f:AgentFinding)
+      OPTIONAL MATCH (f)-[:ABOUT]->(target)
+      RETURN f.id AS id, f.text AS text, f.severity AS severity, f.at AS created_at, f.session_id AS session_id,
+             coalesce(target.name, target.title, toString(target.number), target.id, 'service') AS target_name,
+             labels(target)[0] AS target_type
+      ORDER BY f.at DESC
+      LIMIT 50
+    `;
+    const res = await graph.query(cypher);
+    return res.data || [];
+  } catch {
+    return [];
+  }
 }
 
 /**
  * Full Graph Snapshot for Cytoscape.js Canvas
  */
-export async function getGraphOverview(): Promise<GraphData> {
-  const graph = await getGraph();
-  const nodesRes = await graph.query(`
-    MATCH (n)
-    RETURN id(n) AS id, labels(n)[0] AS label, 
-           coalesce(n.name, n.title, toString(n.number), n.id) AS name,
-           properties(n) AS props
-  `);
+export async function getGraphOverview(graphId?: string): Promise<GraphData> {
+  try {
+    const graph = await getGraph(graphId);
+    const nodesRes = await graph.query(`
+      MATCH (n)
+      RETURN id(n) AS id, labels(n)[0] AS label, 
+             coalesce(n.name, n.title, toString(n.number), n.id) AS name,
+             properties(n) AS props
+    `);
 
-  const edgesRes = await graph.query(`
-    MATCH (a)-[r]->(b)
-    RETURN id(r) AS id, id(a) AS source, id(b) AS target, type(r) AS label, properties(r) AS props
-  `);
+    const edgesRes = await graph.query(`
+      MATCH (a)-[r]->(b)
+      RETURN id(r) AS id, id(a) AS source, id(b) AS target, type(r) AS label, properties(r) AS props
+    `);
 
-  const nodes = (nodesRes.data || []).map((row: any) => ({
-    id: String(row.id),
-    label: row.label || "Entity",
-    name: String(row.name || "Unnamed"),
-    properties: row.props || {},
-  }));
+    const nodes = (nodesRes.data || []).map((row: any) => ({
+      id: String(row.id),
+      label: row.label || "Entity",
+      name: String(row.name || "Unnamed"),
+      properties: row.props || {},
+    }));
 
-  const edges = (edgesRes.data || []).map((row: any) => ({
-    id: String(row.id),
-    source: String(row.source),
-    target: String(row.target),
-    label: row.label || "CONNECTED_TO",
-    properties: row.props || {},
-  }));
+    const edges = (edgesRes.data || []).map((row: any) => ({
+      id: String(row.id),
+      source: String(row.source),
+      target: String(row.target),
+      label: row.label || "CONNECTED_TO",
+      properties: row.props || {},
+    }));
 
-  return { nodes, edges };
+    return { nodes, edges };
+  } catch {
+    return { nodes: [], edges: [] };
+  }
 }

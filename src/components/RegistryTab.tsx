@@ -17,33 +17,77 @@ import {
   Clock,
   Building2,
   Tag,
+  FolderGit2,
+  Plug,
 } from "lucide-react";
 import { GraphData } from "@/lib/schema";
+import { EnterpriseUser } from "@/lib/firebase";
 
 interface RegistryTabProps {
   graphData: GraphData;
   onQueryService: (serviceName: string) => void;
   onAuditPR: (prNum: number) => void;
   onOpenSource?: (sourceId: string) => void;
+  currentUser?: EnterpriseUser | null;
+  isPersonalAccount?: boolean;
+  onNavigateToConnections?: () => void;
 }
+
+const DEMO_ENTITY_NAMES = new Set([
+  "auth-v1",
+  "payments-api",
+  "api-gateway",
+  "mobile-app",
+  "web-checkout",
+  "identity-service",
+  "fraud-detector",
+  "postgres-primary",
+  "dec-44",
+  "dec-88",
+  "dec-105",
+  "dec-12",
+  "rfc-102",
+  "sec-404",
+  "sre-88",
+  "q3 global architecture review",
+  "pr #214",
+  "pr 214",
+  "pr-214",
+]);
 
 export function RegistryTab({
   graphData,
   onQueryService,
   onAuditPR,
   onOpenSource,
+  currentUser,
+  isPersonalAccount,
+  onNavigateToConnections,
 }: RegistryTabProps) {
   const [filter, setFilter] = useState<
     "all" | "services" | "decisions" | "docs" | "meetings" | "prs"
   >("all");
   const [search, setSearch] = useState("");
 
+  const isPersonal =
+    isPersonalAccount ??
+    Boolean(currentUser?.isFirebaseAuthenticated && currentUser?.uid !== "workspace-member");
+
+  // When personal account is logged in, strip out all demo entities
+  const activeNodes = isPersonal
+    ? (graphData.nodes || []).filter(
+        (n) =>
+          !DEMO_ENTITY_NAMES.has((n.name || "").toLowerCase().trim()) &&
+          !DEMO_ENTITY_NAMES.has((n.id || "").toLowerCase().trim())
+      )
+    : graphData.nodes || [];
+
   // Group nodes by categories
-  const services = graphData.nodes.filter((n) => n.label === "Service");
-  const decisions = graphData.nodes.filter((n) => n.label === "Decision");
-  const docs = graphData.nodes.filter((n) => n.label === "Doc");
-  const meetings = graphData.nodes.filter((n) => n.label === "Meeting");
-  const prs = graphData.nodes.filter((n) => n.label === "GitHubPR");
+  const services = activeNodes.filter((n) => n.label === "Service");
+  const decisions = activeNodes.filter((n) => n.label === "Decision");
+  const docs = activeNodes.filter((n) => n.label === "Doc");
+  const meetings = activeNodes.filter((n) => n.label === "Meeting");
+  const prs = activeNodes.filter((n) => n.label === "GitHubPR");
 
   const filteredServices = services.filter((s) =>
     (s.name || "").toLowerCase().includes(search.toLowerCase())
@@ -70,13 +114,15 @@ export function RegistryTab({
         <div className="space-y-1 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
             <Server size={13} />
-            <span>FalkorDB Synchronized Knowledge Catalog</span>
+            <span>{isPersonal ? "Personal Knowledge Catalog" : "FalkorDB Synchronized Knowledge Catalog"}</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            Enterprise Document & Asset Catalog
+            {isPersonal ? "Personal Document & Asset Catalog" : "Enterprise Document & Asset Catalog"}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Unified registry of institutional assets synchronized across Google Workspace RFCs, executive architecture review meetings, GitHub PRs, and microservice definitions.
+            {isPersonal
+              ? "Your isolated personal workspace catalog synchronized with authorized repositories and Google Workspace docs."
+              : "Unified registry of institutional assets synchronized across Google Workspace RFCs, executive architecture review meetings, GitHub PRs, and microservice definitions."}
           </p>
         </div>
 
@@ -101,79 +147,109 @@ export function RegistryTab({
         </div>
       </div>
 
-      {/* 2. Search & Category Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search size={15} className="text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            placeholder="Search catalog by name, title, or keywords..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
-          />
+      {/* If personal account with no synced docs or assets */}
+      {isPersonal && activeNodes.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-14 text-center shadow-xs space-y-4 max-w-2xl mx-auto my-8">
+          <div className="size-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto shadow-xs">
+            <FileText size={26} />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              Personal Catalog Empty
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">
+              Welcome, <span className="font-semibold text-slate-800">{currentUser?.displayName || "Personal Account"}</span>. All demo documents, ADRs, and PRs have been cleared for your personal account. Connect your GitHub or Google Workspace in Connections to sync your repositories, RFCs, and architecture specs.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {onNavigateToConnections && (
+              <button
+                type="button"
+                onClick={onNavigateToConnections}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <Plug size={14} />
+                <span>Connect Google Workspace &amp; GitHub</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
         </div>
+      ) : (
+        <>
+          {/* 2. Search & Category Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search size={15} className="text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                placeholder="Search catalog by name, title, or keywords..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
+              />
+            </div>
 
-        {/* Filter Pills */}
-        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 gap-1 overflow-x-auto">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "all"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            All Assets
-          </button>
-          <button
-            onClick={() => setFilter("services")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "services"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Services ({services.length})
-          </button>
-          <button
-            onClick={() => setFilter("decisions")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "decisions"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Decisions ({decisions.length})
-          </button>
-          <button
-            onClick={() => setFilter("docs")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "docs"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            RFCs ({docs.length})
-          </button>
-          <button
-            onClick={() => setFilter("prs")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "prs"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            PRs ({prs.length})
-          </button>
-        </div>
-      </div>
+            {/* Filter Pills */}
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 gap-1 overflow-x-auto">
+              <button
+                onClick={() => setFilter("all")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  filter === "all"
+                    ? "bg-white text-indigo-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                All Assets
+              </button>
+              <button
+                onClick={() => setFilter("services")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  filter === "services"
+                    ? "bg-white text-indigo-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Services ({services.length})
+              </button>
+              <button
+                onClick={() => setFilter("decisions")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  filter === "decisions"
+                    ? "bg-white text-indigo-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Decisions ({decisions.length})
+              </button>
+              <button
+                onClick={() => setFilter("docs")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  filter === "docs"
+                    ? "bg-white text-indigo-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                RFCs ({docs.length})
+              </button>
+              <button
+                onClick={() => setFilter("prs")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  filter === "prs"
+                    ? "bg-white text-indigo-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                PRs ({prs.length})
+              </button>
+            </div>
+          </div>
 
-      {/* 3. Services Grid */}
-      {(filter === "all" || filter === "services") && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Server size={16} className="text-indigo-600" />
+          {/* 3. Services Grid */}
+          {(filter === "all" || filter === "services") && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Server size={16} className="text-indigo-600" />
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
               Production Microservices ({filteredServices.length})
             </h3>
@@ -373,6 +449,8 @@ export function RegistryTab({
             })}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
