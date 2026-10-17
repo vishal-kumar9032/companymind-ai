@@ -43,6 +43,13 @@ interface DashboardViewProps {
   latencyMs?: number;
 }
 
+const HERO_PROMPTS = [
+  "What breaks if auth-v1 is shut down?",
+  "Why was DEC-44 decided?",
+  "Who owns payments-api?",
+  "Audit PR #214",
+];
+
 export function DashboardView({
   currentTenant,
   onSelectTenant,
@@ -58,6 +65,7 @@ export function DashboardView({
   latencyMs = 2,
 }: DashboardViewProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [askText, setAskText] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [selectedSourceType, setSelectedSourceType] = useState<"all" | "rfc" | "meeting" | "pr" | "decision">("all");
 
@@ -87,89 +95,81 @@ export function DashboardView({
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-16">
-      {/* 1. Header Mission & Problem vs Solution Canvas */}
-      <section className="bg-gradient-to-br from-white via-indigo-50/20 to-slate-50 border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200/70">
-          <div className="space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100">
-              <Sparkles className="w-3.5 h-3.5" />
-              Institutional Knowledge Graph & Multi-Agent Autonomous Brain
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Enterprise Knowledge Without Information Silos
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              In a company, critical knowledge is scattered across meeting notes, project reports, task records, and employee documents. 
-              <strong> CompanyMind AI</strong> uses <strong>FalkorDB</strong> to map interconnected relationships between people, decisions, and tasks, using our <strong>Enterprise AI Gateway</strong> to synthesize answers with verifiable supporting document proofs.
-            </p>
+      {/* 1. Hero: one headline, one ask bar */}
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-indigo-50/40 to-violet-50/40 px-6 py-10 sm:px-12 sm:py-14 shadow-sm">
+        <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
+        <div className="relative mx-auto max-w-3xl text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 text-indigo-700 text-xs font-semibold border border-indigo-100 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+            Company brain powered by FalkorDB
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 leading-[1.1]">
+            Ask your company <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">anything.</span>
+          </h1>
+          <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+            Who owns it, why it was decided, what breaks next. Every answer is traced through the graph to its source.
+          </p>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = askText.trim();
+              if (q) onRunQuery(q);
+            }}
+            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-indigo-100/50 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100 transition"
+          >
+            <Search className="ml-3 h-5 w-5 shrink-0 text-slate-400" />
+            <input
+              value={askText}
+              onChange={(e) => setAskText(e.target.value)}
+              placeholder="What services break if auth-v1 is shut down?"
+              className="min-w-0 flex-1 bg-transparent px-2 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Ask <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {HERO_PROMPTS.map((q) => (
+              <button
+                key={q}
+                onClick={() => onRunQuery(q)}
+                className="rounded-full border border-slate-200 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-white transition-colors"
+              >
+                {q}
+              </button>
+            ))}
           </div>
 
-          {/* Quick Action Station */}
-          <div className="flex flex-wrap lg:flex-col items-stretch gap-2.5 min-w-[240px]">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={onOpenGraph}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
+            >
+              <FolderTree className="h-3.5 w-3.5 text-indigo-600" />
+              Explore the graph
+            </button>
             {currentUser ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    {currentUser.displayName.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-900 truncate">{currentUser.displayName}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{currentUser.role}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="text-[11px] text-rose-600 hover:text-rose-700 font-medium px-2 py-1 hover:bg-rose-50 rounded"
-                >
-                  Sign Out
-                </button>
-              </div>
+              <button
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              >
+                Signed in as {currentUser.displayName} · Sign out
+              </button>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
               >
-                <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                Continue with Google (Firebase)
+                <Lock className="h-3.5 w-3.5 text-indigo-300" />
+                Sign in with Google
               </button>
             )}
-
-            <button
-              onClick={onOpenGraph}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
-            >
-              <FolderTree className="w-3.5 h-3.5" />
-              Explore FalkorDB Graph Stage
-            </button>
-          </div>
-        </div>
-
-        {/* Problem vs. Solution 2-Column Visual */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
-          <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 space-y-2">
-            <div className="flex items-center gap-2 text-rose-800 text-xs font-bold uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-              The Problem: Disconnected Information Silos
-            </div>
-            <ul className="text-xs text-rose-950 space-y-1.5 list-disc list-inside">
-              <li>Engineers waste hours asking <em>"Who owns this task or service?"</em></li>
-              <li>Context on <em>"What was decided in the Q3 meeting?"</em> is buried in transcripts.</li>
-              <li>Pull requests get blocked or delayed because architectural policies (DEC-44) aren't linked to code.</li>
-              <li>Normal document chatbots retrieve isolated paragraphs but miss multi-hop connections.</li>
-            </ul>
-          </div>
-
-          <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-2">
-            <div className="flex items-center gap-2 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              The Solution: FalkorDB Graph + Neural AI Synthesis
-            </div>
-            <ul className="text-xs text-emerald-950 space-y-1.5 list-disc list-inside">
-              <li><strong>FalkorDB Graph:</strong> Maps relationships between people, microservices, decisions, and tasks.</li>
-              <li><strong>Enterprise AI Gateway:</strong> Fast inference on Groq Qwen 27B / Gemini 3.1 Flash Lite.</li>
-              <li><strong>Verifiable Provenance:</strong> Every answer provides clickable source citations with exact excerpts.</li>
-              <li><strong>Autonomous Multi-Agent Governance:</strong> Policy watchdog catches violations in PRs automatically.</li>
-            </ul>
           </div>
         </div>
       </section>
