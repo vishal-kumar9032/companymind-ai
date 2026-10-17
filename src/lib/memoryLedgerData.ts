@@ -17,7 +17,7 @@ export interface FindingItem {
 export const SEVERITY_FILTERS = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
 export type SeverityFilter = (typeof SEVERITY_FILTERS)[number];
 
-export const INITIAL_FINDINGS: FindingItem[] = [
+export const initialFindings: FindingItem[] = [
   {
     id: "finding-001",
     severity: "CRITICAL",
@@ -71,3 +71,6 @@ export const INITIAL_FINDINGS: FindingItem[] = [
     target_type: "service",
   },
 ];
+
+// Backwards compatibility alias
+export const INITIAL_FINDINGS = initialFindings;

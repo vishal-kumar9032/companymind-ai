@@ -508,7 +508,13 @@ export default function Home() {
                     )
                   }
                   selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
                   refreshTrigger={memoryRefreshTrigger}
+                  footerStatus={{
+                    engine: "FalkorDB Institutional Graph Memory",
+                    syncState: "Synced across Sessions",
+                    isSynced: true,
+                  }}
                 />
               </div>
             </div>

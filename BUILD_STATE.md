@@ -194,5 +194,19 @@
     - `pnpm exec tsc --noEmit` passed with 0 errors.
     - `pnpm build` passed (11/11 routes).
     - PM2 service `companymind-ai` restarted on port 13050 (`https://companymind.135-235-136-6.sslip.io`).
+- `2026-10-17` (Branch `feat/connectors-memory` - Dashboard memory ledger dynamic refactoring):
+  - **External Constants & Dynamic State (`src/lib/memoryLedgerData.ts`):** Exported `initialFindings` (with `INITIAL_FINDINGS` alias) containing structured fields (`id`, `severity`, `agent`, `timestamp`, `message`, `service`, `sessionId`). Seeded initial state in `MemoryTab.tsx` with `const [findings, setFindings] = useState<FindingItem[]>(initialFindingsData || initialFindings)`.
+  - **Dynamic UI Text & Model Selector (`src/components/MemoryTab.tsx`):**
+    - Replaced static model selector badge with an interactive `<select>` dropdown dynamically bound to `currentModel`, `selectedModel`, and `onSelectModel` prop, supporting seamless switching between available models.
+    - Replaced static header badge with dynamic counter (`${findings.length} findings`), active filter match badge, and optional `headerBadges` prop mapping.
+    - Replaced static footer strings with dynamic `footerStatus` prop bindings adapting to engine name, live finding count, sync status icon, and `lastSyncedAt` timestamp.
+    - Dynamically mapped severity filters (`['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW']`) to filter buttons with live counts per severity level.
+  - **Interactive Event Handlers:**
+    - Wired up interactive service tags (`handleServiceClick`) to trigger `onSelectNode` and `onSelectService` for canvas topology inspection.
+    - Wired up 1-click blast radius triggers (`handleBlastRadiusClick`) to invoke `onAnalyzeBlastRadius` for 4-hop causal dependency queries in FalkorDB.
+    - Implemented a dedicated Record Finding Modal Dialog triggered by the header "+ Record" action (`handleTriggerRecordModal`) with quick target tags (`postgres-primary`, `auth-v1`, `payments-api`), severity and reporting agent selectors, and optimistic state updates upon `/api/findings` submission.
+    - Wired up interactive finding header badges and agent labels to filter and search findings on click.
+    - Connected `onSelectModel` and `footerStatus` in `src/app/page.tsx`.
+  - **Verification:** Verified with `pnpm exec tsc --noEmit` (0 errors), `pnpm build` (all 11 routes successfully compiled), PM2 restart (`companymind-ai` online), and verified HTTP 200 response on `http://localhost:13050/`.
 
 
