@@ -5,11 +5,12 @@ import os from "os";
 import type OpenAI from "openai";
 
 export const TOOLKITS = [
-  { slug: "gmail", label: "Gmail", blurb: "Read, search and send email" },
-  { slug: "googlecalendar", label: "Google Calendar", blurb: "Read and create events" },
-  { slug: "googledrive", label: "Google Drive", blurb: "Find and read files" },
-  { slug: "googledocs", label: "Google Docs", blurb: "Create and edit documents" },
-  { slug: "googlesheets", label: "Google Sheets", blurb: "Create sheets and append rows" },
+  { slug: "googlesuper", label: "Google Workspace", blurb: "Connect all Google tools (Gmail, Calendar, Drive, Docs, Sheets) at once", isGoogle: true, isBundle: true },
+  { slug: "gmail", label: "Gmail", blurb: "Read, search and send email", isGoogle: true },
+  { slug: "googlecalendar", label: "Google Calendar", blurb: "Read and create events", isGoogle: true },
+  { slug: "googledrive", label: "Google Drive", blurb: "Find and read files", isGoogle: true },
+  { slug: "googledocs", label: "Google Docs", blurb: "Create and edit documents", isGoogle: true },
+  { slug: "googlesheets", label: "Google Sheets", blurb: "Create sheets and append rows", isGoogle: true },
   { slug: "github", label: "GitHub", blurb: "Repos, pull requests, issues" },
 ] as const;
 
@@ -96,6 +97,8 @@ export interface ToolkitStatus {
   label: string;
   blurb: string;
   connected: boolean;
+  isGoogle?: boolean;
+  isBundle?: boolean;
 }
 
 /** Real connection state for this user. Never reports "connected" on error. */
@@ -116,9 +119,17 @@ export async function connectionStatus(
         .filter((i: any) => i.connection?.isActive)
         .map((i: any) => String(i.slug).toLowerCase()),
     );
+    const hasGoogleSuper = active.has("googlesuper");
+    const isConnected = (slug: string) => {
+      if (active.has(slug)) return true;
+      if (hasGoogleSuper && (slug.startsWith("google") || slug === "gmail")) {
+        return true;
+      }
+      return false;
+    };
     return {
       configured: true,
-      toolkits: base.map((t) => ({ ...t, connected: active.has(t.slug) })),
+      toolkits: base.map((t) => ({ ...t, connected: isConnected(t.slug) })),
     };
   } catch (err: any) {
     // If project key gave 401 or invalid, try user key fallback
@@ -136,9 +147,17 @@ export async function connectionStatus(
             .map((i: any) => String(i.slug).toLowerCase()),
         );
         client = fallbackClient;
+        const hasGoogleSuper = active.has("googlesuper");
+        const isConnected = (slug: string) => {
+          if (active.has(slug)) return true;
+          if (hasGoogleSuper && (slug.startsWith("google") || slug === "gmail")) {
+            return true;
+          }
+          return false;
+        };
         return {
           configured: true,
-          toolkits: base.map((t) => ({ ...t, connected: active.has(t.slug) })),
+          toolkits: base.map((t) => ({ ...t, connected: isConnected(t.slug) })),
         };
       } catch {}
     }

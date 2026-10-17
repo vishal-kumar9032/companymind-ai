@@ -199,8 +199,8 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[]; demoOnly?: boolean }[] 
 
 const ROLE_COMPOSIO: Record<Role, string[] | "all"> = {
   orchestrator: "all",
-  researcher: ["googledrive", "gmail", "googlecalendar", "github", "googlesheets", "googledocs"],
-  governance: ["github", "googledrive"],
+  researcher: ["googledrive", "gmail", "googlecalendar", "github", "googlesheets", "googledocs", "googlesuper"],
+  governance: ["github", "googledrive", "googlesuper"],
   scribe: "all",
 };
 
