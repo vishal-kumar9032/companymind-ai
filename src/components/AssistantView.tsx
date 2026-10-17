@@ -26,6 +26,8 @@ import {
   CornerDownLeft,
   Activity,
   Network,
+  Paperclip,
+  History,
 } from "lucide-react";
 import { authHeaders } from "@/lib/clientAuth";
 import { AVAILABLE_MODELS } from "@/lib/truefoundry";
@@ -169,12 +171,14 @@ export function AssistantView({
   initialQuery,
   onInitialQueryUsed,
   model,
+  onGraphUpdate,
 }: {
   signedIn: boolean;
   personal?: boolean;
   initialQuery?: string | null;
   onInitialQueryUsed?: () => void;
   model?: string;
+  onGraphUpdate?: () => void;
 }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -183,9 +187,42 @@ export function AssistantView({
   const [copiedTurnId, setCopiedTurnId] = useState<number | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const nextId = useRef(1);
 
+  // File upload knowledge attachment state
+  const [attachment, setAttachment] = useState<{
+    name: string;
+    text: string;
+    size: number;
+    chars: number;
+  } | null>(null);
+  const [extractingFile, setExtractingFile] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+
+  // Dynamic user instructions & past runs
+  const [recentInstructions, setRecentInstructions] = useState<
+    Array<{ id: string; goal: string; role?: string; at: string }>
+  >([]);
+
   const activeModelObj = AVAILABLE_MODELS.find((m) => m.id === model) || AVAILABLE_MODELS[0];
+
+  const loadRecentInstructions = async () => {
+    try {
+      const headers = await authHeaders();
+      const res = await fetch("/api/agent", { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.runs)) {
+          setRecentInstructions(data.runs.slice(0, 6));
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    void loadRecentInstructions();
+  }, [signedIn]);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -215,15 +252,49 @@ export function AssistantView({
     setExpandedReasoning({});
   };
 
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachmentError(null);
+    setExtractingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const headers = await authHeaders();
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to extract knowledge from file");
+      }
+      setAttachment({
+        name: data.name,
+        text: data.text,
+        size: data.size,
+        chars: data.chars,
+      });
+    } catch (err: any) {
+      setAttachmentError(err?.message || "Could not read file");
+    } finally {
+      setExtractingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   async function ask(question: string) {
     const q = question.trim();
     if (!q || busy) return;
+    const currentAttachment = attachment;
     const id = nextId.current++;
     setTurns((ts) => [
       ...ts,
-      { id, question: q, events: [], approvals: [], answer: "", status: "running" },
+      { id, question: currentAttachment ? `[Attachment: ${currentAttachment.name}] ${q}` : q, events: [], approvals: [], answer: "", status: "running" },
     ]);
     setInput("");
+    setAttachment(null);
     setBusy(true);
     // Keep reasoning expanded while running
     setExpandedReasoning((prev) => ({ ...prev, [id]: true }));
@@ -232,7 +303,11 @@ export function AssistantView({
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "content-type": "application/json", ...(await authHeaders()) },
-        body: JSON.stringify({ message: q, model }),
+        body: JSON.stringify({
+          message: q,
+          model,
+          attachment: currentAttachment ? { name: currentAttachment.name, text: currentAttachment.text } : undefined,
+        }),
       });
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => ({}));
@@ -266,12 +341,16 @@ export function AssistantView({
             patch(id, (t) => ({ ...t, status: "error", error: e.message }));
           } else if (e.type === "done") {
             patch(id, (t) => ({ ...t, status: t.status === "error" ? "error" : "done" }));
+            onGraphUpdate?.();
+            void loadRecentInstructions();
           } else {
             patch(id, (t) => ({ ...t, events: [...t.events, e] }));
           }
         }
       }
       patch(id, (t) => (t.status === "running" ? { ...t, status: "done" } : t));
+      onGraphUpdate?.();
+      void loadRecentInstructions();
     } catch (err: any) {
       patch(id, (t) => ({
         ...t,
@@ -307,6 +386,7 @@ export function AssistantView({
       const j = await res.json().catch(() => ({}));
       if (!res.ok) return setState("failed", j.error || `Failed (${res.status})`);
       setState(j.status === "rejected" ? "rejected" : "executed");
+      onGraphUpdate?.();
     } catch (err: any) {
       setState("failed", err?.message);
     }
@@ -399,6 +479,32 @@ export function AssistantView({
                   );
                 })}
               </div>
+
+              {/* Dynamic Recent Instructions */}
+              {recentInstructions.length > 0 && (
+                <div className="space-y-3 pt-4 text-left">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <History size={14} className="text-indigo-600" />
+                    <span>Recent Instructions &amp; Runs</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                      Live FalkorDB
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentInstructions.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => ask(r.goal)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 text-xs text-slate-700 transition cursor-pointer max-w-full text-left"
+                      >
+                        <Sparkles size={11} className="text-indigo-500 shrink-0" />
+                        <span className="truncate max-w-sm">{r.goal}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -613,19 +719,84 @@ export function AssistantView({
           }}
           className="mx-auto max-w-3xl"
         >
+          {/* Active Attachment Pill */}
+          {attachment && (
+            <div className="mb-2 flex items-center justify-between rounded-xl bg-indigo-50/90 border border-indigo-200/80 px-3 py-1.5 text-xs text-indigo-900 animate-in fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText size={14} className="text-indigo-600 shrink-0" />
+                <span className="font-semibold truncate max-w-xs">{attachment.name}</span>
+                <span className="text-[10px] text-indigo-500 font-mono">
+                  ({Math.round(attachment.size / 1024)} KB · {attachment.chars.toLocaleString()} chars knowledge extracted)
+                </span>
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 font-medium px-1.5 py-0.5 rounded">
+                  Ephemeral Knowledge
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAttachment(null)}
+                className="p-1 text-indigo-400 hover:text-indigo-700 transition-colors cursor-pointer rounded"
+                title="Remove attachment"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
+          {/* Attachment Error */}
+          {attachmentError && (
+            <div className="mb-2 flex items-center justify-between rounded-xl bg-rose-50 border border-rose-200 px-3 py-1.5 text-xs text-rose-800 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CircleAlert size={14} className="text-rose-600 shrink-0" />
+                <span>{attachmentError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAttachmentError(null)}
+                className="p-1 text-rose-400 hover:text-rose-700 transition-colors cursor-pointer rounded"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-sm focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100/60 transition-all">
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelected}
+              className="hidden"
+              accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.tsv,.txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.htm,.rtf,.log"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy || extractingFile}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors cursor-pointer disabled:opacity-40"
+              title="Attach document/knowledge (PDF, Word, Excel, CSV, TXT, JSON) - parsed directly for AI knowledge without saving raw doc"
+            >
+              {extractingFile ? (
+                <Loader2 size={16} className="animate-spin text-indigo-600" />
+              ) : (
+                <Paperclip size={16} />
+              )}
+            </button>
             <textarea
               ref={textareaRef}
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything about architecture dependencies, policies, or workflows…"
-              className="min-w-0 flex-1 resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none max-h-32 leading-relaxed"
+              placeholder={
+                attachment
+                  ? `Ask or instruct the AI about ${attachment.name} (e.g. "Record my skills and experience into the graph")…`
+                  : "Ask anything about architecture dependencies, policies, or workflows…"
+              }
+              className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none max-h-32 leading-relaxed"
             />
             <button
               type="submit"
-              disabled={busy || !input.trim()}
+              disabled={busy || (!input.trim() && !attachment)}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-40 cursor-pointer active:scale-95"
               title="Send prompt (Enter)"
             >

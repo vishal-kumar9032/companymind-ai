@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Building2,
   Users,
@@ -20,11 +20,13 @@ import {
   FolderTree,
   SlidersHorizontal,
   Network,
+  History,
 } from "lucide-react";
 import { TenantConfig } from "@/lib/tenants";
 import { DEMO_PRIMARY_QUERY, heroPrompts, personalPlaceholder } from "@/lib/examples";
 import { AVAILABLE_MODELS } from "@/lib/truefoundry";
 import { EnterpriseUser, signOutEnterpriseUser } from "@/lib/firebase";
+import { authHeaders } from "@/lib/clientAuth";
 import { AuthModal } from "./AuthModal";
 
 interface DashboardViewProps {
@@ -64,6 +66,23 @@ export function DashboardView({
 }: DashboardViewProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [askText, setAskText] = useState("");
+  const [recentRuns, setRecentRuns] = useState<Array<{ id: string; goal: string }>>([]);
+
+  useEffect(() => {
+    let unmounted = false;
+    authHeaders()
+      .then((headers) => fetch("/api/agent", { headers }))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!unmounted && Array.isArray(data?.runs) && data.runs.length > 0) {
+          setRecentRuns(data.runs.slice(0, 4));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      unmounted = true;
+    };
+  }, [currentUser]);
 
   const activeModelObj =
     AVAILABLE_MODELS.find((m) => m.id === selectedModel) || AVAILABLE_MODELS[0];
@@ -118,16 +137,23 @@ export function DashboardView({
             </button>
           </form>
 
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {heroPrompts(isPersonalAccount).map((q) => (
-              <button
-                key={q}
-                onClick={() => onRunQuery(q)}
-                className="rounded-full border border-slate-200 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-white transition-colors cursor-pointer"
-              >
-                {q}
-              </button>
-            ))}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {(recentRuns.length > 0 ? recentRuns.map((r) => r.goal) : heroPrompts(isPersonalAccount)).map((q) => (
+                <button
+                  key={q}
+                  onClick={() => onRunQuery(q)}
+                  className="rounded-full border border-slate-200 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-white transition-colors cursor-pointer truncate max-w-sm"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            {recentRuns.length > 0 && (
+              <p className="text-[10px] text-slate-400 font-mono">
+                Recent live instructions from FalkorDB knowledge graph
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

@@ -24,9 +24,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const goal = typeof body.message === "string" ? body.message.trim() : "";
-  if (!goal) return json({ error: "message is required" }, 400);
-  if (goal.length > 4000) return json({ error: "message too long" }, 400);
+  const rawGoal = typeof body.message === "string" ? body.message.trim() : "";
+  if (!rawGoal) return json({ error: "message is required" }, 400);
+  if (rawGoal.length > 4000) return json({ error: "message too long" }, 400);
+
+  let promptGoal = rawGoal;
+  if (body.attachment && typeof body.attachment === "object" && body.attachment.text) {
+    const attachName = String(body.attachment.name || "knowledge-attachment").slice(0, 100);
+    const attachText = String(body.attachment.text).slice(0, 30_000);
+    promptGoal = `[User Knowledge Attachment: ${attachName}]\n${attachText}\n\n[User Instruction]:\n${rawGoal}`;
+  }
 
   const enc = new TextEncoder();
   const stream = new ReadableStream({
@@ -34,7 +41,7 @@ export async function POST(req: NextRequest) {
       const send = (e: AgentEvent | { type: "done"; runId: string; steps: number }) =>
         controller.enqueue(enc.encode(JSON.stringify(e) + "\n"));
       try {
-        const r = await runAgent({ caller, goal, model: body.model, onEvent: send });
+        const r = await runAgent({ caller, goal: promptGoal, model: body.model, onEvent: send });
         send({ type: "done", runId: r.runId, steps: r.steps });
       } catch (err: any) {
         send({ type: "error", message: String(err?.message || err).slice(0, 300) });

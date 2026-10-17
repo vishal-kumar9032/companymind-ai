@@ -10,7 +10,26 @@ import type { Caller } from "./identity";
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_DOCS = 30;
-export const ALLOWED_EXTENSIONS = ["pdf", "docx", "xlsx", "csv", "txt", "md"] as const;
+export const ALLOWED_EXTENSIONS = [
+  "pdf",
+  "docx",
+  "doc",
+  "xlsx",
+  "xls",
+  "csv",
+  "tsv",
+  "txt",
+  "md",
+  "markdown",
+  "json",
+  "yaml",
+  "yml",
+  "xml",
+  "html",
+  "htm",
+  "rtf",
+  "log",
+] as const;
 export type DocType = (typeof ALLOWED_EXTENSIONS)[number];
 
 const MAX_TEXT_CHARS = 400_000;
@@ -26,30 +45,87 @@ export function extensionOf(filename: string): string {
 
 /** Cheap content check so a renamed binary is not parsed as the type its name claims. */
 export function matchesMagic(ext: string, buf: Buffer): boolean {
-  if (ext === "pdf") return buf.subarray(0, 5).toString("latin1") === "%PDF-";
-  if (ext === "docx" || ext === "xlsx") return buf[0] === 0x50 && buf[1] === 0x4b; // zip container
+  const e = ext.toLowerCase();
+  if (e === "pdf") return buf.subarray(0, 5).toString("latin1") === "%PDF-";
+  if (e === "docx" || e === "xlsx") return buf[0] === 0x50 && buf[1] === 0x4b; // zip container
+  if (e === "doc" || e === "xls") {
+    // OLE2 Compound File Binary Format or printable text
+    return (buf[0] === 0xd0 && buf[1] === 0xcf) || !buf.subarray(0, 4096).includes(0);
+  }
   return !buf.subarray(0, 4096).includes(0); // text formats must not contain NUL bytes
+}
+
+function extractPrintableText(buf: Buffer): string {
+  const str = buf.toString("latin1");
+  const matches = str.match(/[A-Za-z0-9\s.,!?:;\-_@#%&*()\[\]{}]{4,}/g) || [];
+  return matches.join(" ");
 }
 
 export async function extractText(ext: string, buf: Buffer): Promise<string> {
   let text = "";
-  if (ext === "pdf") {
+  const normalizedExt = ext.toLowerCase();
+
+  if (normalizedExt === "pdf") {
     const { getDocumentProxy, extractText: pdfText } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buf));
     const out = await pdfText(pdf, { mergePages: true });
     text = Array.isArray(out.text) ? out.text.join("\n") : out.text;
-  } else if (ext === "docx") {
+  } else if (normalizedExt === "docx") {
     const mammoth = await import("mammoth");
     text = (await mammoth.extractRawText({ buffer: buf })).value;
-  } else if (ext === "xlsx") {
+  } else if (normalizedExt === "doc") {
+    try {
+      const mammoth = await import("mammoth");
+      const res = await mammoth.extractRawText({ buffer: buf });
+      text = res.value || extractPrintableText(buf);
+    } catch {
+      text = extractPrintableText(buf);
+    }
+  } else if (normalizedExt === "xlsx") {
     const { default: readXlsx } = await import("read-excel-file/node");
     const sheets: any[] = (await readXlsx(buf)) as any;
     text = sheets
       .map((s) => `## Sheet: ${s.sheet}\n` + (s.data as any[][]).map((row) => row.map((c) => (c ?? "") + "").join(" | ")).join("\n"))
       .join("\n\n");
+  } else if (normalizedExt === "xls") {
+    try {
+      const { default: readXlsx } = await import("read-excel-file/node");
+      const sheets: any[] = (await readXlsx(buf)) as any;
+      text = sheets
+        .map((s) => `## Sheet: ${s.sheet}\n` + (s.data as any[][]).map((row) => row.map((c) => (c ?? "") + "").join(" | ")).join("\n"))
+        .join("\n\n");
+    } catch {
+      text = extractPrintableText(buf);
+    }
+  } else if (normalizedExt === "json") {
+    try {
+      const parsed = JSON.parse(buf.toString("utf8"));
+      text = JSON.stringify(parsed, null, 2);
+    } catch {
+      text = buf.toString("utf8");
+    }
+  } else if (normalizedExt === "html" || normalizedExt === "htm") {
+    const raw = buf.toString("utf8");
+    text = raw
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"');
+  } else if (normalizedExt === "csv" || normalizedExt === "tsv") {
+    const delimiter = normalizedExt === "tsv" ? "\t" : ",";
+    const raw = buf.toString("utf8");
+    text = raw
+      .split("\n")
+      .map((line) => line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, "")).join(" | "))
+      .join("\n");
   } else {
     text = buf.toString("utf8");
   }
+
   text = text.replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   return text.slice(0, MAX_TEXT_CHARS);
 }
