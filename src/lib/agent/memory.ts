@@ -16,7 +16,9 @@ export type MemoryKind = "episodic" | "semantic" | "procedural";
 const id = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 async function g(c: Caller) {
-  return getGraph(c.graph);
+  // The demo workspace shares the seeded knowledge graph, so keep agent memory in a
+  // sibling graph; otherwise runs would add nodes to the graph users are browsing.
+  return getGraph(c.authenticated ? c.graph : `${c.graph}__agent`);
 }
 
 export async function remember(
