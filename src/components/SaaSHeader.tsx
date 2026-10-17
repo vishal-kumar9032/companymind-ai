@@ -91,6 +91,10 @@ export function SaaSHeader({
       title: "Institutional Episodic Memory",
       subtitle: "Persistent Cross-Session Knowledge & Findings",
     },
+    connections: {
+      title: "Connections",
+      subtitle: "Connect your Google Workspace and GitHub accounts",
+    },
     registry: {
       title: "Enterprise Document Catalog",
       subtitle: "Unified RFCs, ADRs, PRs & Architecture Review Specs",

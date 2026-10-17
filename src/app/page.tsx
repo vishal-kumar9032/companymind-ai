@@ -7,7 +7,8 @@ import { SaaSSidebar, SaaSView } from "@/components/SaaSSidebar";
 import { SaaSHeader } from "@/components/SaaSHeader";
 import { DashboardView } from "@/components/DashboardView";
 import { GraphCanvas } from "@/components/GraphCanvas";
-import { ChatPanel } from "@/components/ChatPanel";
+import { AssistantView } from "@/components/AssistantView";
+import { ConnectionsView } from "@/components/ConnectionsView";
 import { AgentsTab } from "@/components/AgentsTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { RegistryTab } from "@/components/RegistryTab";
@@ -362,26 +363,19 @@ export default function Home() {
           {/* VIEW 2: Ask AI & Graph Oracle */}
           {currentView === "chat" && (
             <div className="flex-1 min-h-0 flex flex-col w-full h-full overflow-hidden relative">
-              <ChatPanel
-                onHopsChange={setHighlightHops}
-                externalTriggerQuery={selectedQuery}
-                onClearExternalTrigger={() => setSelectedQuery(null)}
-                onOpenSourceDrawer={handleOpenSource}
-                onSelectNode={(nodeId: string) => {
-                  setHighlightHops([nodeId]);
-                  handleOpenSource(nodeId);
-                }}
-                onResponseUpdate={handleResponseUpdate}
-                onToggleProcess={() => setCurrentView("agents")}
-                isProcessOpen={false}
-                onToggleGraph={() => setCurrentView("graph")}
-                isGraphOpen={false}
-                onToggleMemory={() => setCurrentView("memory")}
-                isMemoryOpen={false}
-                activeOutcome={lastOutcome}
-                selectedModel={selectedModel}
-                currentTenantId={currentTenant.id}
+              <AssistantView
+                signedIn={Boolean(currentUser?.isFirebaseAuthenticated)}
+                initialQuery={selectedQuery}
+                onInitialQueryUsed={() => setSelectedQuery(null)}
+                model={selectedModel}
               />
+            </div>
+          )}
+
+          {/* Connections: Composio-backed per-user accounts */}
+          {currentView === "connections" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ConnectionsView onRequestSignIn={() => setIsAuthModalOpen(true)} />
             </div>
           )}
 

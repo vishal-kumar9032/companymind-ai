@@ -34,7 +34,8 @@ export type SaaSView =
   | "graph"
   | "agents"
   | "memory"
-  | "registry";
+  | "registry"
+  | "connections";
 
 interface SaaSSidebarProps {
   currentView: SaaSView;
@@ -97,6 +98,13 @@ export function SaaSSidebar({
           icon: MessageSquare,
           badge: "Active",
           description: "Multi-agent knowledge synthesis",
+        },
+        {
+          id: "connections" as SaaSView,
+          label: "Connections",
+          icon: Layers,
+          badge: null,
+          description: "Gmail, Calendar, Drive, Sheets, GitHub",
         },
         {
           id: "graph" as SaaSView,
