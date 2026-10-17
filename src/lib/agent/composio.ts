@@ -322,8 +322,16 @@ const WRITE_WORDS = new Set([
   "REOPEN", "FORK", "STAR", "LABEL", "UPLOAD", "SHARE", "RENAME", "COPY", "EDIT", "SET", "ARCHIVE",
 ]);
 
+/** Verbs that only read. A tool must carry one of these to skip approval (fail closed). */
+const READ_WORDS = new Set([
+  "GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "QUERY", "LOOKUP", "RETRIEVE", "CHECK",
+  "DESCRIBE", "VIEW", "SHOW", "COUNT", "DOWNLOAD",
+]);
+
+/** A tool runs without approval only if it has a read verb and no write verb; anything unrecognised is gated. */
 export function isWriteTool(slug: string): boolean {
-  return slug.toUpperCase().split("_").some((w) => WRITE_WORDS.has(w));
+  const words = slug.toUpperCase().split("_");
+  return words.some((w) => WRITE_WORDS.has(w)) || !words.some((w) => READ_WORDS.has(w));
 }
 
 const ALLOWED_PARAM_KEYS = new Set([
