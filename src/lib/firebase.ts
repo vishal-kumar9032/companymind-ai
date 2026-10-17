@@ -92,12 +92,21 @@ export function getFirebaseAuth(): Auth | null {
 }
 
 export function getFirebaseFirestore(): Firestore | null {
+  // Guard: If Firestore is not enabled or provisioned, return null to avoid
+  // "@firebase/firestore: Database '(default)' not found" retry noise in console.
+  if (process.env.NEXT_PUBLIC_ENABLE_FIRESTORE !== "true") {
+    return null;
+  }
   const fbApp = getFirebaseApp();
   if (!fbApp) {
     return null;
   }
   if (!db) {
-    db = getFirestore(fbApp);
+    try {
+      db = getFirestore(fbApp);
+    } catch {
+      return null;
+    }
   }
   return db;
 }
