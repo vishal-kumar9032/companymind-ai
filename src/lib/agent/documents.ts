@@ -185,10 +185,119 @@ export async function listDocuments(c: Caller): Promise<DocInfo[]> {
   }
 }
 
+export async function extractAndLinkEntities(
+  graph: any,
+  docId: string,
+  docName: string,
+  text: string,
+  ext: string,
+): Promise<{ entitiesCount: number; relationshipsCount: number }> {
+  let entitiesCount = 0;
+  let relationshipsCount = 0;
+
+  try {
+    // 1. Identify Decisions / Policies / ADRs / RFCs
+    const decisionMatches = text.match(/\b(DEC-\d+|RFC-\d+|ADR-\d+|SEC-\d+|SRE-\d+)\b/gi) || [];
+    const uniqueDecisions = Array.from(new Set(decisionMatches.map((d) => d.toUpperCase())));
+    for (const dec of uniqueDecisions.slice(0, 10)) {
+      await graph.query(
+        `MERGE (dec:Decision {name: $name})
+         ON CREATE SET dec.title = $name, dec.source = $source, dec.status = 'Active'
+         WITH dec
+         MATCH (d:Doc {id: $docId})
+         MERGE (d)-[:DEFINES]->(dec)`,
+        { params: { name: dec, source: `upload:${docId}`, docId } },
+      );
+      entitiesCount++;
+      relationshipsCount++;
+    }
+
+    // 2. Identify Services / APIs / Microservices
+    const serviceMatches =
+      text.match(/\b[a-zA-Z0-9_-]+(?:-api|-service|-gateway|-worker|-app|-db|-cluster)\b/gi) || [];
+    const uniqueServices = Array.from(
+      new Set(
+        serviceMatches
+          .map((s) => s.toLowerCase().trim())
+          .filter((s) => s.length > 3 && s.length < 35 && !s.includes(" ")),
+      ),
+    );
+    for (const svc of uniqueServices.slice(0, 10)) {
+      await graph.query(
+        `MERGE (s:Service {name: $name})
+         ON CREATE SET s.tier = 'Tier 1', s.source = $source
+         WITH s
+         MATCH (d:Doc {id: $docId})
+         MERGE (d)-[:DOCUMENTS]->(s)`,
+        { params: { name: svc, source: `upload:${docId}`, docId } },
+      );
+      entitiesCount++;
+      relationshipsCount++;
+    }
+
+    // 3. Identify Authors / People
+    const authorMatches = text.match(/(?:Author|Owner|Lead|Created by|By):\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/gi) || [];
+    for (const m of authorMatches.slice(0, 5)) {
+      const name = m.replace(/(?:Author|Owner|Lead|Created by|By):\s*/i, "").trim();
+      if (name && name.length > 2 && name.length < 40) {
+        await graph.query(
+          `MERGE (p:Person {name: $name})
+           ON CREATE SET p.source = $source
+           WITH p
+           MATCH (d:Doc {id: $docId})
+           MERGE (p)-[:AUTHORED]->(d)`,
+          { params: { name, source: `upload:${docId}`, docId } },
+        );
+        entitiesCount++;
+        relationshipsCount++;
+      }
+    }
+
+    // 4. Identify Key Concepts / Technologies
+    const techKeywords = [
+      "Kubernetes", "Docker", "PostgreSQL", "Redis", "Kafka", "GraphQL", "REST", "gRPC", "OAuth",
+      "mTLS", "TypeScript", "Next.js", "Python", "Golang", "Microservices", "Event-Driven", "AWS", "GCP", "Azure",
+      "FalkorDB", "Vector", "Embedding", "RAG", "LLM", "Agent",
+    ];
+    for (const tech of techKeywords) {
+      if (new RegExp(`\\b${tech}\\b`, "i").test(text)) {
+        await graph.query(
+          `MERGE (c:Concept {name: $name})
+           ON CREATE SET c.category = 'Technology', c.source = $source
+           WITH c
+           MATCH (d:Doc {id: $docId})
+           MERGE (d)-[:CONTAINS_CONCEPT]->(c)`,
+          { params: { name: tech, source: `upload:${docId}`, docId } },
+        );
+        entitiesCount++;
+        relationshipsCount++;
+      }
+    }
+
+    // 5. Connect Services with Decisions if both appear in document
+    if (uniqueServices.length > 0 && uniqueDecisions.length > 0) {
+      for (const s of uniqueServices.slice(0, 3)) {
+        for (const dec of uniqueDecisions.slice(0, 3)) {
+          await graph.query(
+            `MATCH (s:Service {name: $s}), (dec:Decision {name: $dec})
+             MERGE (dec)-[:GOVERNS]->(s)`,
+            { params: { s, dec } },
+          );
+          relationshipsCount++;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Knowledge graph entity extraction notice:", err);
+  }
+
+  return { entitiesCount, relationshipsCount };
+}
+
 export async function storeDocument(
   c: Caller,
   doc: { name: string; type: string; size: number; text: string },
-): Promise<{ id: string; chunks: number }> {
+): Promise<{ id: string; chunks: number; entities: number; relations: number }> {
   await ensureIndex(c.graph);
   const graph = await getGraph(c.graph);
   const docId = id();
@@ -203,7 +312,11 @@ export async function storeDocument(
       { params: { doc: docId, cid: `${docId}-${i}`, idx: i, text: chunks[i] } },
     );
   }
-  return { id: docId, chunks: chunks.length };
+
+  // Automatically extract knowledge entities and link them into the graph
+  const { entitiesCount, relationshipsCount } = await extractAndLinkEntities(graph, docId, doc.name, doc.text, doc.type);
+
+  return { id: docId, chunks: chunks.length, entities: entitiesCount, relations: relationshipsCount };
 }
 
 export async function deleteDocument(c: Caller, id: string): Promise<boolean> {
@@ -211,6 +324,7 @@ export async function deleteDocument(c: Caller, id: string): Promise<boolean> {
   const found = await graph.roQuery(`MATCH (d:Doc {id: $id, kind: 'upload'}) RETURN count(d) AS n`, { params: { id } });
   if (!Number((found.data as any[])?.[0]?.n)) return false;
   await graph.query(`MATCH (k:Chunk {doc_id: $id}) DELETE k`, { params: { id } });
+  await graph.query(`MATCH (d:Doc {id: $id, kind: 'upload'})-[r]-() DELETE r`, { params: { id } });
   await graph.query(`MATCH (d:Doc {id: $id, kind: 'upload'}) DELETE d`, { params: { id } });
   return true;
 }
