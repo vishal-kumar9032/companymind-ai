@@ -54,30 +54,30 @@ export function AuthModal({
     <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity cursor-pointer"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-100 bg-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="size-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
               <Lock size={15} />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">
+              <h3 className="font-bold text-sm text-slate-900">
                 Enterprise Authentication
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Sign in to your organization workspace
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -86,7 +86,7 @@ export function AuthModal({
         {/* Content */}
         <div className="p-6 space-y-5">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
               {error}
             </div>
           )}
@@ -95,7 +95,7 @@ export function AuthModal({
           <button
             onClick={() => handleSignIn()}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
           >
             <svg className="size-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -122,8 +122,8 @@ export function AuthModal({
             </span>
           </button>
 
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Need an enterprise account?</span>
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="text-slate-500">Need an enterprise account?</span>
             <a
               href="/?stage=register"
               onClick={(e) => {
@@ -131,19 +131,19 @@ export function AuthModal({
                 onClose();
                 window.location.href = "/?stage=register";
               }}
-              className="text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-1"
+              className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1"
             >
               <span>Register workspace</span>
               <ArrowRight size={12} />
             </a>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <div className="flex items-center gap-1.5 font-semibold text-slate-200">
-              <ShieldCheck size={13} className="text-emerald-400" />
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+            <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+              <ShieldCheck size={13} className="text-emerald-600" />
               <span>Multi-Tenant Role-Based Access Control</span>
             </div>
-            <p className="text-[10px] leading-relaxed text-slate-400">
+            <p className="text-[10px] leading-relaxed text-slate-500">
               Enterprise sessions are partitioned by tenant domain with FalkorDB OpenCypher governance policies enforced automatically.
             </p>
           </div>

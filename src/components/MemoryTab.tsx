@@ -253,25 +253,25 @@ export function MemoryTab({
     switch (sev?.toUpperCase()) {
       case "CRITICAL":
         return (
-          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
             CRITICAL
           </span>
         );
       case "HIGH":
         return (
-          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+          <span className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
             HIGH
           </span>
         );
       case "MEDIUM":
         return (
-          <span className="text-3xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+          <span className="text-3xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
             MEDIUM
           </span>
         );
       default:
         return (
-          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
             LOW
           </span>
         );
@@ -305,12 +305,12 @@ export function MemoryTab({
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#090d16] overflow-hidden text-slate-200 rounded-2xl border border-slate-800 shadow-sm">
+    <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden text-slate-800 rounded-2xl border border-slate-200 shadow-xs">
       {/* Toast Alert when a finding is recalled */}
       {recalledFindingToast && (
-        <div className="p-3 bg-indigo-950/60 border-b border-indigo-500/30 flex items-center justify-between text-xs text-indigo-200 font-mono animate-in fade-in shrink-0">
+        <div className="p-3 bg-indigo-50 border-b border-indigo-200 flex items-center justify-between text-xs text-indigo-900 font-mono animate-in fade-in shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-indigo-400" />
+            <Sparkles size={14} className="text-indigo-600" />
             <span>
               <strong>Recalled finding from memory:</strong> "{recalledFindingToast}"
             </span>
@@ -318,7 +318,7 @@ export function MemoryTab({
           <button
             type="button"
             onClick={onClearToast}
-            className="text-2xs text-indigo-400 hover:text-indigo-200 transition-colors cursor-pointer font-medium"
+            className="text-2xs text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer font-medium"
           >
             Dismiss
           </button>
@@ -326,20 +326,20 @@ export function MemoryTab({
       )}
 
       {/* Header with dynamic badges, dynamic model selector, and interactive actions */}
-      <div className="p-3.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0 flex-wrap gap-2">
+      <div className="p-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <Brain size={15} strokeWidth={1.75} className="text-purple-400 shrink-0" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white font-mono">
+          <Brain size={15} strokeWidth={1.75} className="text-purple-600 shrink-0" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">
             {isPersonal ? "Personal Memory Ledger" : headerTitle}
           </h2>
 
           {/* Dynamic Header Badges */}
-          <span className="text-3xs font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shadow-xs">
+          <span className="text-3xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
             {headerBadge || (isPersonal ? `${findings.length} personal findings` : `${findings.length} findings`)}
           </span>
 
           {filterSeverity !== "ALL" && (
-            <span className="text-3xs font-mono text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 shadow-xs">
+            <span className="text-3xs font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 shadow-2xs">
               {filtered.length} matching
             </span>
           )}
@@ -347,14 +347,14 @@ export function MemoryTab({
           {headerBadges?.map((b, idx) => (
             <span
               key={idx}
-              className={`text-3xs font-mono px-2 py-0.5 rounded border shadow-xs ${
+              className={`text-3xs font-mono px-2 py-0.5 rounded border shadow-2xs ${
                 b.variant === "success"
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : b.variant === "warning"
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
                   : b.variant === "danger" || b.variant === "rose"
-                  ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                  : "bg-slate-900 text-slate-300 border-slate-800"
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : "bg-slate-100 text-slate-700 border-slate-200"
               }`}
             >
               {b.label}
@@ -368,7 +368,7 @@ export function MemoryTab({
               value={currentModel}
               onChange={(e) => handleModelChange(e.target.value)}
               aria-label="Active Model Selector"
-              className="appearance-none bg-slate-900 hover:bg-slate-850 text-indigo-300 border border-slate-700/80 text-3xs font-mono rounded-full pl-6 pr-6 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-colors shadow-2xs font-medium"
+              className="appearance-none bg-slate-50 hover:bg-slate-100 text-indigo-700 border border-slate-200 text-3xs font-mono rounded-full pl-6 pr-6 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors shadow-2xs font-medium"
               title="Switch Active AI Engine Model"
             >
               {availableModels.map((m) => (
@@ -377,8 +377,8 @@ export function MemoryTab({
                 </option>
               ))}
             </select>
-            <Cpu size={10} className="text-indigo-400 absolute left-2 pointer-events-none" />
-            <ChevronDown size={10} className="text-indigo-400/70 absolute right-2 pointer-events-none" />
+            <Cpu size={10} className="text-indigo-600 absolute left-2 pointer-events-none" />
+            <ChevronDown size={10} className="text-indigo-600/70 absolute right-2 pointer-events-none" />
           </div>
         </div>
 
@@ -387,7 +387,7 @@ export function MemoryTab({
           <button
             type="button"
             onClick={handleTriggerRecordModal}
-            className="flex items-center gap-1 text-2xs font-mono px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer shadow-xs"
+            className="flex items-center gap-1 text-2xs font-mono px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
             title="Record new architecture or policy finding"
           >
             <Plus size={11} />
@@ -397,7 +397,7 @@ export function MemoryTab({
             type="button"
             onClick={fetchFindings}
             disabled={loading}
-            className="p-1 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer shadow-xs"
+            className="p-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-2xs"
             title="Refresh memory store from FalkorDB"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -406,7 +406,7 @@ export function MemoryTab({
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer ml-1"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer ml-1"
               title="Close panel"
             >
               <X size={15} />
@@ -420,24 +420,24 @@ export function MemoryTab({
         <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsRecordModalOpen(false)}
             aria-hidden="true"
           />
 
           {/* Dialog Container */}
-          <div className="relative w-full max-w-lg bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl p-5 sm:p-6 space-y-4 z-10 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-xl p-5 sm:p-6 space-y-4 z-10 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <Brain size={18} className="text-purple-400" />
-                <h3 className="text-sm font-bold text-white font-mono">
+                <Brain size={18} className="text-purple-600" />
+                <h3 className="text-sm font-bold text-slate-900 font-mono">
                   Record Finding to Shared Memory
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsRecordModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -445,7 +445,7 @@ export function MemoryTab({
 
             <form onSubmit={handleAddFinding} className="space-y-4">
               <div>
-                <label className="text-2xs font-mono font-medium text-slate-400 block mb-1">
+                <label className="text-2xs font-mono font-medium text-slate-500 block mb-1">
                   Target Service or Component
                 </label>
                 <input
@@ -457,11 +457,11 @@ export function MemoryTab({
                       ? "Name of a service, project or document"
                       : "e.g. postgres-primary, auth-v1, payments-api"
                   }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 font-mono"
                   required
                 />
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="text-3xs text-slate-500 font-mono">Quick:</span>
+                  <span className="text-3xs text-slate-400 font-mono">Quick:</span>
                   {(isPersonal
                     ? []
                     : ["postgres-primary", "auth-v1", "payments-api", "identity-service"]
@@ -470,7 +470,7 @@ export function MemoryTab({
                       key={svc}
                       type="button"
                       onClick={() => setNewTarget(svc)}
-                      className="text-3xs font-mono px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 cursor-pointer transition-colors"
+                      className="text-3xs font-mono px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors"
                     >
                       {svc}
                     </button>
@@ -480,13 +480,13 @@ export function MemoryTab({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-2xs font-mono font-medium text-slate-400 block mb-1">
+                  <label className="text-2xs font-mono font-medium text-slate-500 block mb-1">
                     Severity Level
                   </label>
                   <select
                     value={newSeverity}
                     onChange={(e) => setNewSeverity(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 font-mono"
                   >
                     <option value="CRITICAL">CRITICAL</option>
                     <option value="HIGH">HIGH</option>
@@ -495,13 +495,13 @@ export function MemoryTab({
                   </select>
                 </div>
                 <div>
-                  <label className="text-2xs font-mono font-medium text-slate-400 block mb-1">
+                  <label className="text-2xs font-mono font-medium text-slate-500 block mb-1">
                     Reporting Agent
                   </label>
                   <select
                     value={newAgent}
                     onChange={(e) => setNewAgent(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 font-mono"
                   >
                     <option value="PolicyWatchdog">PolicyWatchdog</option>
                     <option value="ArchitectureOracle">ArchitectureOracle</option>
@@ -512,7 +512,7 @@ export function MemoryTab({
               </div>
 
               <div>
-                <label className="text-2xs font-mono font-medium text-slate-400 block mb-1">
+                <label className="text-2xs font-mono font-medium text-slate-500 block mb-1">
                   Observation / Rule Summary
                 </label>
                 <textarea
@@ -520,23 +520,23 @@ export function MemoryTab({
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
                   placeholder="Describe the governance violation, performance anomaly, or architecture rule..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsRecordModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newText.trim()}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
                 >
                   {isSubmitting ? "Persisting to FalkorDB..." : "Save to Memory Ledger"}
                 </button>
@@ -547,18 +547,18 @@ export function MemoryTab({
       )}
 
       {/* Filter and Search Bar: dynamically mapped severity filters */}
-      <div className="p-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center gap-2">
+      <div className="p-3 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[140px]">
           <Search
             size={12}
-            className="absolute left-2.5 top-2.5 text-slate-500"
+            className="absolute left-2.5 top-2.5 text-slate-400"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="Search findings, services, agents..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-7 pr-2.5 py-1 text-2xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-2.5 py-1 text-2xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -577,14 +577,14 @@ export function MemoryTab({
                 onClick={() => handleFilterSeverity(sev)}
                 className={`px-2 py-0.5 rounded-lg border transition-colors cursor-pointer flex items-center gap-1 ${
                   isSelected
-                    ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30 font-semibold shadow-2xs"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850"
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold shadow-2xs"
+                    : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                 }`}
               >
                 <span>{sev}</span>
                 <span
                   className={`text-3xs px-1 rounded-full font-sans ${
-                    isSelected ? "bg-indigo-500/30 text-indigo-200" : "bg-slate-800 text-slate-400"
+                    isSelected ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {count}
@@ -596,42 +596,42 @@ export function MemoryTab({
       </div>
 
       {/* Findings List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#090d16]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8fafc]">
         {loading && findings.length === 0 ? (
           <div className="space-y-3 animate-pulse">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 shadow-xs"
+                className="p-4 rounded-xl bg-white border border-slate-200 space-y-3 shadow-2xs"
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-4 w-20 bg-slate-800 rounded" />
-                  <div className="h-3 w-16 bg-slate-800 rounded" />
+                  <div className="h-4 w-20 bg-slate-100 rounded" />
+                  <div className="h-3 w-16 bg-slate-100 rounded" />
                 </div>
                 <div className="space-y-1.5">
-                  <div className="h-3 w-full bg-slate-800 rounded" />
-                  <div className="h-3 w-3/4 bg-slate-800 rounded" />
+                  <div className="h-3 w-full bg-slate-100 rounded" />
+                  <div className="h-3 w-3/4 bg-slate-100 rounded" />
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <div className="h-4 w-32 bg-slate-800 rounded" />
-                  <div className="h-3 w-16 bg-slate-800 rounded" />
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <div className="h-4 w-32 bg-slate-100 rounded" />
+                  <div className="h-3 w-16 bg-slate-100 rounded" />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
           findings.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-900/80 border border-slate-800 rounded-2xl shadow-xs space-y-3">
-              <div className="size-12 rounded-2xl bg-slate-800 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-xs">
+            <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+              <div className="size-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-2xs">
                 <Brain size={24} />
               </div>
               <div className="space-y-1 max-w-sm">
-                <h3 className="text-sm font-bold text-white">
+                <h3 className="text-sm font-bold text-slate-900">
                   {isPersonal
                     ? "Personal Episodic Memory Clean"
                     : "No Memory Findings Recorded Yet"}
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   {isPersonal
                     ? "Welcome to your personal workspace. All demo memory findings have been removed. As you interact with AI agents or record manual findings, your cross-session memory will populate here."
                     : "FalkorDB stores episodic findings and governance reviews across sessions. Record your first architecture observation or policy finding."}
@@ -640,7 +640,7 @@ export function MemoryTab({
               <button
                 type="button"
                 onClick={handleTriggerRecordModal}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <Plus size={13} />
                 <span>Record First Finding</span>
@@ -648,15 +648,15 @@ export function MemoryTab({
             </div>
           ) : (
             <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-2.5">
-              <Brain size={28} className="stroke-1 opacity-40 text-purple-400" />
-              <p className="text-xs text-slate-300 font-medium">No findings match your active filter.</p>
+              <Brain size={28} className="stroke-1 opacity-40 text-purple-600" />
+              <p className="text-xs text-slate-700 font-medium">No findings match your active filter.</p>
               <button
                 type="button"
                 onClick={() => {
                   setFilterSeverity("ALL");
                   setSearchQuery("");
                 }}
-                className="inline-flex items-center gap-1 text-2xs font-mono text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 rounded-lg border border-indigo-500/30 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-2xs font-mono text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
               >
                 <RotateCcw size={11} />
                 <span>Reset search & filters</span>
@@ -670,7 +670,7 @@ export function MemoryTab({
             return (
               <div
                 key={item.id}
-                className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 transition-all space-y-2.5 shadow-sm"
+                className="p-3.5 rounded-xl bg-white hover:bg-slate-50/70 border border-slate-200 transition-all space-y-2.5 shadow-2xs"
               >
                 {/* Finding Header */}
                 <div className="flex items-center justify-between">
@@ -686,14 +686,14 @@ export function MemoryTab({
                     <button
                       type="button"
                       onClick={() => setSearchQuery(item.agent || "")}
-                      className="text-2xs font-mono text-slate-400 hover:text-indigo-400 font-medium transition-colors cursor-pointer"
+                      className="text-2xs font-mono text-slate-500 hover:text-indigo-600 font-medium transition-colors cursor-pointer"
                       title={`Search findings by agent ${item.agent}`}
                     >
                       {item.agent || "PolicyWatchdog"}
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-3xs font-mono text-slate-500">
+                  <div className="flex items-center gap-1.5 text-3xs font-mono text-slate-400">
                     <Clock size={11} />
                     <span>
                       {new Date(item.timestamp || item.created_at || Date.now()).toLocaleDateString(
@@ -705,19 +705,19 @@ export function MemoryTab({
                 </div>
 
                 {/* Finding Summary */}
-                <p className="text-xs text-slate-200 leading-relaxed font-sans">
+                <p className="text-xs text-slate-800 leading-relaxed font-sans">
                   {displayText}
                 </p>
 
                 {/* Target Node & Interactive Handlers */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-2xs font-mono flex-wrap gap-2">
-                  <div className="flex items-center gap-1.5 text-slate-400 flex-wrap">
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs font-mono flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 text-slate-500 flex-wrap">
                     <span>Attached:</span>
                     {/* Functional service tag click handler */}
                     <button
                       type="button"
                       onClick={() => handleServiceClick(serviceName)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition-colors cursor-pointer font-medium"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer font-medium"
                       title={`Inspect ${serviceName} topology in graph canvas`}
                     >
                       {getTargetIcon(item.target_type)}
@@ -729,15 +729,15 @@ export function MemoryTab({
                     <button
                       type="button"
                       onClick={() => handleBlastRadiusClick(serviceName)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 border border-violet-500/30 transition-colors cursor-pointer font-medium shadow-2xs hover:shadow-xs"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors cursor-pointer font-medium shadow-2xs"
                       title={`Calculate 4-hop blast radius for ${serviceName}`}
                     >
-                      <Sparkles size={10} className="text-violet-400" />
+                      <Sparkles size={10} className="text-purple-600" />
                       <span>Blast Radius</span>
                     </button>
                   </div>
 
-                  <span className="text-3xs text-slate-500 font-mono">
+                  <span className="text-3xs text-slate-400 font-mono">
                     {item.sessionId || item.session_id || "session-1"}
                   </span>
                 </div>
@@ -748,11 +748,11 @@ export function MemoryTab({
       </div>
 
       {/* Dynamic Footer Status: adapts to props, loading, and connection state */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-2xs font-mono text-slate-400 flex-wrap gap-2">
+      <div className="p-3 border-t border-slate-200 bg-white flex items-center justify-between text-2xs font-mono text-slate-500 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span>{footerStatus?.engine || "FalkorDB Institutional Graph Memory"}</span>
-          <span className="text-slate-700">·</span>
-          <span className="text-3xs text-slate-500">
+          <span className="text-slate-300">·</span>
+          <span className="text-3xs text-slate-400">
             {footerStatus?.itemCount !== undefined
               ? `${footerStatus.itemCount} findings`
               : `${findings.length} findings synced`}
@@ -761,19 +761,19 @@ export function MemoryTab({
 
         <div className="flex items-center gap-2">
           {footerStatus?.lastSyncTime || lastSyncedAt ? (
-            <span className="text-3xs text-slate-500 hidden sm:inline">
+            <span className="text-3xs text-slate-400 hidden sm:inline">
               Synced {footerStatus?.lastSyncTime || lastSyncedAt}
             </span>
           ) : null}
           <span
             className={`flex items-center gap-1 font-medium ${
-              footerStatus?.isSynced !== false && !loading ? "text-emerald-400" : "text-amber-400"
+              footerStatus?.isSynced !== false && !loading ? "text-emerald-600" : "text-amber-600"
             }`}
           >
             {footerStatus?.isSynced !== false && !loading ? (
-              <CheckCircle2 size={11} className="text-emerald-400" />
+              <CheckCircle2 size={11} className="text-emerald-600" />
             ) : (
-              <Clock size={11} className="text-amber-400" />
+              <Clock size={11} className="text-amber-600" />
             )}
             <span>
               {footerStatus?.syncState || (loading ? "Syncing memory..." : "Synced across Sessions")}

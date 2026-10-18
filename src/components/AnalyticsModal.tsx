@@ -80,8 +80,8 @@ export function AnalyticsModal({
       .map((s) => ({
         title: `Sunsetting Risk: ${s.name}`,
         level: "High Risk",
-        levelClass: "bg-rose-500/10 text-rose-300 border-rose-500/20",
-        bgClass: "bg-rose-950/20 border-rose-900/30",
+        levelClass: "bg-rose-50 text-rose-700 border-rose-200",
+        bgClass: "bg-rose-50/50 border-rose-200",
         text: `${s.name} is classified as ${s.properties?.tier || "Deprecated"}. Inbound callers must be migrated to avoid breaking downstream microservices.`,
         query: `What services break if ${s.name} is shut down?`,
       })),
@@ -90,16 +90,16 @@ export function AnalyticsModal({
       .map((s) => ({
         title: `Single-Point-of-Failure: ${s.name}`,
         level: "Tier 0 Critical",
-        levelClass: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-        bgClass: "bg-amber-950/20 border-amber-900/30",
+        levelClass: "bg-amber-50 text-amber-700 border-amber-200",
+        bgClass: "bg-amber-50/50 border-amber-200",
         text: `${s.name} serves multiple inbound callers. Ensure connection pool limits (DEC-105) are enforced on all dependent client instances.`,
         query: `What breaks if ${s.name} goes down?`,
       })),
     ...decisions.slice(0, 1).map((d) => ({
       title: `Policy Watchdog: ${d.name} Compliance`,
       level: "Active Policy",
-      levelClass: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
-      bgClass: "bg-indigo-950/20 border-indigo-900/30",
+      levelClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      bgClass: "bg-indigo-50/50 border-indigo-200",
       text: d.properties?.rationale || d.properties?.summary || `Governing mandate enforced across microservice PR audits.`,
       query: `Explain ${d.name} and why it was decided`,
     })),
@@ -114,22 +114,22 @@ export function AnalyticsModal({
     <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity cursor-pointer"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150 text-slate-200">
+      <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150 text-slate-800">
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 bg-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart2 className="size-4 text-indigo-400" />
-            <h3 className="font-semibold text-sm text-white">Enterprise Graph Intelligence & Knowledge Gaps</h3>
+            <BarChart2 className="size-4 text-indigo-600" />
+            <h3 className="font-semibold text-sm text-slate-900">Enterprise Graph Intelligence & Knowledge Gaps</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>
@@ -139,27 +139,27 @@ export function AnalyticsModal({
         <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh] text-xs">
           {/* Top Metric Cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Avg Graph Latency</span>
-              <div className="text-xl font-extrabold text-emerald-400 font-mono">{latencyMs} ms</div>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Avg Graph Latency</span>
+              <div className="text-xl font-extrabold text-emerald-600 font-mono">{latencyMs} ms</div>
               <p className="text-[10px] text-slate-400">FalkorDB in-memory execution</p>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Tracked Nodes</span>
-              <div className="text-xl font-extrabold text-indigo-400 font-mono">{actualNodeCount}</div>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Tracked Nodes</span>
+              <div className="text-xl font-extrabold text-indigo-600 font-mono">{actualNodeCount}</div>
               <p className="text-[10px] text-slate-400">Entities in living topology</p>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Causal Relations</span>
-              <div className="text-xl font-extrabold text-purple-400 font-mono">{actualEdgeCount}</div>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">Causal Relations</span>
+              <div className="text-xl font-extrabold text-purple-600 font-mono">{actualEdgeCount}</div>
               <p className="text-[10px] text-slate-400">Dependencies & approvals</p>
             </div>
           </div>
 
           {/* Dynamic Architectural Questions */}
           <div className="space-y-2.5">
-            <h4 className="font-semibold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <TrendingUp className="size-3.5 text-indigo-400" />
+            <h4 className="font-semibold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <TrendingUp className="size-3.5 text-indigo-600" />
               <span>Recommended Graph Traversal Solvers</span>
             </h4>
             <div className="space-y-1.5">
@@ -167,16 +167,16 @@ export function AnalyticsModal({
                 <div
                   key={idx}
                   onClick={() => handleRunQuery(item.q)}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/40 transition-all cursor-pointer group"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer group"
                 >
-                  <span className="text-slate-200 font-medium truncate group-hover:text-indigo-400 transition-colors">
+                  <span className="text-slate-800 font-medium truncate group-hover:text-indigo-700 transition-colors">
                     {item.q}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 shadow-2xs">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs">
                       {item.cat}
                     </span>
-                    <ArrowRight size={13} className="text-slate-400 group-hover:text-indigo-400 transition-colors" />
+                    <ArrowRight size={13} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
                   </div>
                 </div>
               ))}
@@ -185,25 +185,25 @@ export function AnalyticsModal({
 
           {/* Dynamically Identified Knowledge Gaps */}
           <div className="space-y-2.5">
-            <h4 className="font-semibold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="size-3.5 text-amber-400" />
+            <h4 className="font-semibold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="size-3.5 text-amber-600" />
               <span>Identified Topology & Governance Risks</span>
             </h4>
             <div className="space-y-2">
               {dynamicGaps.map((gap, idx) => (
-                <div key={idx} className={`p-3.5 rounded-xl border ${gap.bgClass} text-slate-200 space-y-1.5`}>
+                <div key={idx} className={`p-3.5 rounded-xl border ${gap.bgClass} text-slate-800 space-y-1.5`}>
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-xs text-white">{gap.title}</span>
+                    <span className="font-semibold text-xs text-slate-900">{gap.title}</span>
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${gap.levelClass}`}>
                       {gap.level}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">{gap.text}</p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">{gap.text}</p>
                   <div className="pt-1 flex items-center justify-end">
                     <button
                       type="button"
                       onClick={() => handleRunQuery(gap.query)}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
                     >
                       <span>Analyze Risk in Graph</span>
                       <ArrowRight size={12} />
@@ -216,12 +216,12 @@ export function AnalyticsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs">
-          <span className="text-slate-400 font-mono text-[11px]">Powered by FalkorDB Real Graph Engine</span>
+        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs">
+          <span className="text-slate-500 font-mono text-[11px]">Powered by FalkorDB Real Graph Engine</span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-medium transition-colors cursor-pointer shadow-2xs"
           >
             Close
           </button>

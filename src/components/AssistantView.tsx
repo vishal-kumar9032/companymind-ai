@@ -192,10 +192,14 @@ export function AssistantView({
 
   // File upload knowledge attachment state
   const [attachment, setAttachment] = useState<{
+    id?: string;
     name: string;
     text: string;
     size: number;
     chars: number;
+    entities?: number;
+    relations?: number;
+    chunks?: number;
   } | null>(null);
   const [extractingFile, setExtractingFile] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
@@ -259,9 +263,9 @@ export function AssistantView({
     setExtractingFile(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("files", file);
       const headers = await authHeaders();
-      const res = await fetch("/api/extract", {
+      const res = await fetch("/api/documents", {
         method: "POST",
         headers,
         body: formData,
@@ -270,12 +274,21 @@ export function AssistantView({
       if (!res.ok) {
         throw new Error(data.error || "Failed to extract knowledge from file");
       }
+      const item = data.results?.[0];
+      if (!item || !item.ok) {
+        throw new Error(item?.error || "Failed to process document");
+      }
       setAttachment({
-        name: data.name,
-        text: data.text,
-        size: data.size,
-        chars: data.chars,
+        id: item.id,
+        name: item.name,
+        text: item.text || "",
+        size: file.size,
+        chars: item.chars || file.size,
+        entities: item.entities || 0,
+        relations: item.relations || 0,
+        chunks: item.chunks || 0,
       });
+      onGraphUpdate?.();
     } catch (err: any) {
       setAttachmentError(err?.message || "Could not read file");
     } finally {
@@ -400,16 +413,16 @@ export function AssistantView({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#090d16] selection:bg-indigo-500 selection:text-white">
+    <div className="flex h-full min-h-0 flex-col bg-slate-50 selection:bg-indigo-500 selection:text-white">
       {/* Top Context Subheader */}
-      <div className="h-10 px-4 sm:px-8 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md flex items-center justify-between shrink-0 select-none">
+      <div className="h-10 px-4 sm:px-8 border-b border-slate-200 bg-white/95 backdrop-blur-md flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium text-[11px]">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium text-[11px]">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>FalkorDB Oracle Online</span>
           </div>
-          <span className="text-slate-700">·</span>
-          <span className="text-[11px] font-mono text-slate-400 truncate">
+          <span className="text-slate-300">·</span>
+          <span className="text-[11px] font-mono text-slate-500 truncate">
             {activeModelObj.name}
           </span>
         </div>
@@ -418,7 +431,7 @@ export function AssistantView({
           <button
             onClick={handleClearChat}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-850 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
             title="Start new conversation"
           >
             <RotateCcw size={12} />
@@ -438,10 +451,10 @@ export function AssistantView({
                   <Brain size={26} strokeWidth={2.2} />
                 </div>
                 <div className="space-y-1.5">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                     Enterprise Knowledge &amp; Autonomous Operations
                   </h2>
-                  <p className="mx-auto max-w-xl text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  <p className="mx-auto max-w-xl text-xs sm:text-sm text-slate-500 leading-relaxed">
                     Ask questions across your institutional knowledge graph, audit architectural policies, verify downstream dependencies, and orchestrate verified actions.
                   </p>
                 </div>
@@ -455,7 +468,7 @@ export function AssistantView({
                     <button
                       key={idx}
                       onClick={() => ask(item.prompt)}
-                      className="group relative flex flex-col justify-between p-4 rounded-2xl border border-slate-800 bg-slate-900/80 hover:bg-slate-850 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5 transition-all cursor-pointer text-left space-y-2.5"
+                      className="group relative flex flex-col justify-between p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer text-left space-y-2.5 shadow-2xs"
                     >
                       <div className="flex items-center justify-between">
                         <span
@@ -463,15 +476,15 @@ export function AssistantView({
                         >
                           {item.category}
                         </span>
-                        <div className="size-6 rounded-lg bg-slate-800/80 group-hover:bg-indigo-950/60 text-slate-400 group-hover:text-indigo-400 flex items-center justify-center transition-colors">
+                        <div className="size-6 rounded-lg bg-slate-100 group-hover:bg-indigo-50 text-slate-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
                           <Icon size={13} />
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-xs sm:text-sm font-semibold text-slate-200 group-hover:text-white transition-colors leading-snug">
+                        <h4 className="text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors leading-snug">
                           {item.prompt}
                         </h4>
-                        <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                           {item.subtitle}
                         </p>
                       </div>
@@ -483,10 +496,10 @@ export function AssistantView({
               {/* Dynamic Recent Instructions */}
               {recentInstructions.length > 0 && (
                 <div className="space-y-3 pt-4 text-left">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                    <History size={14} className="text-indigo-400" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <History size={14} className="text-indigo-600" />
                     <span>Recent Instructions &amp; Runs</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                       Live FalkorDB
                     </span>
                   </div>
@@ -496,9 +509,9 @@ export function AssistantView({
                         key={r.id}
                         type="button"
                         onClick={() => ask(r.goal)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/40 hover:text-indigo-300 hover:bg-indigo-950/30 text-xs text-slate-300 transition cursor-pointer max-w-full text-left"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50 text-xs text-slate-700 transition cursor-pointer max-w-full text-left shadow-2xs"
                       >
-                        <Sparkles size={11} className="text-indigo-400 shrink-0" />
+                        <Sparkles size={11} className="text-indigo-600 shrink-0" />
                         <span className="truncate max-w-sm">{r.goal}</span>
                       </button>
                     ))}
@@ -517,24 +530,24 @@ export function AssistantView({
               <div key={t.id} className="space-y-4 animate-in fade-in duration-150">
                 {/* 1. User Message */}
                 <div className="flex justify-end">
-                  <div className="max-w-[85%] rounded-2xl rounded-tr-xs bg-indigo-600/25 border border-indigo-500/40 px-4 py-3 text-xs sm:text-sm font-medium text-indigo-100 shadow-sm leading-relaxed">
+                  <div className="max-w-[85%] rounded-2xl rounded-tr-xs bg-indigo-600 px-4 py-3 text-xs sm:text-sm font-medium text-white shadow-xs leading-relaxed">
                     {t.question}
                   </div>
                 </div>
 
                 {/* 2. Assistant Message Box */}
-                <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg shadow-black/20 transition-shadow">
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-shadow">
                   {/* Top Bar inside Assistant Card */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="size-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                         <Sparkles size={13} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-100">
+                        <span className="text-xs font-bold text-slate-900">
                           CompanyMind Oracle
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                           {activeModelObj.name}
                         </span>
                       </div>
@@ -544,13 +557,13 @@ export function AssistantView({
                       {t.answer && (
                         <button
                           onClick={() => handleCopy(t.id, t.answer)}
-                          className="flex items-center gap-1 px-2 py-1 text-[11px] text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+                          className="flex items-center gap-1 px-2 py-1 text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                           title="Copy answer to clipboard"
                         >
                           {copiedTurnId === t.id ? (
                             <>
-                              <Check size={12} className="text-emerald-400" />
-                              <span className="text-emerald-400 font-medium">Copied</span>
+                              <Check size={12} className="text-emerald-600" />
+                              <span className="text-emerald-600 font-medium">Copied</span>
                             </>
                           ) : (
                             <>
@@ -565,37 +578,37 @@ export function AssistantView({
 
                   {/* Reasoning & Telemetry Accordion */}
                   {validEvents.length > 0 && (
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/70 overflow-hidden text-xs">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden text-xs">
                       <button
                         type="button"
                         onClick={() => toggleReasoning(t.id)}
-                        className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-900/80 transition-colors cursor-pointer"
+                        className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-100/70 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
-                          <Brain size={14} className="text-indigo-400 shrink-0" />
-                          <span className="font-semibold text-slate-200">
+                          <Brain size={14} className="text-indigo-600 shrink-0" />
+                          <span className="font-semibold text-slate-800">
                             Institutional Reasoning &amp; Graph Traversal
                           </span>
-                          <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono text-[10px] font-semibold">
+                          <span className="px-1.5 py-0.2 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono text-[10px] font-semibold">
                             {validEvents.length} {validEvents.length === 1 ? "step" : "steps"}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-slate-400">
+                        <div className="flex items-center gap-1.5 text-slate-500">
                           {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </div>
                       </button>
 
                       {isExpanded && (
-                        <div className="px-3 pb-3 pt-1 border-t border-slate-800/80 space-y-1.5">
+                        <div className="px-3 pb-3 pt-1 border-t border-slate-200 space-y-1.5">
                           {validEvents.map((d, i) => (
                             <div
                               key={i}
-                              className="flex items-start gap-2.5 py-1 text-[11px] text-slate-400 leading-normal"
+                              className="flex items-start gap-2.5 py-1 text-[11px] text-slate-600 leading-normal"
                             >
                               <span className="mt-0.5 shrink-0">{d!.icon}</span>
-                              <span className="flex-1 font-mono text-slate-300">{d!.text}</span>
+                              <span className="flex-1 font-mono text-slate-700">{d!.text}</span>
                               {d!.badge && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 uppercase shrink-0">
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 uppercase shrink-0">
                                   {d!.badge}
                                 </span>
                               )}
@@ -608,8 +621,8 @@ export function AssistantView({
 
                   {/* Active Processing Indicator */}
                   {t.status === "running" && !t.answer && (
-                    <div className="flex items-center gap-2.5 py-2 text-xs font-medium text-indigo-400 animate-pulse">
-                      <Loader2 size={15} className="animate-spin text-indigo-400" />
+                    <div className="flex items-center gap-2.5 py-2 text-xs font-medium text-indigo-600 animate-pulse">
+                      <Loader2 size={15} className="animate-spin text-indigo-600" />
                       <span>Traversing knowledge graph &amp; evaluating policies…</span>
                     </div>
                   )}
@@ -625,23 +638,23 @@ export function AssistantView({
                   {t.approvals.map((a) => (
                     <div
                       key={a.id}
-                      className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4 space-y-3"
+                      className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 space-y-3"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-amber-200">
-                          <ShieldCheck size={16} className="text-amber-400 shrink-0" />
+                        <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                          <ShieldCheck size={16} className="text-amber-600 shrink-0" />
                           <span>Action requires your explicit authorization</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-semibold">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-mono font-semibold">
                           Tool: {a.tool}
                         </span>
                       </div>
 
                       <div className="space-y-1">
-                        <span className="text-[10px] font-mono uppercase text-amber-300/80 tracking-wider">
+                        <span className="text-[10px] font-mono uppercase text-amber-800 tracking-wider">
                           Proposed Payload:
                         </span>
-                        <pre className="max-h-36 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950/90 border border-amber-500/20 p-2.5 text-[11px] font-mono text-amber-100">
+                        <pre className="max-h-36 overflow-auto whitespace-pre-wrap rounded-lg bg-white border border-amber-200 p-2.5 text-[11px] font-mono text-amber-950">
                           {JSON.stringify(a.args, null, 2)}
                         </pre>
                       </div>
@@ -657,7 +670,7 @@ export function AssistantView({
                           </button>
                           <button
                             onClick={() => decide(t.id, a.id, "reject")}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-750 px-3.5 py-2 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
                           >
                             <X size={13} />
                             <span>Reject</span>
@@ -666,26 +679,26 @@ export function AssistantView({
                       )}
 
                       {a.state === "working" && (
-                        <div className="flex items-center gap-2 text-xs text-amber-300">
-                          <Loader2 size={13} className="animate-spin" />
+                        <div className="flex items-center gap-2 text-xs text-amber-800 font-medium">
+                          <Loader2 size={13} className="animate-spin text-amber-600" />
                           <span>Executing tool on authorized connection…</span>
                         </div>
                       )}
                       {a.state === "executed" && (
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                          <CheckCircle2 size={14} className="text-emerald-400" />
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                          <CheckCircle2 size={14} className="text-emerald-600" />
                           <span>Action authorized and successfully executed.</span>
                         </div>
                       )}
                       {a.state === "rejected" && (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                          <X size={14} className="text-slate-500" />
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <X size={14} className="text-slate-400" />
                           <span>Action rejected by user. Nothing was executed.</span>
                         </div>
                       )}
                       {a.state === "failed" && (
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-400">
-                          <CircleAlert size={14} className="text-rose-400" />
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-700">
+                          <CircleAlert size={14} className="text-rose-600" />
                           <span>Failed: {a.detail}</span>
                         </div>
                       )}
@@ -694,8 +707,8 @@ export function AssistantView({
 
                   {/* Error Card */}
                   {t.status === "error" && (
-                    <div className="flex items-start gap-2.5 rounded-xl bg-rose-950/30 border border-rose-500/30 p-3.5 text-xs text-rose-300">
-                      <CircleAlert size={16} className="mt-0.5 shrink-0 text-rose-400" />
+                    <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-800">
+                      <CircleAlert size={16} className="mt-0.5 shrink-0 text-rose-600" />
                       <div>
                         <span className="font-semibold">Query Processing Failed: </span>
                         <span>{t.error}</span>
@@ -711,7 +724,7 @@ export function AssistantView({
       </div>
 
       {/* Floating Prompt Input Dock */}
-      <div className="shrink-0 border-t border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 py-3 sm:px-8">
+      <div className="shrink-0 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 sm:px-8">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -721,21 +734,28 @@ export function AssistantView({
         >
           {/* Active Attachment Pill */}
           {attachment && (
-            <div className="mb-2 flex items-center justify-between rounded-xl bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 text-xs text-indigo-200 animate-in fade-in">
+            <div className="mb-2 flex items-center justify-between rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs text-indigo-950 animate-in fade-in shadow-2xs">
               <div className="flex items-center gap-2 min-w-0">
-                <FileText size={14} className="text-indigo-400 shrink-0" />
+                <FileText size={14} className="text-indigo-600 shrink-0" />
                 <span className="font-semibold truncate max-w-xs">{attachment.name}</span>
-                <span className="text-[10px] text-indigo-300/70 font-mono">
-                  ({Math.round(attachment.size / 1024)} KB · {attachment.chars.toLocaleString()} chars knowledge extracted)
+                <span className="text-[10px] text-indigo-700/80 font-mono">
+                  ({Math.round(attachment.size / 1024)} KB · {attachment.chars.toLocaleString()} chars parsed)
                 </span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium px-1.5 py-0.5 rounded">
-                  Ephemeral Knowledge
-                </span>
+                {attachment.id ? (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-medium px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                    <Check size={10} className="text-emerald-700" />
+                    Graph Linked {attachment.entities ? `(${attachment.entities} entities)` : ""}
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-indigo-100 text-indigo-700 border border-indigo-200 font-medium px-1.5 py-0.5 rounded">
+                    Prompt Context
+                  </span>
+                )}
               </div>
               <button
                 type="button"
                 onClick={() => setAttachment(null)}
-                className="p-1 text-indigo-400 hover:text-indigo-200 transition-colors cursor-pointer rounded"
+                className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer rounded"
                 title="Remove attachment"
               >
                 <X size={13} />
@@ -745,22 +765,22 @@ export function AssistantView({
 
           {/* Attachment Error */}
           {attachmentError && (
-            <div className="mb-2 flex items-center justify-between rounded-xl bg-rose-950/50 border border-rose-500/40 px-3 py-1.5 text-xs text-rose-300 animate-in fade-in">
+            <div className="mb-2 flex items-center justify-between rounded-xl bg-rose-50 border border-rose-200 px-3 py-1.5 text-xs text-rose-800 animate-in fade-in">
               <div className="flex items-center gap-2">
-                <CircleAlert size={14} className="text-rose-400 shrink-0" />
+                <CircleAlert size={14} className="text-rose-600 shrink-0" />
                 <span>{attachmentError}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setAttachmentError(null)}
-                className="p-1 text-rose-400 hover:text-rose-200 transition-colors cursor-pointer rounded"
+                className="p-1 text-rose-500 hover:text-rose-800 transition-colors cursor-pointer rounded"
               >
                 <X size={13} />
               </button>
             </div>
           )}
 
-          <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-900/95 p-2 shadow-inner focus-within:border-indigo-500/80 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
+          <div className="flex items-end gap-2 rounded-2xl border border-slate-300 bg-slate-50/80 p-2 shadow-2xs focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
             <input
               ref={fileInputRef}
               type="file"
@@ -772,11 +792,11 @@ export function AssistantView({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={busy || extractingFile}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-40"
-              title="Attach document/knowledge (PDF, Word, Excel, CSV, TXT, JSON) - parsed directly for AI knowledge without saving raw doc"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40"
+              title="Upload doc, pdf, excel, or sheet - parses content, links knowledge into graph, and adds to agent context"
             >
               {extractingFile ? (
-                <Loader2 size={16} className="animate-spin text-indigo-400" />
+                <Loader2 size={16} className="animate-spin text-indigo-600" />
               ) : (
                 <Paperclip size={16} />
               )}
@@ -789,10 +809,10 @@ export function AssistantView({
               onKeyDown={handleKeyDown}
               placeholder={
                 attachment
-                  ? `Ask or instruct the AI about ${attachment.name} (e.g. "Record my skills and experience into the graph")…`
+                  ? `Ask or instruct the AI about ${attachment.name} (e.g. "Summarize this document and trace dependencies")…`
                   : "Ask anything about architecture dependencies, policies, or workflows…"
               }
-              className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none max-h-32 leading-relaxed"
+              className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none max-h-32 leading-relaxed"
             />
             <button
               type="submit"
@@ -810,9 +830,9 @@ export function AssistantView({
 
           <div className="mt-1.5 flex items-center justify-between px-2 text-[10px] text-slate-500">
             <span>
-              Press <kbd className="font-mono text-slate-400 bg-slate-800 border border-slate-700/60 px-1 py-0.5 rounded text-[9px]">Enter</kbd> to submit · <kbd className="font-mono text-slate-400 bg-slate-800 border border-slate-700/60 px-1 py-0.5 rounded text-[9px]">Shift+Enter</kbd> for new line
+              Press <kbd className="font-mono text-slate-600 bg-slate-100 border border-slate-200 px-1 py-0.5 rounded text-[9px]">Enter</kbd> to submit · <kbd className="font-mono text-slate-600 bg-slate-100 border border-slate-200 px-1 py-0.5 rounded text-[9px]">Shift+Enter</kbd> for new line
             </span>
-            <span className="hidden sm:inline font-mono text-slate-500">
+            <span className="hidden sm:inline font-mono text-slate-400">
               Grounded in FalkorDB Causal Knowledge Graph
             </span>
           </div>
