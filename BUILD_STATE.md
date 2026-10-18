@@ -320,3 +320,10 @@
     - Verified live `/api/extract` endpoint with `curl` (returned 200 with extracted JSON text).
     - Verified live `/api/graph` endpoint (returned live nodes and edges).
     - Reloaded PM2 service `companymind-ai` (`HTTP 200 OK`).
+
+- `2026-10-18` (Branch `feat/connectors-memory` - Dedicated Documents view & Hackathon Tri-Track submission readiness):
+  - **Dedicated Documents & Files View (`DocumentsView.tsx`, `SaaSSidebar.tsx`, `SaaSHeader.tsx`, `page.tsx`):** Added a full-page documents workspace featuring drag-and-drop file ingestion (12+ file extensions including PDF, Word, Excel, CSV, Markdown, JSON), live FalkorDB indexing telemetry, tabular catalog with chunk and entity badges, "Ask Agent", "Add to Graph", and delete actions.
+  - **Multi-Touch Ingestion Points:** Added explicit document upload triggers in `SaaSHeader` ("Upload Document" quick button), `AssistantView` ("Upload Knowledge Doc / PDF" subheader, starter card, and prompt dock "Attach Doc/PDF" button), `DashboardView` (hero action row), and `CommandPalette` (`⌘K`).
+  - **Hackathon Tri-Track Alignment (`README.md`, `winning_hackathon_strategy.md`, `hackathon_pitch_script.md`):** Updated project documentation to compete across all three hackathon tracks: Track 1 (Agents Acting on Connected Data), Track 2 (Agent Memory and Coordination), and Track 3 (Company Brain). Prepared full word-for-word pitch script and Q&A defense answers.
+  - **Verification:** `tsc --noEmit` clean (0 errors), `pnpm build` passed, PM2 `companymind-ai` service online on port 13050, git branches synchronized with `origin/feat/connectors-memory` and `origin/main`.
+
