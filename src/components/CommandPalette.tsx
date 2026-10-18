@@ -270,26 +270,26 @@ export function CommandPalette({
     <div className="fixed inset-0 z-50 overflow-hidden flex items-start justify-center pt-16 sm:pt-24 p-4 animate-in fade-in duration-150">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity cursor-pointer"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150 text-slate-800">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150 text-slate-200">
         {/* Search Input */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-200 gap-3 bg-slate-50">
-          <Search className="size-4 text-indigo-600 shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-slate-800 gap-3 bg-slate-950/80">
+          <Search className="size-4 text-indigo-400 shrink-0" />
           <input
             type="text"
             placeholder="Type a command, question, or document name..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
-            className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
           />
           <button
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>
@@ -304,7 +304,7 @@ export function CommandPalette({
           ) : (
             filteredItems.map((group, gIdx) => (
               <div key={gIdx} className="space-y-1">
-                <span className="px-3 text-3xs font-mono uppercase tracking-wider text-slate-400 font-semibold block">
+                <span className="px-3 text-3xs font-mono uppercase tracking-wider text-slate-500 font-semibold block">
                   {group.category}
                 </span>
                 <div className="space-y-0.5">
@@ -323,13 +323,13 @@ export function CommandPalette({
                           }
                           onClose();
                         }}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer group"
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left hover:bg-slate-800/80 text-slate-300 hover:text-white transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Icon className="size-4 text-indigo-600 group-hover:scale-110 transition-transform shrink-0" />
+                          <Icon className="size-4 text-indigo-400 group-hover:scale-110 transition-transform shrink-0" />
                           <span className="text-xs truncate font-medium">{item.title}</span>
                         </div>
-                        <ArrowRight className="size-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors shrink-0" />
+                        <ArrowRight className="size-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors shrink-0" />
                       </button>
                     );
                   })}
@@ -340,9 +340,9 @@ export function CommandPalette({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-3xs text-slate-500 font-mono">
+        <div className="px-4 py-2.5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-3xs text-slate-500 font-mono">
           <div className="flex items-center gap-2">
-            <span>Press <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 shadow-xs">ESC</kbd> to close</span>
+            <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700/60 text-slate-400">ESC</kbd> to close</span>
           </div>
           <span>FalkorDB Company Brain</span>
         </div>
