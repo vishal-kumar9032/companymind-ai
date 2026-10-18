@@ -131,35 +131,35 @@ export function AgentsTab({
       case "PolicyWatchdog":
       case "Watchdog":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 font-semibold">
             <ShieldAlert size={10} />
             PolicyWatchdog
           </span>
         );
       case "BlastRadiusMapper":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold">
             <Radio size={10} />
             BlastRadiusMapper
           </span>
         );
       case "OwnershipGraph":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-semibold">
             <CheckCircle2 size={10} />
             OwnershipGraph
           </span>
         );
       case "IncidentMemory":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20 font-semibold">
             <Sparkles size={10} />
             IncidentMemory
           </span>
         );
       case "Ingestor":
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20 font-semibold">
             <Terminal size={10} />
             Ingestor
           </span>
@@ -168,7 +168,7 @@ export function AgentsTab({
       case "Oracle":
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
+          <span className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-semibold">
             <Sparkles size={10} />
             ArchitectureOracle
           </span>
@@ -177,22 +177,22 @@ export function AgentsTab({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden text-slate-800">
+    <div className="flex flex-col h-full bg-[#090d16] overflow-hidden text-slate-200">
       {/* Header Bar */}
-      <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+      <div className="p-3.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Bot size={15} strokeWidth={1.75} className="text-indigo-600" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900 font-mono">
+          <Bot size={15} strokeWidth={1.75} className="text-indigo-400" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-white font-mono">
             Process Telemetry
           </h2>
-          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 font-semibold">
+          <span className="text-3xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 font-semibold">
             <Radio size={9} className="animate-pulse" />
             Live CompanyMind
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-3xs font-mono text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-xs">
+          <span className="text-3xs font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shadow-xs">
             {sessionId}
           </span>
           <button
@@ -211,7 +211,7 @@ export function AgentsTab({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer ml-1"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer ml-1"
               title="Close panel"
             >
               <X size={15} />
@@ -221,24 +221,24 @@ export function AgentsTab({
       </div>
 
       {/* Enterprise MCP Tools & Multi-Agent Architecture Overview */}
-      <div className="p-3 bg-white border-b border-slate-200 space-y-2.5 shrink-0 text-xs shadow-xs">
+      <div className="p-3 bg-slate-950/60 border-b border-slate-800 space-y-2.5 shrink-0 text-xs shadow-xs">
         {/* Gateway & Fallback Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
           <div className="flex items-center gap-1.5 font-mono text-2xs">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            <span className="font-semibold text-slate-800">Autonomous Agent Harness:</span>
-            <span className="text-slate-600">Online</span>
+            <span className="size-2 rounded-full bg-emerald-400" />
+            <span className="font-semibold text-white">Autonomous Agent Harness:</span>
+            <span className="text-slate-400">Online</span>
           </div>
 
           <div className="flex items-center gap-1.5 font-mono text-2xs">
             {gatewayStatus?.status === "fallback_active" ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 font-medium">
+                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span>AI Gateway: Fallback Engine Active</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                <span className="size-1.5 rounded-full bg-emerald-400" />
                 <span>Enterprise AI Gateway: Online</span>
               </span>
             )}
@@ -247,9 +247,9 @@ export function AgentsTab({
 
         {/* Registered Enterprise MCP Tools */}
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-slate-500 font-semibold">
+          <div className="flex items-center justify-between text-3xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
             <span>Registered Enterprise MCP Tools (5)</span>
-            <span className="text-indigo-600 font-medium">Zero-Shot OpenCypher</span>
+            <span className="text-indigo-400 font-medium">Zero-Shot OpenCypher</span>
           </div>
           <div className="flex flex-wrap gap-1">
             {[
@@ -261,10 +261,10 @@ export function AgentsTab({
             ].map((tool) => (
               <span
                 key={tool.name}
-                className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700"
+                className="inline-flex items-center gap-1 text-3xs font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300"
                 title={`${tool.name}: ${tool.desc}`}
               >
-                <span className="size-1 rounded-full bg-indigo-500" />
+                <span className="size-1 rounded-full bg-indigo-400" />
                 <span>{tool.name}</span>
               </span>
             ))}
@@ -272,33 +272,33 @@ export function AgentsTab({
         </div>
 
         {/* Coordinated Multi-Agent Roster */}
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-3xs font-mono text-slate-500">
-          <span className="uppercase font-semibold text-slate-400">Roster:</span>
-          <span className="text-rose-700 font-medium">🛡️ PolicyWatchdog</span>
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80 text-3xs font-mono text-slate-400">
+          <span className="uppercase font-semibold text-slate-500">Roster:</span>
+          <span className="text-rose-400 font-medium">🛡️ PolicyWatchdog</span>
           <span>·</span>
-          <span className="text-indigo-700 font-medium">🔮 ArchitectureOracle</span>
+          <span className="text-indigo-400 font-medium">🔮 ArchitectureOracle</span>
           <span>·</span>
-          <span className="text-sky-700 font-medium">💥 BlastRadiusMapper</span>
+          <span className="text-sky-400 font-medium">💥 BlastRadiusMapper</span>
           <span>·</span>
-          <span className="text-purple-700 font-medium">🧠 IncidentMemory</span>
+          <span className="text-purple-400 font-medium">🧠 IncidentMemory</span>
         </div>
       </div>
 
       {/* Timeline Stream */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#090d16]">
         {events.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
-            <Bot size={28} className="stroke-1 opacity-40 text-indigo-500" />
+          <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-2">
+            <Bot size={28} className="stroke-1 opacity-40 text-indigo-400" />
             <p className="text-xs">No active agent run recorded for this session.</p>
             <button
               onClick={handleRunPipeline}
-              className="text-xs font-mono text-indigo-600 hover:underline cursor-pointer font-medium"
+              className="text-xs font-mono text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer font-medium"
             >
               Execute live autonomous workflow
             </button>
           </div>
         ) : (
-          <div className="relative border-l border-slate-200 ml-3.5 space-y-6">
+          <div className="relative border-l border-slate-800 ml-3.5 space-y-6">
             {events.map((evt) => {
               const isExpanded = expandedJsonId === evt.id;
 
@@ -308,26 +308,26 @@ export function AgentsTab({
                   <div
                     className={`absolute -left-[5px] top-1.5 size-2.5 rounded-full border ${
                       evt.type === "approval_requested"
-                        ? "bg-rose-500 border-rose-300 ring-4 ring-rose-100 animate-pulse"
+                        ? "bg-rose-500 border-rose-400 ring-4 ring-rose-500/20 animate-pulse"
                         : evt.type === "done"
-                        ? "bg-emerald-500 border-emerald-300"
+                        ? "bg-emerald-500 border-emerald-400"
                         : evt.type === "tool_call" || evt.type === "tool_result"
-                        ? "bg-indigo-500 border-indigo-300"
-                        : "bg-slate-400 border-slate-300"
+                        ? "bg-indigo-500 border-indigo-400"
+                        : "bg-slate-700 border-slate-600"
                     }`}
                   />
 
                   {/* Card Body */}
-                  <div className="p-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 shadow-xs transition-all space-y-2">
+                  <div className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 shadow-sm transition-all space-y-2">
                     {/* Event Header */}
                     <div className="flex items-center justify-between text-2xs font-mono">
                       <div className="flex items-center gap-2">
                         {getRoleBadge(evt.agentRole)}
-                        <span className="text-slate-500 capitalize">
+                        <span className="text-slate-400 capitalize">
                           {evt.type.replace("_", " ")}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-slate-400">
+                      <div className="flex items-center gap-1 text-slate-500">
                         <Clock size={11} />
                         <span>
                           {new Date(evt.timestamp).toLocaleTimeString([], {
@@ -337,7 +337,7 @@ export function AgentsTab({
                           })}
                         </span>
                         {evt.durationMs !== undefined && (
-                          <span className="text-emerald-600 font-semibold ml-1">
+                          <span className="text-emerald-400 font-semibold ml-1">
                             {evt.durationMs}ms
                           </span>
                         )}
@@ -346,18 +346,18 @@ export function AgentsTab({
 
                     {/* Step Name / Tool Details */}
                     {evt.stepName && (
-                      <div className="text-xs font-semibold text-slate-900">
+                      <div className="text-xs font-semibold text-white">
                         {evt.stepName}
                       </div>
                     )}
 
                     {evt.toolName && (
-                      <div className="text-xs font-mono text-slate-700 flex items-center justify-between">
-                        <span className="text-indigo-600 font-semibold">
+                      <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
+                        <span className="text-indigo-400 font-semibold">
                           {evt.toolName}()
                         </span>
                         {evt.resultSummary && (
-                          <span className="text-2xs text-slate-500">
+                          <span className="text-2xs text-slate-400">
                             {evt.resultSummary}
                           </span>
                         )}
@@ -365,28 +365,28 @@ export function AgentsTab({
                     )}
 
                     {evt.argsSummary && (
-                      <div className="text-2xs font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-200 truncate">
+                      <div className="text-2xs font-mono text-slate-400 bg-slate-950 px-2 py-1 rounded border border-slate-800 truncate">
                         args: {evt.argsSummary}
                       </div>
                     )}
 
                     {/* Prominent Approval Card */}
                     {evt.type === "approval_requested" && evt.approvalData && (
-                      <div className="mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 space-y-3">
+                      <div className="mt-3 p-3.5 rounded-xl bg-rose-950/30 border border-rose-500/30 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-2xs font-mono text-rose-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="text-2xs font-mono text-rose-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
                             <Lock size={12} />
                             Human-in-the-Loop Approval Required
                           </span>
-                          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-rose-200 text-rose-900 border border-rose-300 font-bold">
+                          <span className="text-3xs font-mono px-2 py-0.5 rounded bg-rose-900/60 text-rose-200 border border-rose-700/60 font-bold">
                             {evt.approvalData.riskLevel} RISK
                           </span>
                         </div>
 
-                        <div className="space-y-1.5 text-xs text-slate-800">
+                        <div className="space-y-1.5 text-xs text-slate-300">
                           <div>
                             <span className="text-slate-500 font-mono text-2xs uppercase">Action: </span>
-                            <span className="font-semibold text-slate-900">
+                            <span className="font-semibold text-white">
                               {evt.approvalData.action}
                             </span>
                           </div>
@@ -394,27 +394,27 @@ export function AgentsTab({
                             <span className="text-slate-500 font-mono text-2xs uppercase">Target: </span>
                             <button
                               onClick={() => onSelectNode?.(evt.approvalData?.target.split("/")[0].trim() || "unknown")}
-                              className="text-indigo-600 hover:underline font-mono text-2xs cursor-pointer font-medium"
+                              className="text-indigo-400 hover:underline font-mono text-2xs cursor-pointer font-medium"
                             >
                               {evt.approvalData.target}
                             </button>
                           </div>
                           <div>
                             <span className="text-slate-500 font-mono text-2xs uppercase">Rationale: </span>
-                            <span className="text-slate-700 italic">
+                            <span className="text-slate-300 italic">
                               "{evt.approvalData.reason}"
                             </span>
                           </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="pt-2 border-t border-rose-200">
+                        <div className="pt-2 border-t border-rose-500/30">
                           {evt.approvalData.status !== "pending" ? (
                             <div
                               className={`py-1.5 px-3 rounded-lg text-2xs font-mono flex items-center gap-2 ${
                                 evt.approvalData.status === "allowed"
-                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                  : "bg-rose-100 text-rose-800 border border-rose-300"
+                                  ? "bg-emerald-950/40 text-emerald-300 border border-emerald-500/30"
+                                  : "bg-rose-950/40 text-rose-300 border border-rose-500/30"
                               }`}
                             >
                               <CheckCircle2 size={13} />
@@ -433,7 +433,7 @@ export function AgentsTab({
                                   handleResolveApproval(evt.approvalData!, "allowed")
                                 }
                                 disabled={resolvingApprovalId === evt.approvalData.id}
-                                className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs"
+                                className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs"
                               >
                                 <CheckCircle2 size={13} />
                                 <span>Allow & Store Finding</span>
@@ -443,7 +443,7 @@ export function AgentsTab({
                                   handleResolveApproval(evt.approvalData!, "denied")
                                 }
                                 disabled={resolvingApprovalId === evt.approvalData.id}
-                                className="flex-1 py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                               >
                                 <AlertCircle size={13} />
                                 <span>Deny Action</span>
@@ -461,7 +461,7 @@ export function AgentsTab({
                           onClick={() =>
                             setExpandedJsonId(isExpanded ? null : evt.id)
                           }
-                          className="flex items-center gap-1 text-3xs font-mono text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                          className="flex items-center gap-1 text-3xs font-mono text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                         >
                           {isExpanded ? (
                             <ChevronDown size={11} />
@@ -471,7 +471,7 @@ export function AgentsTab({
                           <span>{isExpanded ? "Hide Telemetry JSON" : "Expand Telemetry JSON"}</span>
                         </button>
                         {isExpanded && (
-                          <pre className="mt-1.5 p-2 rounded-lg bg-slate-900 border border-slate-800 text-3xs font-mono text-slate-200 overflow-x-auto max-h-40 shadow-inner">
+                          <pre className="mt-1.5 p-2 rounded-lg bg-slate-950 border border-slate-800 text-3xs font-mono text-slate-300 overflow-x-auto max-h-40 shadow-inner">
                             {JSON.stringify(evt.rawJson, null, 2)}
                           </pre>
                         )}

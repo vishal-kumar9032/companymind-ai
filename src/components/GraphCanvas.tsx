@@ -154,17 +154,17 @@ export function GraphCanvas({
           style: {
             "background-color": "data(color)",
             shape: "data(shape)" as any,
-            color: "#0f172a",
+            color: "#f1f5f9",
             "font-size": "11px",
             "font-family": "var(--font-jetbrains-mono), monospace",
             "text-valign": "bottom",
             "text-margin-y": 6,
-            "text-outline-color": "#ffffff",
-            "text-outline-width": 2,
+            "text-outline-color": "#090d16",
+            "text-outline-width": 2.5,
             width: 24,
             height: 24,
             "border-width": 1.5,
-            "border-color": "#cbd5e1",
+            "border-color": "#475569",
             label: "", // Hidden by default for clean look
             "transition-property": "opacity, border-color, border-width, width, height, background-color",
             "transition-duration": 0.25,
@@ -180,17 +180,17 @@ export function GraphCanvas({
           selector: "edge",
           style: {
             width: 1.25,
-            "line-color": "#cbd5e1",
-            "target-arrow-color": "#94a3b8",
+            "line-color": "#334155",
+            "target-arrow-color": "#64748b",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             "arrow-scale": 0.8,
             "font-size": "9px",
             "font-family": "var(--font-jetbrains-mono), monospace",
-            color: "#64748b",
+            color: "#94a3b8",
             "text-rotation": "autorotate",
             "text-margin-y": -4,
-            "text-outline-color": "#ffffff",
+            "text-outline-color": "#090d16",
             "text-outline-width": 2,
             opacity: 0.75,
             label: "",
@@ -213,15 +213,15 @@ export function GraphCanvas({
         {
           selector: "node.highlighted",
           style: {
-            "border-color": "#4f46e5",
+            "border-color": "#6366f1",
             "border-width": 3,
             width: 32,
             height: 32,
             "font-size": "12px",
             "font-weight": "bold",
-            "text-outline-color": "#ffffff",
-            "text-outline-width": 2.5,
-            color: "#312e81",
+            "text-outline-color": "#090d16",
+            "text-outline-width": 3,
+            color: "#e0e7ff",
             "z-index": 999,
             opacity: 1,
           },
@@ -230,8 +230,8 @@ export function GraphCanvas({
           selector: "edge.highlighted",
           style: {
             width: 2.5,
-            "line-color": "#4f46e5",
-            "target-arrow-color": "#4f46e5",
+            "line-color": "#6366f1",
+            "target-arrow-color": "#6366f1",
             opacity: 1,
             "z-index": 998,
           },
@@ -420,17 +420,17 @@ export function GraphCanvas({
   };
 
   return (
-    <div className="relative w-full h-full dot-grid rounded-card border border-border overflow-hidden">
+    <div className="relative w-full h-full dot-grid rounded-2xl border border-slate-800 bg-[#090d16] overflow-hidden">
       {/* Cytoscape Container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Floating Controls: Zoom, Fit, Replay, Clear */}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-sm z-10">
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 p-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl shadow-lg z-10">
         {hasPath && (
           <>
             <button
               onClick={animatePath}
-              className="flex items-center gap-1 px-2 py-1 text-2xs font-mono rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1 text-2xs font-mono rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 transition-colors cursor-pointer"
               title="Replay Causal Path Animation"
             >
               <Play size={11} strokeWidth={2} />
@@ -438,18 +438,18 @@ export function GraphCanvas({
             </button>
             <button
               onClick={handleClearHighlights}
-              className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
               title="Clear Highlighted Path"
             >
               <X size={14} strokeWidth={1.75} />
             </button>
-            <span className="w-px h-3.5 bg-slate-200" />
+            <span className="w-px h-3.5 bg-slate-800" />
           </>
         )}
 
         <button
           onClick={() => cyRef.current?.zoom(cyRef.current.zoom() * 1.25)}
-          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
           title="Zoom In"
           aria-label="Zoom In"
         >
@@ -457,7 +457,7 @@ export function GraphCanvas({
         </button>
         <button
           onClick={() => cyRef.current?.zoom(cyRef.current.zoom() * 0.8)}
-          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
           title="Zoom Out"
           aria-label="Zoom Out"
         >
@@ -465,7 +465,7 @@ export function GraphCanvas({
         </button>
         <button
           onClick={() => cyRef.current?.fit(undefined, 40)}
-          className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
           title="Fit Graph to Viewport"
           aria-label="Fit Graph"
         >
@@ -474,7 +474,7 @@ export function GraphCanvas({
       </div>
 
       {/* Interactive Legend & Category Filter */}
-      <div className="absolute bottom-3 left-3 p-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl text-2xs font-mono flex flex-wrap gap-x-2 gap-y-1.5 max-w-xl z-10 shadow-sm max-h-36 overflow-y-auto">
+      <div className="absolute bottom-3 left-3 p-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl text-2xs font-mono flex flex-wrap gap-x-2 gap-y-1.5 max-w-xl z-10 shadow-lg max-h-36 overflow-y-auto">
         {Array.from(new Set(data.nodes.map((n) => n.label || "Entity"))).sort().map((label) => {
           const color = getLabelColor(label);
           const count = data.nodes.filter((n) => (n.label || "Entity") === label).length;
@@ -483,13 +483,13 @@ export function GraphCanvas({
             <button
               key={label}
               onClick={() => toggleFilter(label)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
-                isActive ? "opacity-100 bg-slate-50 border border-slate-200/80 hover:bg-slate-100" : "opacity-35 line-through bg-transparent border border-transparent"
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
+                isActive ? "opacity-100 bg-slate-800/80 border border-slate-700/80 hover:bg-slate-750 text-slate-200" : "opacity-35 line-through bg-transparent border border-transparent text-slate-500"
               }`}
               title={`Toggle ${label} visibility (${count} nodes)`}
             >
               <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-slate-700 font-medium">{label}</span>
+              <span className="text-slate-200 font-medium">{label}</span>
               <span className="text-[10px] text-slate-400 font-mono">({count})</span>
             </button>
           );
@@ -498,22 +498,22 @@ export function GraphCanvas({
 
       {/* Slide-in Node Detail Drawer inside Card (Requirement #7) */}
       {selectedNode && (
-        <div className="absolute top-0 right-0 w-72 sm:w-80 h-full bg-white/98 backdrop-blur-xl border-l border-slate-200 p-4 flex flex-col justify-between z-20 shadow-xl animate-in slide-in-from-right duration-200 text-xs">
+        <div className="absolute top-0 right-0 w-72 sm:w-80 h-full bg-slate-900/95 backdrop-blur-xl border-l border-slate-800 p-4 flex flex-col justify-between z-20 shadow-2xl animate-in slide-in-from-right duration-200 text-xs">
           <div className="space-y-4 overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <span
                   className="size-3 rounded-full"
                   style={{ backgroundColor: selectedNode.color }}
                 />
-                <span className="font-semibold text-sm text-slate-900 truncate">
+                <span className="font-semibold text-sm text-white truncate">
                   {selectedNode.label}
                 </span>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
                 aria-label="Close details"
               >
                 <X size={14} strokeWidth={1.75} />
@@ -522,10 +522,10 @@ export function GraphCanvas({
 
             {/* Entity Type Badge */}
             <div className="flex items-center gap-2">
-              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700">
+              <span className="text-2xs font-mono uppercase px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
                 {selectedNode.category}
               </span>
-              <span className="text-2xs font-mono text-slate-400">ID: {selectedNode.id}</span>
+              <span className="text-2xs font-mono text-slate-500">ID: {selectedNode.id}</span>
             </div>
 
             {/* Properties key/value rows */}
@@ -533,11 +533,11 @@ export function GraphCanvas({
               <span className="text-2xs font-mono uppercase tracking-wider text-slate-400 block font-medium">
                 Properties:
               </span>
-              <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-2xs">
+              <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-2xs">
                 {Object.entries(selectedNode.props || {}).map(([key, val]) => (
                   <div key={key} className="flex flex-col">
-                    <span className="text-slate-400 uppercase">{key}:</span>
-                    <span className="text-slate-800 font-sans break-words">{String(val)}</span>
+                    <span className="text-slate-500 uppercase">{key}:</span>
+                    <span className="text-slate-200 font-sans break-words">{String(val)}</span>
                   </div>
                 ))}
               </div>
@@ -562,7 +562,7 @@ export function GraphCanvas({
                           }
                         }
                       }}
-                      className="text-2xs font-mono px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+                      className="text-2xs font-mono px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
                     >
                       {item.name}
                     </button>
@@ -573,14 +573,14 @@ export function GraphCanvas({
           </div>
 
           {/* Action: Ask about this node in Chat */}
-          <div className="pt-3 border-t border-slate-200">
+          <div className="pt-3 border-t border-slate-800">
             <button
               onClick={() => {
                 if (onAskAboutNode) {
                   onAskAboutNode(`What is the impact and role of ${selectedNode.label} in the company graph?`);
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition-colors cursor-pointer shadow-sm shadow-indigo-600/20"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors cursor-pointer shadow-lg shadow-indigo-600/20"
             >
               <MessageSquare size={13} strokeWidth={2} />
               <span>Ask Oracle About This</span>
