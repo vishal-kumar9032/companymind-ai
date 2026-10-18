@@ -17,6 +17,8 @@ import {
   Activity,
   Layers,
   Database,
+  UploadCloud,
+  FileText,
 } from "lucide-react";
 import { TenantConfig } from "@/lib/tenants";
 import { AVAILABLE_MODELS, ModelOption } from "@/lib/truefoundry";
@@ -32,6 +34,7 @@ interface SaaSHeaderProps {
   onRunDemo: () => void;
   onRefreshGraph: () => void;
   onGoToLanding?: () => void;
+  onNavigateToDocuments?: () => void;
   activeAgent?: {
     name: string;
     role: string;
@@ -56,6 +59,7 @@ export function SaaSHeader({
   onRunDemo,
   onRefreshGraph,
   onGoToLanding,
+  onNavigateToDocuments,
   activeAgent = {
     name: "ArchitectureOracle",
     role: "Enterprise Knowledge & Provenance Orchestrator",
@@ -78,6 +82,10 @@ export function SaaSHeader({
     chat: {
       title: "Ask AI & Graph Oracle",
       subtitle: "Multi-Agent Verifiable Knowledge Synthesis",
+    },
+    documents: {
+      title: "Knowledge Documents & File Ingestion",
+      subtitle: "Upload and index PDF, Word, Excel, Sheets, and Markdown into FalkorDB",
     },
     graph: {
       title: "Knowledge Graph Explorer",
@@ -167,6 +175,18 @@ export function SaaSHeader({
 
       {/* 3. Right: Quick Actions & Status Indicators */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Upload Knowledge Document Quick Action */}
+        {onNavigateToDocuments && (
+          <button
+            onClick={onNavigateToDocuments}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+            title="Upload PDF, Word, Excel, Sheets, or Markdown files"
+          >
+            <UploadCloud size={13} className="text-indigo-600" />
+            <span className="hidden sm:inline">Upload Document</span>
+          </button>
+        )}
+
         {/* Quick Blast Radius Analysis Action */}
         <button
           onClick={onRunDemo}
