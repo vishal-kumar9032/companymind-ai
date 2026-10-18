@@ -16,6 +16,7 @@ import {
   BarChart2,
   Server,
   GitPullRequest,
+  UploadCloud,
 } from "lucide-react";
 import { GraphData } from "@/lib/schema";
 
@@ -29,6 +30,7 @@ interface CommandPaletteProps {
   onOpenGraph?: () => void;
   onOpenMemory?: () => void;
   onOpenAnalytics?: () => void;
+  onOpenDocuments?: () => void;
   graphData?: GraphData;
 }
 
@@ -56,6 +58,7 @@ export function CommandPalette({
   onOpenGraph,
   onOpenMemory,
   onOpenAnalytics,
+  onOpenDocuments,
   graphData,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
@@ -70,6 +73,16 @@ export function CommandPalette({
     {
       category: "System Panels & Tools",
       items: [
+        ...(onOpenDocuments
+          ? [
+              {
+                title: "Upload Knowledge Documents (PDF, Word, Excel, Sheets, CSV)",
+                type: "action" as const,
+                icon: UploadCloud,
+                action: onOpenDocuments,
+              },
+            ]
+          : []),
         ...(onOpenGraph
           ? [
               {

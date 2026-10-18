@@ -21,6 +21,7 @@ import {
   SlidersHorizontal,
   Network,
   History,
+  UploadCloud,
 } from "lucide-react";
 import { TenantConfig } from "@/lib/tenants";
 import { DEMO_PRIMARY_QUERY, heroPrompts, personalPlaceholder } from "@/lib/examples";
@@ -43,6 +44,7 @@ interface DashboardViewProps {
   onOpenMcp: () => void;
   onOpenMemory: () => void;
   onOpenRegistry?: () => void;
+  onOpenDocuments?: () => void;
   latencyMs?: number;
   nodeCount?: number;
   edgeCount?: number;
@@ -60,6 +62,7 @@ export function DashboardView({
   onOpenMcp,
   onOpenMemory,
   onOpenRegistry,
+  onOpenDocuments,
   latencyMs = 2,
   nodeCount = 36,
   edgeCount = 61,
@@ -157,6 +160,16 @@ export function DashboardView({
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {onOpenDocuments && (
+              <button
+                onClick={onOpenDocuments}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 px-4 py-2 text-xs font-semibold text-indigo-700 shadow-2xs transition-colors cursor-pointer"
+                title="Upload PDF, Word, Excel, Sheets, or TXT"
+              >
+                <UploadCloud className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Upload Knowledge Document</span>
+              </button>
+            )}
             <button
               onClick={onOpenGraph}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"

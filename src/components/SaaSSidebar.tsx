@@ -31,6 +31,7 @@ import { EnterpriseUser } from "@/lib/firebase";
 export type SaaSView =
   | "dashboard"
   | "chat"
+  | "documents"
   | "graph"
   | "agents"
   | "memory"
@@ -102,6 +103,13 @@ export function SaaSSidebar({
           icon: MessageSquare,
           badge: "Active",
           description: "Multi-agent knowledge synthesis",
+        },
+        {
+          id: "documents" as SaaSView,
+          label: "Documents & Files",
+          icon: FileText,
+          badge: "Upload",
+          description: "Upload PDF, Word, Excel, Sheets, CSV",
         },
         {
           id: "connections" as SaaSView,

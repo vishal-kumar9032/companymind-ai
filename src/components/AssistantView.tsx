@@ -28,6 +28,7 @@ import {
   Network,
   Paperclip,
   History,
+  UploadCloud,
 } from "lucide-react";
 import { authHeaders } from "@/lib/clientAuth";
 import { AVAILABLE_MODELS } from "@/lib/truefoundry";
@@ -427,17 +428,34 @@ export function AssistantView({
           </span>
         </div>
 
-        {turns.length > 0 && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleClearChat}
-            disabled={busy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
-            title="Start new conversation"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy || extractingFile}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer shadow-2xs disabled:opacity-40"
+            title="Upload PDF, Word, Excel, Sheets, or TXT"
           >
-            <RotateCcw size={12} />
-            <span>New Chat</span>
+            {extractingFile ? (
+              <Loader2 size={12} className="animate-spin text-indigo-600" />
+            ) : (
+              <UploadCloud size={12} className="text-indigo-600" />
+            )}
+            <span>Upload Knowledge Doc / PDF</span>
           </button>
-        )}
+
+          {turns.length > 0 && (
+            <button
+              onClick={handleClearChat}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+              title="Start new conversation"
+            >
+              <RotateCcw size={12} />
+              <span>New Chat</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Message Stream */}
@@ -458,6 +476,42 @@ export function AssistantView({
                     Ask questions across your institutional knowledge graph, audit architectural policies, verify downstream dependencies, and orchestrate verified actions.
                   </p>
                 </div>
+              </div>
+
+              {/* Featured Upload Knowledge File Banner Card */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="group p-4 rounded-2xl border-2 border-dashed border-indigo-300 bg-gradient-to-r from-indigo-50/80 via-white to-violet-50/80 hover:border-indigo-500 hover:shadow-sm transition-all cursor-pointer text-left flex items-center justify-between gap-4 shadow-2xs"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="size-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                    {extractingFile ? (
+                      <Loader2 size={20} className="animate-spin text-white" />
+                    ) : (
+                      <UploadCloud size={20} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                        Upload Knowledge Document (PDF, Word, Sheet, TXT)
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 font-semibold">
+                        Auto-Graph
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Drop any architectural RFC, PRD, Excel spreadsheet, or policy document. Automatically chunks text, maps microservice and decision entities into FalkorDB, and attaches it directly to the agent.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="hidden sm:inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 group-hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                >
+                  <Paperclip size={13} />
+                  <span>Choose File</span>
+                </button>
               </div>
 
               {/* Categorized Enterprise Prompt Cards */}
@@ -792,14 +846,15 @@ export function AssistantView({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={busy || extractingFile}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40"
+              className="flex h-9 shrink-0 items-center gap-1.5 px-2.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/70 text-slate-700 hover:text-indigo-700 transition-colors cursor-pointer disabled:opacity-40 shadow-2xs text-xs font-semibold"
               title="Upload doc, pdf, excel, or sheet - parses content, links knowledge into graph, and adds to agent context"
             >
               {extractingFile ? (
-                <Loader2 size={16} className="animate-spin text-indigo-600" />
+                <Loader2 size={14} className="animate-spin text-indigo-600" />
               ) : (
-                <Paperclip size={16} />
+                <Paperclip size={14} className="text-indigo-600" />
               )}
+              <span className="hidden sm:inline">Attach Doc/PDF</span>
             </button>
             <textarea
               ref={textareaRef}

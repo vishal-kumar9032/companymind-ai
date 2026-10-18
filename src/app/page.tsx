@@ -8,6 +8,7 @@ import { SaaSHeader } from "@/components/SaaSHeader";
 import { DashboardView } from "@/components/DashboardView";
 import { GraphCanvas } from "@/components/GraphCanvas";
 import { AssistantView } from "@/components/AssistantView";
+import { DocumentsView } from "@/components/DocumentsView";
 import { ConnectionsView } from "@/components/ConnectionsView";
 import { AgentsTab } from "@/components/AgentsTab";
 import { MemoryTab } from "@/components/MemoryTab";
@@ -457,6 +458,7 @@ export default function Home() {
           }
           onRefreshGraph={fetchGraph}
           onGoToLanding={() => setAppStage("landing")}
+          onNavigateToDocuments={() => setCurrentView("documents")}
           activeAgent={activeAgent}
           activeOutcome={lastOutcome}
           gatewayStatus={gatewayStatus}
@@ -480,6 +482,7 @@ export default function Home() {
                 onOpenMcp={() => setCurrentView("agents")}
                 onOpenMemory={() => setCurrentView("memory")}
                 onOpenRegistry={() => setCurrentView("registry")}
+                onOpenDocuments={() => setCurrentView("documents")}
                 latencyMs={latencyMs}
                 nodeCount={graphData.nodes.length}
                 edgeCount={graphData.edges.length}
@@ -497,6 +500,19 @@ export default function Home() {
                 onInitialQueryUsed={() => setSelectedQuery(null)}
                 model={selectedModel}
                 onGraphUpdate={() => {
+                  fetchGraph();
+                  fetchFindingsCount();
+                }}
+              />
+            </div>
+          )}
+
+          {/* VIEW: Knowledge Documents & File Ingestion */}
+          {currentView === "documents" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <DocumentsView
+                onAskAboutDoc={handleSelectQueryAndSwitchToChat}
+                onRefreshGraph={() => {
                   fetchGraph();
                   fetchFindingsCount();
                 }}
@@ -668,6 +684,7 @@ export default function Home() {
         onOpenProcess={() => setCurrentView("agents")}
         onOpenGraph={() => setCurrentView("graph")}
         onOpenMemory={() => setCurrentView("memory")}
+        onOpenDocuments={() => setCurrentView("documents")}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         graphData={graphData}
       />
