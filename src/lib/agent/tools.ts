@@ -9,7 +9,7 @@ import {
 import type { Caller } from "./identity";
 import { createApproval, recall, remember } from "./memory";
 import { executeComposioTool, getAppTool, getConnectedTools, isWriteTool, searchAppTools } from "./composio";
-import { listDocuments, readDocument, searchDocuments } from "./documents";
+import { listDocuments, readDocument, searchDocuments, storeDocument } from "./documents";
 
 export type Role = "orchestrator" | "researcher" | "governance" | "scribe";
 
@@ -44,16 +44,18 @@ const MAX_ROWS = 50;
 const UPSERT_LABELS = [
   "Person", "Team", "Meeting", "Doc", "Decision", "Service", "GitHubPR", "GitHubIssue",
   "User", "Project", "Company", "Skill", "Task", "Memory", "Entity", "Role", "Client",
-  "Repository", "Topic", "Note", "Product",
+  "Repository", "Topic", "Note", "Product", "Wiki", "Article", "Guide", "Policy",
+  "Standard", "Architecture", "Feature", "System", "Concept", "Milestone",
 ];
 const UPSERT_RELS = [
   "MEMBER_OF", "ATTENDED", "AUTHORED", "RECORDED_IN", "PROPOSES", "APPROVED", "SUPERSEDES", "GOVERNS",
   "OWNS", "DEPENDS_ON", "TRACKS", "RESOLVES", "TOUCHES", "AUTHORED_PR",
   "WORKS_AT", "HAS_SKILL", "LEADS", "MANAGES", "KNOWS", "PART_OF", "ASSIGNED_TO", "ABOUT", "CREATED", "ASSOCIATED_WITH", "PRODUCED",
+  "DEFINES", "DOCUMENTS", "REFERENCES", "CONTAINS", "COVERS", "IMPLEMENTS", "LINKS_TO",
 ];
 const UPSERT_PROPS = [
   "title", "date", "url", "status", "summary", "email", "role", "rationale", "tier", "type",
-  "name", "description", "experience", "skills", "location", "department", "company", "level", "note",
+  "name", "description", "experience", "skills", "location", "department", "company", "level", "note", "content", "category",
 ];
 const isValidLabel = (l: string) => Boolean(l && (UPSERT_LABELS.includes(l) || /^[A-Za-z][A-Za-z0-9_]{1,30}$/.test(l)));
 const isValidRel = (r: string) => Boolean(r && (UPSERT_RELS.includes(r) || /^[A-Z0-9_]{2,40}$/.test(r)));
@@ -257,15 +259,15 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
   {
     def: fn(
       "graph_upsert",
-      "Record entities and relationships you have verified from connected sources (emails, docs, PRs, calendar events) into this workspace's knowledge graph so future questions can use graph tools. Only record facts you actually read; every entity needs a `source` (e.g. gmail:<messageId>, drive:<fileId>, github:<owner/repo#123>). Signed-in workspaces only.",
+      "Record entities and relationships you have verified from connected sources, documents, wikis or meeting notes into this workspace's FalkorDB knowledge graph so future questions can traverse them. Only record verified facts; every entity needs a `source` (e.g. upload:<docId>, wiki:<name>, gmail:<msgId>, github:<pr>).",
       {
         entities: {
           type: "array",
-          description: "Max 25. Each: {label, name, source, properties?}. name is the display name or title; properties (all strings) may use: " + UPSERT_PROPS.join(", "),
+          description: "Max 25. Each: {label, name, source, properties?}. Label e.g. " + UPSERT_LABELS.slice(0, 12).join(", ") + "; properties (all strings) may use: " + UPSERT_PROPS.join(", "),
           items: {
             type: "object",
             properties: {
-              label: { type: "string", enum: UPSERT_LABELS },
+              label: { type: "string", description: "PascalCase entity label, e.g. Person, Service, Decision, Wiki, Doc, Concept, Team" },
               name: { type: "string" },
               source: { type: "string" },
               properties: { type: "object", properties: Object.fromEntries(UPSERT_PROPS.map((k) => [k, { type: "string" }])) },
@@ -279,9 +281,9 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
           items: {
             type: "object",
             properties: {
-              from: { type: "object", properties: { label: { type: "string", enum: UPSERT_LABELS }, name: { type: "string" } } },
-              type: { type: "string", enum: UPSERT_RELS },
-              to: { type: "object", properties: { label: { type: "string", enum: UPSERT_LABELS }, name: { type: "string" } } },
+              from: { type: "object", properties: { label: { type: "string" }, name: { type: "string" } }, required: ["label", "name"] },
+              type: { type: "string", description: "Relationship type, e.g. GOVERNS, DEPENDS_ON, OWNS, DEFINES, DOCUMENTS, REFERENCES, CONTAINS" },
+              to: { type: "object", properties: { label: { type: "string" }, name: { type: "string" } }, required: ["label", "name"] },
             },
             required: ["from", "type", "to"],
           },
@@ -290,7 +292,6 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       [],
     ),
     run: async ({ entities, relationships }, ctx) => {
-      if (!ctx.caller.authenticated) return { error: "Sign in to build your own knowledge graph; the demo workspace is read-only." };
       const graph = await getGraph(ctx.caller.graph);
       let nodes = 0;
       let edges = 0;
@@ -302,7 +303,11 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
           skipped.push(`entity ${name || "?"}: needs a valid label, name and source`);
           continue;
         }
-        const props: Record<string, string> = { source: str(e.source, 200), updated_at: new Date().toISOString() };
+        const props: Record<string, string> = {
+          source: str(e.source, 200),
+          updated_at: new Date().toISOString(),
+          created_by: ctx.caller.authenticated ? ctx.caller.id : "guest",
+        };
         if (e.properties && typeof e.properties === "object") {
           for (const [k, v] of Object.entries(e.properties)) {
             if (/^[a-zA-Z0-9_]{1,40}$/.test(k) && v != null) {
@@ -329,6 +334,39 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
         else skipped.push(`relationship ${relType}: ${r.from.name} or ${r.to.name} not in the graph`);
       }
       return { entitiesWritten: nodes, relationshipsWritten: edges, skipped };
+    },
+    roles: ["orchestrator", "researcher", "scribe"],
+  },
+  {
+    def: fn(
+      "store_wiki",
+      "Create and publish a permanent wiki page, documentation article, architecture specification, runbook or RFC into this organization's FalkorDB knowledge brain. It chunks the text, extracts key entities (:Decision, :Service, :Concept, :Person, :Wiki) into graph nodes, and makes it searchable via search_documents.",
+      {
+        title: { type: "string", description: "Title or filename of the wiki, e.g. payments-architecture.md or DEC-44 Migration Guide" },
+        content: { type: "string", description: "The full markdown content or text of the wiki article" },
+        category: { type: "string", description: "Category: Architecture, Policy, Runbook, Guide, RFC, Meeting Notes", default: "Wiki" },
+      },
+      ["title", "content"],
+    ),
+    run: async ({ title, content, category }, ctx) => {
+      const baseTitle = String(title || "wiki").trim();
+      const filename = baseTitle.endsWith(".md") ? baseTitle : `${baseTitle}.md`;
+      const docText = `# ${baseTitle}\n\n${category ? `**Category:** ${category}\n\n` : ""}${content}`;
+      const res = await storeDocument(ctx.caller, {
+        name: filename,
+        type: "md",
+        size: Buffer.byteLength(docText, "utf8"),
+        text: docText,
+      });
+      return {
+        success: true,
+        id: res.id,
+        name: filename,
+        chunks: res.chunks,
+        entitiesExtracted: res.entities,
+        relationsLinked: res.relations,
+        message: `Successfully stored and indexed wiki "${filename}" in FalkorDB with ${res.entities} entities extracted and ${res.relations} graph relationships.`,
+      };
     },
     roles: ["orchestrator", "researcher", "scribe"],
   },

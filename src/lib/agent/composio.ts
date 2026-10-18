@@ -356,7 +356,15 @@ export function isWriteTool(slug: string): boolean {
  * and preserves parameter property dictionaries without treating property names as schema keywords.
  */
 export function sanitizeSchemaNode(node: any): any {
-  if (!node || typeof node !== "object") return node;
+  if (!node) return { type: "string" };
+  if (typeof node === "string") {
+    const lower = node.toLowerCase();
+    if (["string", "number", "integer", "boolean", "array", "object"].includes(lower)) {
+      return { type: lower, ...(lower === "object" ? { properties: {} } : {}) };
+    }
+    return { type: "string" };
+  }
+  if (typeof node !== "object") return { type: "string" };
   if (Array.isArray(node)) return node.map(sanitizeSchemaNode);
 
   // Flatten anyOf / oneOf to first non-null variant
@@ -383,9 +391,11 @@ export function sanitizeSchemaNode(node: any): any {
   }
 
   const clean: any = {};
-  if (type) clean.type = type;
+  if (type && ["string", "number", "integer", "boolean", "array", "object"].includes(type)) {
+    clean.type = type;
+  }
   if (nullable) clean.nullable = true;
-  if (typeof node.description === "string") clean.description = node.description;
+  if (typeof node.description === "string") clean.description = node.description.slice(0, 300);
   if (typeof node.format === "string") clean.format = node.format;
 
   if (Array.isArray(node.enum) && node.enum.length > 0) {
@@ -393,16 +403,23 @@ export function sanitizeSchemaNode(node: any): any {
     if (!clean.type) clean.type = "string";
   }
 
-  // Handle properties map: each key is an arbitrary parameter name; sanitize each value as a schema node
+  // Handle properties map: each key must be valid parameter name; sanitize each value as a schema node object
   if (node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)) {
     clean.properties = {};
     for (const [propName, propSchema] of Object.entries(node.properties)) {
-      clean.properties[propName] = sanitizeSchemaNode(propSchema);
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(propName)) continue;
+      const sanitizedProp = sanitizeSchemaNode(propSchema);
+      clean.properties[propName] = typeof sanitizedProp === "object" && !Array.isArray(sanitizedProp)
+        ? sanitizedProp
+        : { type: "string" };
     }
   }
 
   if (node.items) {
-    clean.items = sanitizeSchemaNode(node.items);
+    const sanitizedItems = sanitizeSchemaNode(node.items);
+    clean.items = typeof sanitizedItems === "object" && !Array.isArray(sanitizedItems)
+      ? sanitizedItems
+      : { type: "string" };
   }
 
   // Default missing types
@@ -484,35 +501,22 @@ function scoreTool(name: string): number {
  */
 const CURATED_TOOLS: Record<string, string[]> = {
   gmail: [
-    "GMAIL_FETCH_EMAILS", "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID", "GMAIL_FETCH_MESSAGE_BY_THREAD_ID",
-    "GMAIL_LIST_THREADS", "GMAIL_SEARCH_PEOPLE", "GMAIL_CREATE_EMAIL_DRAFT", "GMAIL_SEND_EMAIL",
+    "GMAIL_FETCH_EMAILS", "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID", "GMAIL_CREATE_EMAIL_DRAFT", "GMAIL_SEND_EMAIL",
   ],
   googlecalendar: [
-    "GOOGLECALENDAR_EVENTS_LIST", "GOOGLECALENDAR_EVENTS_LIST_ALL_CALENDARS", "GOOGLECALENDAR_FIND_EVENT",
-    "GOOGLECALENDAR_FIND_FREE_SLOTS", "GOOGLECALENDAR_LIST_CALENDARS", "GOOGLECALENDAR_CREATE_EVENT",
+    "GOOGLECALENDAR_EVENTS_LIST", "GOOGLECALENDAR_FIND_EVENT", "GOOGLECALENDAR_CREATE_EVENT",
   ],
   googledrive: [
-    "GOOGLEDRIVE_LIST_FILES", "GOOGLEDRIVE_FIND_FILE", "GOOGLEDRIVE_FIND_FOLDER",
-    "GOOGLEDRIVE_GET_FILE_METADATA", "GOOGLEDRIVE_DOWNLOAD_FILE", "GOOGLEDRIVE_EXPORT_GOOGLE_WORKSPACE_FILE",
-    "GOOGLEDRIVE_CREATE_FILE_FROM_TEXT", "GOOGLEDRIVE_CREATE_FOLDER", "GOOGLEDRIVE_UPLOAD_FILE",
-    "GOOGLEDRIVE_LIST_COMMENTS",
+    "GOOGLEDRIVE_LIST_FILES", "GOOGLEDRIVE_FIND_FILE", "GOOGLEDRIVE_DOWNLOAD_FILE", "GOOGLEDRIVE_CREATE_FILE_FROM_TEXT",
   ],
   googledocs: [
-    "GOOGLEDOCS_SEARCH_DOCUMENTS", "GOOGLEDOCS_GET_DOCUMENT_BY_ID", "GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT",
-    "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN", "GOOGLEDOCS_CREATE_DOCUMENT", "GOOGLEDOCS_UPDATE_DOCUMENT_MARKDOWN",
-    "GOOGLEDOCS_UPDATE_DOCUMENT_SECTION_MARKDOWN", "GOOGLEDOCS_INSERT_TEXT_ACTION",
+    "GOOGLEDOCS_SEARCH_DOCUMENTS", "GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT", "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN",
   ],
   googlesheets: [
-    "GOOGLESHEETS_CREATE_GOOGLE_SHEET1", "GOOGLESHEETS_SEARCH_SPREADSHEETS", "GOOGLESHEETS_GET_SPREADSHEET_INFO",
-    "GOOGLESHEETS_GET_SHEET_NAMES", "GOOGLESHEETS_VALUES_GET", "GOOGLESHEETS_VALUES_UPDATE",
-    "GOOGLESHEETS_UPDATE_VALUES_BATCH", "GOOGLESHEETS_CREATE_SPREADSHEET_ROW", "GOOGLESHEETS_ADD_SHEET",
-    "GOOGLESHEETS_SHEET_FROM_JSON", "GOOGLESHEETS_BATCH_GET", "GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW",
+    "GOOGLESHEETS_CREATE_GOOGLE_SHEET1", "GOOGLESHEETS_GET_SPREADSHEET_INFO", "GOOGLESHEETS_VALUES_GET", "GOOGLESHEETS_VALUES_UPDATE",
   ],
   github: [
-    "GITHUB_GET_THE_AUTHENTICATED_USER", "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
-    "GITHUB_LIST_PULL_REQUESTS", "GITHUB_FIND_PULL_REQUESTS", "GITHUB_GET_A_PULL_REQUEST",
-    "GITHUB_LIST_REPOSITORY_ISSUES", "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER",
-    "GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS", "GITHUB_GET_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT",
+    "GITHUB_LIST_PULL_REQUESTS", "GITHUB_GET_A_PULL_REQUEST", "GITHUB_LIST_REPOSITORY_ISSUES", "GITHUB_GET_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT",
   ],
 };
 

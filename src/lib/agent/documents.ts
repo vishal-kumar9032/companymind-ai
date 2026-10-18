@@ -287,6 +287,34 @@ export async function extractAndLinkEntities(
         }
       }
     }
+
+    // 6. Extract Wiki / Documentation node
+    const isWiki = /wiki|guide|runbook|manual|spec|rfc|doc/i.test(docName) || text.includes("# ") || text.includes("Category:");
+    if (isWiki) {
+      const headingMatch = text.match(/^#\s+([^\n\r]+)/m);
+      const wikiTitle = headingMatch ? headingMatch[1].trim() : docName.replace(/\.[a-z0-9]+$/i, "");
+      if (wikiTitle && wikiTitle.length < 120) {
+        await graph.query(
+          `MERGE (w:Wiki {name: $name})
+           ON CREATE SET w.title = $title, w.source = $source, w.updated_at = $at
+           WITH w
+           MATCH (d:Doc {id: $docId})
+           MERGE (d)-[:DEFINES]->(w)`,
+          { params: { name: wikiTitle, title: wikiTitle, source: `upload:${docId}`, docId, at: new Date().toISOString() } },
+        );
+        entitiesCount++;
+        relationshipsCount++;
+
+        for (const s of uniqueServices.slice(0, 3)) {
+          await graph.query(
+            `MATCH (w:Wiki {name: $name}), (s:Service {name: $s})
+             MERGE (w)-[:COVERS]->(s)`,
+            { params: { name: wikiTitle, s } },
+          );
+          relationshipsCount++;
+        }
+      }
+    }
   } catch (err) {
     console.warn("Knowledge graph entity extraction notice:", err);
   }
