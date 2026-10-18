@@ -355,7 +355,7 @@ export default function Home() {
      STAGE 3: THE COMPANYMIND AGENT HARNESS DASHBOARD & WORKSPACE
      ========================================================================= */
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090d16] text-slate-100 font-sans select-none antialiased">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 font-sans select-none antialiased">
       {/* 1. Desktop Enterprise Sidebar */}
       <div className="hidden lg:flex shrink-0 h-full">
         <SaaSSidebar
@@ -391,11 +391,11 @@ export default function Home() {
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsMobileSidebarOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative w-[280px] max-w-[85vw] h-full bg-slate-950 z-10 shadow-2xl animate-in slide-in-from-left duration-200">
+          <div className="relative w-[280px] max-w-[85vw] h-full bg-white z-10 shadow-2xl animate-in slide-in-from-left duration-200">
             <SaaSSidebar
               currentView={currentView}
               onSelectView={(v) => {
@@ -463,7 +463,7 @@ export default function Home() {
         />
 
         {/* Dynamic View Canvas */}
-        <main className="flex-1 min-h-0 relative flex flex-col w-full h-full overflow-hidden bg-[#090d16]">
+        <main className="flex-1 min-h-0 relative flex flex-col w-full h-full overflow-hidden bg-slate-50">
           {/* VIEW 1: Dashboard / Executive Intelligence Hub */}
           {currentView === "dashboard" && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
@@ -514,12 +514,12 @@ export default function Home() {
           {/* VIEW 3: Knowledge Graph Topology Explorer */}
           {currentView === "graph" && (
             <div className="flex-1 min-h-0 relative flex flex-col w-full h-full overflow-hidden">
-              <div className="px-6 py-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0 shadow-2xs">
+              <div className="px-6 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-xs">
                 <div>
-                  <h2 className="text-sm font-bold text-white tracking-tight">
+                  <h2 className="text-sm font-bold text-slate-900 tracking-tight">
                     FalkorDB Graph Topology Explorer
                   </h2>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     Live interactive graph with {graphData.nodes.length} nodes and{" "}
                     {graphData.edges.length} edges across {activeTenant.name}
                   </p>
@@ -530,23 +530,23 @@ export default function Home() {
                       onClick={() =>
                         handleSelectQueryAndSwitchToChat(primaryQuery(false))
                       }
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition-colors cursor-pointer"
                     >
                       Analyze auth-v1 Path
                     </button>
                   )}
                   <button
                     onClick={fetchGraph}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
                   >
                     Refresh Topology
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 relative bg-[#090d16]">
+              <div className="flex-1 min-h-0 relative bg-slate-50">
                 {loading ? (
-                  <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-400 gap-2">
+                  <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-500 gap-2">
                     <span className="size-2 rounded-full bg-indigo-600 animate-ping" />
                     <span>Hydrating FalkorDB graph topology...</span>
                   </div>

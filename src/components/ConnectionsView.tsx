@@ -83,11 +83,11 @@ function SyncPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm space-y-3">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-white">Sync connected accounts into your graph</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h3 className="text-sm font-bold text-slate-900">Sync connected accounts into your graph</h3>
+          <p className="text-xs text-slate-500 mt-0.5">
             Reads recent email, calendar events, documents and GitHub activity (read-only) and records the people, documents and pull requests it finds, each linked to its source.
           </p>
         </div>
@@ -101,14 +101,14 @@ function SyncPanel() {
         </button>
       </div>
       {lines.length > 0 && (
-        <ul className="max-h-32 overflow-y-auto space-y-0.5 rounded-xl bg-slate-950 border border-slate-800 p-3 text-[11px] font-mono text-slate-400">
+        <ul className="max-h-32 overflow-y-auto space-y-0.5 rounded-xl bg-slate-50 border border-slate-200 p-3 text-[11px] font-mono text-slate-600">
           {lines.map((l, i) => (
-            <li key={i} className={l.ok === false ? "text-rose-400" : undefined}>{l.text}</li>
+            <li key={i} className={l.ok === false ? "text-rose-600" : undefined}>{l.text}</li>
           ))}
         </ul>
       )}
-      {summary && <p className="whitespace-pre-wrap rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-slate-300">{summary}</p>}
-      {err && <p className="text-xs text-rose-400">{err}</p>}
+      {summary && <p className="whitespace-pre-wrap rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-700">{summary}</p>}
+      {err && <p className="text-xs text-rose-600">{err}</p>}
     </div>
   );
 }
@@ -193,11 +193,11 @@ function DocumentsPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm space-y-3">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
       <div>
-        <h3 className="text-sm font-bold text-white">Upload documents</h3>
-        <p className="text-xs text-slate-400 mt-0.5">
-          PDF, Word, Excel, CSV, TSV, text, JSON, HTML, or Markdown (up to 10 MB each). The agent can search and cite them, and you can add what they state to your graph.
+        <h3 className="text-sm font-bold text-slate-900">Upload documents &amp; Knowledge</h3>
+        <p className="text-xs text-slate-500 mt-0.5">
+          PDF, Word, Excel, CSV, TSV, text, JSON, HTML, or Markdown (up to 10 MB each). Automatically extracts entities and relationships into FalkorDB.
         </p>
       </div>
       <label
@@ -211,14 +211,15 @@ function DocumentsPanel() {
           setDragging(false);
           void upload(e.dataTransfer.files);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-5 text-xs transition ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed p-6 text-xs transition ${
           dragging
-            ? "border-indigo-500 bg-indigo-950/40 text-indigo-300"
-            : "border-slate-800 bg-slate-950/50 hover:border-indigo-500/50 hover:bg-slate-900 text-slate-300"
+            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+            : "border-slate-300 bg-slate-50/70 hover:border-indigo-400 hover:bg-slate-100/70 text-slate-600"
         }`}
       >
-        {uploading ? <Loader2 size={16} className="animate-spin text-indigo-400" /> : <Layers size={16} className="text-indigo-400" />}
-        <span className="font-semibold text-slate-300">{uploading ? "Reading files…" : "Drop files here or click to choose"}</span>
+        {uploading ? <Loader2 size={18} className="animate-spin text-indigo-600" /> : <Layers size={18} className="text-indigo-600" />}
+        <span className="font-semibold text-slate-800">{uploading ? "Extracting knowledge & building graph…" : "Drop files here or click to choose"}</span>
+        <span className="text-[11px] text-slate-500">Auto-extracted into FalkorDB entities and prompt context</span>
         <input
           type="file"
           multiple
@@ -232,28 +233,28 @@ function DocumentsPanel() {
         />
       </label>
       {notes.length > 0 && (
-        <ul className="space-y-0.5 text-[11px] text-slate-400 font-mono">
+        <ul className="space-y-0.5 text-[11px] text-slate-600 font-mono">
           {notes.map((n, i) => (
             <li key={i}>{n}</li>
           ))}
         </ul>
       )}
       {docs.length > 0 && (
-        <ul className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/40">
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/50">
           {docs.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
-              <span className="min-w-0 truncate font-medium text-slate-200">
+            <li key={d.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-xs">
+              <span className="min-w-0 truncate font-medium text-slate-800">
                 {d.name} <span className="font-normal text-slate-500">· {d.chunks} parts</span>
               </span>
               <span className="flex shrink-0 items-center gap-3">
                 <button
                   onClick={() => void addToGraph(d)}
                   disabled={building !== null}
-                  className="font-semibold text-indigo-400 hover:text-indigo-300 disabled:opacity-50 cursor-pointer"
+                  className="font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 cursor-pointer"
                 >
                   {building === d.id ? "Adding…" : "Add to graph"}
                 </button>
-                <button onClick={() => void remove(d.id)} className="text-slate-500 hover:text-rose-400 cursor-pointer" title="Delete">
+                <button onClick={() => void remove(d.id)} className="text-slate-400 hover:text-rose-600 cursor-pointer transition-colors" title="Delete">
                   <Unlink size={14} />
                 </button>
               </span>
@@ -261,7 +262,7 @@ function DocumentsPanel() {
           ))}
         </ul>
       )}
-      {result && <p className="whitespace-pre-wrap rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-slate-300">{result}</p>}
+      {result && <p className="whitespace-pre-wrap rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-700">{result}</p>}
     </div>
   );
 }
@@ -351,24 +352,24 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Connections &amp; Workspaces</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Connect your accounts so autonomous agents can securely index institutional knowledge and prepare actions with human-in-the-loop approval.
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Connections &amp; Workspaces</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Connect your accounts and upload documents so autonomous agents can securely index institutional knowledge, extract graph entities, and execute authorized workflows.
         </p>
       </div>
 
-      {state?.authenticated && <DocumentsPanel />}
+      <DocumentsPanel />
 
       {state?.authenticated && state.toolkits.some((t) => t.connected) && <SyncPanel />}
 
       {signedOut && (
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-4">
-          <div className="flex items-center gap-2 text-sm text-indigo-200 font-medium">
-            <Lock size={16} /> Sign in with Google to connect your enterprise accounts.
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4">
+          <div className="flex items-center gap-2 text-sm text-indigo-950 font-medium">
+            <Lock size={16} className="text-indigo-600" /> Sign in with Google to connect external enterprise OAuth accounts.
           </div>
           <button
             onClick={onRequestSignIn}
-            className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition cursor-pointer shadow-xs"
+            className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer shadow-xs"
           >
             Sign in
           </button>
@@ -376,45 +377,45 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
       )}
 
       {state && !state.configured && (
-        <div className="flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-950/30 p-4 text-sm text-amber-300">
-          <CircleAlert size={16} className="mt-0.5 shrink-0" /> Connectors are not configured on this server (COMPOSIO_API_KEY missing).
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <CircleAlert size={16} className="mt-0.5 shrink-0 text-amber-600" /> Connectors are not configured on this server (COMPOSIO_API_KEY missing).
         </div>
       )}
 
       {(error || state?.error) && (
-        <div className="flex items-start gap-3 rounded-2xl border border-rose-500/30 bg-rose-950/40 p-4 text-xs text-rose-300 animate-in fade-in">
-          <CircleAlert size={16} className="mt-0.5 shrink-0 text-rose-400" />
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900 animate-in fade-in">
+          <CircleAlert size={16} className="mt-0.5 shrink-0 text-rose-600" />
           <div className="space-y-1">
-            <p className="font-semibold text-rose-200">Connection Gateway Notice</p>
-            <p className="leading-relaxed">{error || state?.error}</p>
-            <p className="text-[11px] text-rose-400">
-              Verify your <code className="bg-rose-900/60 border border-rose-700/60 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_API_KEY</code> or <code className="bg-rose-900/60 border border-rose-700/60 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_USER_API_KEY</code> in environment configuration.
+            <p className="font-semibold text-rose-950">Connection Gateway Notice</p>
+            <p className="leading-relaxed text-rose-800">{error || state?.error}</p>
+            <p className="text-[11px] text-rose-700">
+              Verify your <code className="bg-rose-100 border border-rose-200 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_API_KEY</code> or <code className="bg-rose-100 border border-rose-200 px-1 py-0.5 rounded font-mono text-[10px]">COMPOSIO_USER_API_KEY</code> in environment configuration.
             </p>
           </div>
         </div>
       )}
 
       {!state && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Loader2 size={15} className="animate-spin text-indigo-400" /> Checking account connections…
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 size={15} className="animate-spin text-indigo-600" /> Checking account connections…
         </div>
       )}
 
       {/* 1-Click Unified Google Workspace Connect Card */}
-      <div className="rounded-3xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-violet-950/40 p-6 shadow-xl shadow-black/30 space-y-4">
+      <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-violet-50/70 p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="size-11 rounded-2xl bg-slate-900 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-xs shrink-0">
-              <Sparkles className="size-5 text-indigo-400" />
+            <div className="size-11 rounded-2xl bg-white border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-xs shrink-0">
+              <Sparkles className="size-5 text-indigo-600" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase tracking-wider mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider mb-1">
                 Unified 1-Click Connect
               </div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-slate-900">
                 Connect All Google Tools at Once
               </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Authorize Gmail, Google Calendar, Drive, Docs &amp; Sheets in a single Google consent prompt.
               </p>
             </div>
@@ -423,19 +424,19 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
           <div>
             {isGoogleSuperConnected ? (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-semibold text-emerald-400 shadow-xs">
-                  <CheckCircle2 size={14} className="text-emerald-400" /> All Google Tools Connected
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 shadow-2xs">
+                  <CheckCircle2 size={14} className="text-emerald-700" /> All Google Tools Connected
                 </span>
                 <button
                   disabled={disconnecting !== null || busy !== null}
                   onClick={() => disconnect("googlesuper", "Google Workspace")}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 px-3 py-1.5 text-xs font-semibold shadow-2xs transition cursor-pointer disabled:opacity-40"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 text-xs font-semibold shadow-2xs transition cursor-pointer disabled:opacity-40"
                   title="Disconnect all Google tools"
                 >
                   {disconnecting === "googlesuper" ? (
-                    <Loader2 size={13} className="animate-spin text-rose-400" />
+                    <Loader2 size={13} className="animate-spin text-rose-600" />
                   ) : (
-                    <Unlink size={13} className="text-rose-400" />
+                    <Unlink size={13} className="text-rose-600" />
                   )}
                   <span>Disconnect All</span>
                 </button>
@@ -444,7 +445,7 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
               <button
                 disabled={!state?.authenticated || !state?.configured || busy !== null}
                 onClick={() => connect("googlesuper")}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition cursor-pointer disabled:opacity-40"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition cursor-pointer disabled:opacity-40"
               >
                 {busy === "googlesuper" ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -458,14 +459,14 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
         </div>
 
         {/* Google Apps Included Badges */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800 text-xs">
-          <span className="text-[11px] font-medium text-slate-400 mr-1">Includes 5 Services:</span>
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+          <span className="text-[11px] font-medium text-slate-500 mr-1">Includes 5 Services:</span>
           {["Gmail", "Google Calendar", "Google Drive", "Google Docs", "Google Sheets"].map((app) => (
             <span
               key={app}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs font-medium shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium shadow-2xs"
             >
-              <span className={`size-1.5 rounded-full ${isGoogleSuperConnected ? "bg-emerald-400" : "bg-indigo-400"}`} />
+              <span className={`size-1.5 rounded-full ${isGoogleSuperConnected ? "bg-emerald-500" : "bg-indigo-500"}`} />
               <span>{app}</span>
             </span>
           ))}
@@ -474,7 +475,7 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
 
       {/* Individual Toolkits Grid */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 font-mono">
           Individual Connector Status
         </h3>
 
@@ -482,33 +483,33 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
           {individualToolkits.map((t) => (
             <div
               key={t.slug}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xs hover:border-slate-700 hover:bg-slate-850 transition-colors"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white">{t.label}</p>
+                  <p className="text-sm font-semibold text-slate-900">{t.label}</p>
                   {t.isGoogle && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                       Google
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">{t.blurb}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{t.blurb}</p>
               </div>
 
               {t.connected ? (
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700">
                     <CheckCircle2 size={13} /> Connected
                   </span>
                   <button
                     disabled={disconnecting !== null || busy !== null}
                     onClick={() => disconnect(t.slug, t.label)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-950 hover:bg-rose-950/40 hover:border-rose-500/30 hover:text-rose-300 text-slate-400 px-2.5 py-1 text-xs font-medium transition cursor-pointer disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-600 px-2.5 py-1 text-xs font-medium transition cursor-pointer disabled:opacity-40"
                     title={`Disconnect ${t.label}`}
                   >
                     {disconnecting === t.slug ? (
-                      <Loader2 size={12} className="animate-spin text-rose-400" />
+                      <Loader2 size={12} className="animate-spin text-rose-600" />
                     ) : (
                       <Unlink size={12} />
                     )}
@@ -519,7 +520,7 @@ export function ConnectionsView({ onRequestSignIn }: { onRequestSignIn: () => vo
                 <button
                   disabled={!state?.authenticated || !state?.configured || busy !== null}
                   onClick={() => connect(t.slug)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-40 cursor-pointer shadow-xs"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-xs"
                 >
                   {busy === t.slug ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />} Connect
                 </button>

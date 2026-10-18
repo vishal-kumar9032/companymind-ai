@@ -89,12 +89,12 @@ export function AuthPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
       {/* 1. Header with Back button */}
-      <header className="h-16 px-4 sm:px-8 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl flex items-center justify-between">
+      <header className="h-16 px-4 sm:px-8 border-b border-slate-200 bg-white/90 backdrop-blur-xl flex items-center justify-between">
         <button
           onClick={onBackToLanding}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
         >
           <ArrowLeft size={15} />
           <span>Back to CompanyMind</span>
@@ -104,7 +104,7 @@ export function AuthPage({
           <div className="size-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
             <Brain size={18} />
           </div>
-          <span className="font-bold text-sm tracking-tight text-white">
+          <span className="font-bold text-sm tracking-tight text-slate-900">
             CompanyMind
           </span>
         </div>
@@ -114,19 +114,19 @@ export function AuthPage({
 
       {/* 2. Main Authentication Card Area */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
           {/* Card Top Branding */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-mono">
               <Sparkles size={12} />
               <span>Enterprise Identity & Access</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               {activeTab === "login"
                 ? "Sign In to Your Workspace"
                 : "Create Enterprise Account"}
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600">
               {activeTab === "login"
                 ? "Access your FalkorDB knowledge graph and agent workforce."
                 : "Initialize a new agent harness partitioned for your team."}
@@ -134,7 +134,7 @@ export function AuthPage({
           </div>
 
           {/* Segmented Switcher (Sign In vs Register) */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
             <button
               onClick={() => {
                 setActiveTab("login");
@@ -142,8 +142,8 @@ export function AuthPage({
               }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === "login"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/60 font-bold"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Sign In
@@ -155,8 +155,8 @@ export function AuthPage({
               }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === "register"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/60 font-bold"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Register
@@ -164,8 +164,8 @@ export function AuthPage({
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle size={15} className="shrink-0" />
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
@@ -174,7 +174,7 @@ export function AuthPage({
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
           >
             <svg className="size-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -199,9 +199,9 @@ export function AuthPage({
 
           <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800" />
+              <div className="w-full border-t border-slate-200" />
             </div>
-            <span className="relative bg-slate-900 px-3 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+            <span className="relative bg-white px-3 text-[10px] font-mono uppercase tracking-wider text-slate-500">
               Or with work email
             </span>
           </div>
@@ -210,47 +210,47 @@ export function AuthPage({
           <form onSubmit={handleEmailAuthSubmit} className="space-y-3.5">
             {activeTab === "register" && (
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-slate-300">
+                <label className="text-[11px] font-medium text-slate-700">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User size={14} className="text-slate-500 absolute left-3 top-3" />
+                  <User size={14} className="text-slate-400 absolute left-3 top-3" />
                   <input
                     type="text"
                     required
                     placeholder="Alex Morgan"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-slate-300">
+              <label className="text-[11px] font-medium text-slate-700">
                 Work Email
               </label>
               <div className="relative">
-                <Mail size={14} className="text-slate-500 absolute left-3 top-3" />
+                <Mail size={14} className="text-slate-400 absolute left-3 top-3" />
                 <input
                   type="email"
                   required
                   placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
             </div>
 
             {activeTab === "register" && (
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-slate-300">
+                <label className="text-[11px] font-medium text-slate-700">
                   Target Organization Domain
                 </label>
                 <div className="relative">
-                  <Building2 size={14} className="text-slate-500 absolute left-3 top-3" />
+                  <Building2 size={14} className="text-slate-400 absolute left-3 top-3" />
                   <select
                     value={selectedTenantId}
                     onChange={(e) => {
@@ -258,7 +258,7 @@ export function AuthPage({
                       const t = TENANTS.find((item) => item.id === e.target.value);
                       if (t) setOrgName(t.name);
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
                   >
                     {TENANTS.map((tenant) => (
                       <option key={tenant.id} value={tenant.id}>
@@ -272,28 +272,28 @@ export function AuthPage({
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-medium text-slate-300">
+                <label className="text-[11px] font-medium text-slate-700">
                   Password
                 </label>
                 {activeTab === "login" && (
                   <button
                     type="button"
                     onClick={() => setError("Password reset is managed by your SSO directory.")}
-                    className="text-[10px] text-indigo-400 hover:text-indigo-300"
+                    className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer"
                   >
                     Forgot password?
                   </button>
                 )}
               </div>
               <div className="relative">
-                <Lock size={14} className="text-slate-500 absolute left-3 top-3" />
+                <Lock size={14} className="text-slate-400 absolute left-3 top-3" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
             </div>
@@ -301,7 +301,7 @@ export function AuthPage({
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50 active:scale-98"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50 active:scale-98"
             >
               <span>
                 {activeTab === "login"
@@ -315,10 +315,10 @@ export function AuthPage({
       </main>
 
       {/* 3. Footer */}
-      <footer className="h-12 border-t border-slate-800/80 px-4 sm:px-8 flex items-center justify-between text-xs text-slate-500">
+      <footer className="h-12 border-t border-slate-200 px-4 sm:px-8 flex items-center justify-between text-xs text-slate-500">
         <span>CompanyMind · FalkorDB Platform</span>
         <div className="flex items-center gap-4">
-          <a href="https://github.com/vishal-kumar9032/companymind-ai" target="_blank" rel="noreferrer" className="hover:text-slate-400">
+          <a href="https://github.com/vishal-kumar9032/companymind-ai" target="_blank" rel="noreferrer" className="hover:text-slate-700">
             Docs
           </a>
           <span>Privacy & Security</span>
