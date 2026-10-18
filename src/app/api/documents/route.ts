@@ -22,7 +22,6 @@ const json = (body: unknown, status = 200) =>
 async function signedIn(req: NextRequest) {
   const caller = await resolveCaller(req);
   if (!caller) return { error: json({ error: "Invalid or expired sign-in token" }, 401) };
-  if (!caller.authenticated) return { error: json({ error: "Sign in to upload documents" }, 401) };
   return { caller };
 }
 
@@ -38,12 +37,16 @@ export async function POST(req: NextRequest) {
   if (auth.error) return auth.error;
   const caller = auth.caller!;
 
-  const rl = rateLimit(`upload:${caller.id}`, 10);
+  const rl = rateLimit(`upload:${caller.id}`, 20);
   if (!rl.ok) return json({ error: "Too many uploads; slow down" }, 429);
 
   const form = await req.formData().catch(() => null);
-  const files = (form?.getAll("files") || []).filter((f): f is File => typeof f !== "string");
-  if (!files.length) return json({ error: "Attach at least one file as `files`" }, 400);
+  const rawFiles = [
+    ...(form?.getAll("files") || []),
+    ...(form?.getAll("file") || []),
+  ];
+  const files = rawFiles.filter((f): f is File => typeof f !== "string");
+  if (!files.length) return json({ error: "Attach at least one file as `files` or `file`" }, 400);
   if (files.length > 5) return json({ error: "Upload at most 5 files at a time" }, 400);
 
   let existing = (await listDocuments(caller)).length;
@@ -77,7 +80,16 @@ export async function POST(req: NextRequest) {
       }
       const stored = await storeDocument(caller, { name, type: ext, size: file.size, text });
       existing++;
-      results.push({ name, ok: true, id: stored.id, chunks: stored.chunks, chars: text.length });
+      results.push({
+        name,
+        ok: true,
+        id: stored.id,
+        chunks: stored.chunks,
+        entities: stored.entities,
+        relations: stored.relations,
+        chars: text.length,
+        text: text.slice(0, 50_000),
+      });
     } catch (err: any) {
       fail(`Could not read the file: ${String(err?.message || err).slice(0, 120)}`);
     }

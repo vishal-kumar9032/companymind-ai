@@ -333,11 +333,10 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
     roles: ["orchestrator", "researcher", "scribe"],
   },
   {
-    def: fn("list_documents", "List the documents the user uploaded (PDF, Word, Excel, CSV, text) with their ids. Signed-in workspaces only.", {}),
+    def: fn("list_documents", "List the documents the user uploaded (PDF, Word, Excel, CSV, text) with their ids.", {}),
     run: async (_a, ctx) => {
-      if (!ctx.caller.authenticated) return { error: "Uploads are only available to signed-in users." };
       const docs = await listDocuments(ctx.caller);
-      return docs.length ? docs : { documents: [], note: "No documents uploaded yet. The user can upload files on the Connections page." };
+      return docs.length ? docs : { documents: [], note: "No documents uploaded yet. The user can upload files on the Connections or Chat page." };
     },
   },
   {
@@ -348,7 +347,6 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       ["query"],
     ),
     run: async ({ query, limit }, ctx) => {
-      if (!ctx.caller.authenticated) return { error: "Uploads are only available to signed-in users." };
       const rows = await searchDocuments(ctx.caller, String(query), Math.min(Number(limit) || 6, 10));
       return rows.length ? { passages: rows } : { passages: [], note: "No uploaded document matches. Try different keywords or list_documents." };
     },
@@ -364,7 +362,6 @@ const BUILTIN: { def: Def; run: Handler; roles?: Role[] }[] = [
       ["document"],
     ),
     run: async ({ document, part }, ctx) => {
-      if (!ctx.caller.authenticated) return { error: "Uploads are only available to signed-in users." };
       const doc = await readDocument(ctx.caller, String(document), Math.max(Number(part) || 0, 0));
       if (!doc) return { error: `No uploaded document "${document}". Use list_documents for exact names.` };
       return doc.parts.length ? doc : { ...doc, note: "No more parts; the document ends before this part number." };

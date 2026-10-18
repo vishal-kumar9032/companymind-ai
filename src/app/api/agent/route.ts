@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { resolveCaller } from "@/lib/agent/identity";
 import { runAgent, type AgentEvent } from "@/lib/agent/loop";
 import { listApprovals, recentRuns } from "@/lib/agent/memory";
+import { storeDocument } from "@/lib/agent/documents";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -31,7 +32,18 @@ export async function POST(req: NextRequest) {
   let promptGoal = rawGoal;
   if (body.attachment && typeof body.attachment === "object" && body.attachment.text) {
     const attachName = String(body.attachment.name || "knowledge-attachment").slice(0, 100);
-    const attachText = String(body.attachment.text).slice(0, 30_000);
+    const attachText = String(body.attachment.text).slice(0, 50_000);
+    const attachExt = String(body.attachment.ext || body.attachment.type || "txt").slice(0, 10);
+    try {
+      await storeDocument(caller, {
+        name: attachName,
+        type: attachExt,
+        size: Number(body.attachment.size) || attachText.length,
+        text: attachText,
+      });
+    } catch (e) {
+      console.warn("Auto-store document notice:", e);
+    }
     promptGoal = `[User Knowledge Attachment: ${attachName}]\n${attachText}\n\n[User Instruction]:\n${rawGoal}`;
   }
 
