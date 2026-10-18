@@ -327,3 +327,12 @@
   - **Hackathon Tri-Track Alignment (`README.md`, `winning_hackathon_strategy.md`, `hackathon_pitch_script.md`):** Updated project documentation to compete across all three hackathon tracks: Track 1 (Agents Acting on Connected Data), Track 2 (Agent Memory and Coordination), and Track 3 (Company Brain). Prepared full word-for-word pitch script and Q&A defense answers.
   - **Verification:** `tsc --noEmit` clean (0 errors), `pnpm build` passed, PM2 `companymind-ai` service online on port 13050, git branches synchronized with `origin/feat/connectors-memory` and `origin/main`.
 
+- `2026-10-18` (Branch `feat/connectors-memory` - Agent tool reliability, wiki storage, and autonomous FalkorDB fallback):
+  - **Dedicated `store_wiki` Tool (`src/lib/agent/tools.ts`):** Added permanent wiki/documentation publishing tool for agents. Text is parsed, chunked, and stored into FalkorDB, automatically creating `:Doc`, `:Chunk`, and `:Wiki` nodes with full-text search indexing.
+  - **Wiki Entity Extraction (`src/lib/agent/documents.ts`):** Automatically generates `:Wiki` nodes on document ingestion and links them to covered `:Service` and `:Decision` nodes via `:COVERS` and `:DEFINES`.
+  - **Enhanced `graph_upsert` (`src/lib/agent/tools.ts`):** Removed guest/demo workspace write restrictions so visitors can freely upsert graph knowledge. Expanded `UPSERT_LABELS` (`Wiki`, `Article`, `Guide`, `Policy`, `Architecture`, etc.) and `UPSERT_RELS` (`DEFINES`, `DOCUMENTS`, `REFERENCES`, `CONTAINS`, etc.) and decoupled strict enums to prevent schema validation failures.
+  - **Tool Schema Sanitization & Token Cap (`src/lib/agent/composio.ts`, `src/lib/agent/loop.ts`):** Hardened `sanitizeSchemaNode` to guarantee schema objects (preventing Gemini "properties.value object" 400 errors). Removed broken `GOOGLESHEETS_ADD_SHEET` and streamlined curated tools to reduce payload size. Capped chat completion `max_tokens` to prevent Groq OTPM 429 rate limit errors.
+  - **Autonomous FalkorDB Fallback (`src/lib/agent/loop.ts`):** Integrated native FalkorDB tool execution fallback in `runAgent` so if cloud LLM providers fail or rate-limit, the agent executes OpenCypher graph tools directly and returns grounded answers without failing.
+  - **Verification:** `pnpm exec tsc --noEmit` passed clean (0 errors), `pnpm build` passed (14/14 routes), PM2 process reloaded (HTTP 200), and verified live `/api/agent` request successfully storing `payments-api-architecture.md` wiki into FalkorDB across 6 steps.
+
+
