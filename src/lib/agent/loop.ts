@@ -79,6 +79,8 @@ const UNSUPPORTED_MODELS = new Set([
   "meta-llama/llama-3.3-70b-instruct",
 ]);
 
+let directGeminiDisabled = false;
+
 function allowedModels(): string[] {
   const extraModels = [
     "google-gemini/gemini-3.1-flash-lite",
@@ -86,7 +88,7 @@ function allowedModels(): string[] {
     "google-gemini/gemini-2.5-flash-lite",
     "openrouter/openrouter-free",
   ];
-  if (process.env.GEMINI_API_KEY) {
+  if (process.env.GEMINI_API_KEY && !directGeminiDisabled) {
     extraModels.push("gemini-2.5-flash-lite");
     extraModels.push("gemini-2.5-flash");
   }
@@ -194,6 +196,7 @@ async function chat(
       } catch (directErr: any) {
         console.warn(`[Agent Gateway] Direct Gemini (${fallbackModel}) fallback failed:`, directErr?.message || directErr);
         if (directErr?.status === 401 || String(directErr?.message).includes("UNAUTHENTICATED") || String(directErr?.message).includes("ACCOUNT_STATE_INVALID")) {
+          directGeminiDisabled = true;
           break; // Stop retrying broken credentials
         }
       }

@@ -537,14 +537,20 @@ export async function getConnectedTools(
 ): Promise<OpenAI.Chat.Completions.ChatCompletionTool[]> {
   const composio = getComposio();
   if (!composio || toolkits.length === 0) return [];
-  const key = `${userId}:${[...toolkits].sort().join(",")}`;
+
+  // If googlesuper is connected, collapse individual google toolkits to avoid redundant fetching
+  const normalizedToolkits = toolkits.includes("googlesuper")
+    ? ["googlesuper", ...toolkits.filter((t) => !["gmail", "googlecalendar", "googledrive", "googledocs", "googlesheets"].includes(t))]
+    : toolkits;
+
+  const key = `${userId}:${[...normalizedToolkits].sort().join(",")}`;
   const hit = toolCache.get(key);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.tools;
 
   const fetchTools = async (c: Composio) => {
-    // If multiple toolkits are connected, fetch per toolkit to guarantee each service has tools available
+    // Fetch tools per toolkit to ensure essential curated tools are retrieved
     const perToolkit = await Promise.all(
-      toolkits.map(async (toolkitSlug) => {
+      normalizedToolkits.map(async (toolkitSlug) => {
         try {
           const curated = CURATED_TOOLS[toolkitSlug];
           const raw = (await c.tools.get(
@@ -562,14 +568,24 @@ export async function getConnectedTools(
       })
     );
     const combined = perToolkit.flat();
-    return combined.map((t: any) => ({
-      type: "function" as const,
-      function: {
-        name: t.function.name,
-        description: t.function.description || t.function.name,
-        parameters: sanitizeToolParameters(t.function.parameters),
-      },
-    }));
+    const seenNames = new Set<string>();
+    const deduplicated: OpenAI.Chat.Completions.ChatCompletionTool[] = [];
+
+    for (const t of combined) {
+      const name = String(t?.function?.name || "").trim();
+      if (!name || seenNames.has(name)) continue;
+      seenNames.add(name);
+      deduplicated.push({
+        type: "function" as const,
+        function: {
+          name,
+          description: t.function.description || name,
+          parameters: sanitizeToolParameters(t.function.parameters),
+        },
+      });
+    }
+
+    return deduplicated;
   };
 
   try {
