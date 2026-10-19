@@ -485,11 +485,15 @@ export async function buildToolbox(
 ): Promise<Toolbox> {
   const handlers = new Map<string, Handler>();
   const definitions: Def[] = [];
+  const seenToolNames = new Set<string>();
 
   for (const t of BUILTIN) {
     if (t.roles && !t.roles.includes(role)) continue;
     if (t.def.type === "function") {
-      handlers.set(t.def.function.name, t.run);
+      const name = t.def.function.name;
+      if (seenToolNames.has(name)) continue;
+      seenToolNames.add(name);
+      handlers.set(name, t.run);
       definitions.push(t.def);
     }
   }
@@ -502,6 +506,8 @@ export async function buildToolbox(
       for (const def of await getConnectedTools(caller.id, toolkits)) {
         if (def.type !== "function") continue;
         const slug = def.function.name;
+        if (seenToolNames.has(slug)) continue;
+        seenToolNames.add(slug);
         const write = isWriteTool(slug);
         if (write && opts.readOnly) continue;
         composioNames.add(slug);
@@ -519,26 +525,34 @@ export async function buildToolbox(
   }
 
   if (caller.authenticated && toolkits.length) {
-    definitions.push(
-      fn(
-        "find_app_tools",
-        `Search the FULL tool catalogue of the user's connected apps (${toolkits.join(", ")}); each has hundreds of tools beyond the few listed directly. Use it whenever the tools you already have cannot do the task (e.g. list calendar events, find GitHub issues, read a sheet range). Returns tool names with required parameters; then call run_app_tool. Tools marked write=true need the user's approval.`,
-        {
-          query: { type: "string", description: "What you want to do, e.g. 'list pull requests' or 'search spreadsheets'" },
-          app: { type: "string", enum: toolkits, description: "Limit the search to one connected app" },
-        },
-        ["query"],
-      ),
-      fn(
-        "run_app_tool",
-        "Run a tool found with find_app_tools (or listed directly) with its arguments. Only tools of the user's connected apps run. Write tools are queued for human approval, not run.",
-        {
-          tool: { type: "string", description: "Exact tool name, e.g. GITHUB_LIST_PULL_REQUESTS" },
-          arguments: { type: "object", description: "Arguments as {name: value}; see required parameters from find_app_tools" },
-        },
-        ["tool"],
-      ),
-    );
+    if (!seenToolNames.has("find_app_tools")) {
+      seenToolNames.add("find_app_tools");
+      definitions.push(
+        fn(
+          "find_app_tools",
+          `Search the FULL tool catalogue of the user's connected apps (${toolkits.join(", ")}); each has hundreds of tools beyond the few listed directly. Use it whenever the tools you already have cannot do the task (e.g. list calendar events, find GitHub issues, read a sheet range). Returns tool names with required parameters; then call run_app_tool. Tools marked write=true need the user's approval.`,
+          {
+            query: { type: "string", description: "What you want to do, e.g. 'list pull requests' or 'search spreadsheets'" },
+            app: { type: "string", enum: toolkits, description: "Limit the search to one connected app" },
+          },
+          ["query"],
+        ),
+      );
+    }
+    if (!seenToolNames.has("run_app_tool")) {
+      seenToolNames.add("run_app_tool");
+      definitions.push(
+        fn(
+          "run_app_tool",
+          "Run a tool found with find_app_tools (or listed directly) with its arguments. Only tools of the user's connected apps run. Write tools are queued for human approval, not run.",
+          {
+            tool: { type: "string", description: "Exact tool name, e.g. GITHUB_LIST_PULL_REQUESTS" },
+            arguments: { type: "object", description: "Arguments as {name: value}; see required parameters from find_app_tools" },
+          },
+          ["tool"],
+        ),
+      );
+    }
     handlers.set("find_app_tools", async (a: any) => {
       if (a.app && !toolkits.includes(a.app)) return { error: `"${a.app}" is not connected for this user. Connected: ${toolkits.join(", ")}.` };
       const apps = a.app ? [a.app] : toolkits;
