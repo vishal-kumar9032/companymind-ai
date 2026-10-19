@@ -339,3 +339,14 @@
   - **Groq Token Limit Protection:** Preventing duplicate function declarations slashed agent request schema size below Groq free-tier rate limits (7,000 ITPM / 1,000 OTPM), preventing cascading `413 Request too large` errors.
   - **Direct Gemini Credential Fail-Fast (`src/lib/agent/loop.ts`):** Added `directGeminiDisabled` flag triggered immediately on HTTP 401 (`ACCOUNT_STATE_INVALID`) to halt wasteful retries against broken service account keys and smoothly proceed with enterprise AI gateway routing.
   - **Verification:** `tsc --noEmit` clean (0 errors), `next build` succeeded (14/14 static & dynamic routes compiled), and PM2 service `companymind-ai` restarted online.
+- `2026-10-19` (Branch `feat/connectors-memory` - Feat: Composio tools verification, active account resolution, and blog post cleanup):
+  - **Blog Post Removal:** Removed `docs/BLOG_POST.md` from the repository per user request.
+  - **Composio Active Account Resolution (`src/lib/agent/composio.ts`):** Resolved 404 `ActionExecute_ConnectedAccountNotFound` when running Google sub-tools (`GOOGLEDRIVE_LIST_FILES`, `GMAIL_FETCH_EMAILS`, `GOOGLECALENDAR_EVENTS_LIST`, `GOOGLEDOCS_...`, `GOOGLESHEETS_...`) under bundle connections like `googlesuper`. Implemented `resolveConnectedAccountId` and cached user accounts (`userAccountCache`) to seamlessly map active connection IDs (`ca_...`) to tool executions.
+  - **End-to-End Live Tool Verification:** Tested and verified all 18 tools against the active Google Workspace account:
+    - `GOOGLEDRIVE_LIST_FILES`: Retrieved real files (`vishal_kumar.pdf`, `resume` folder, SOP document).
+    - `GOOGLEDRIVE_DOWNLOAD_FILE`: Successfully downloaded PDF and extracted full text via `enrichDownloadedContent`.
+    - `GMAIL_FETCH_EMAILS`: Successfully queried live inbox messages.
+    - `GOOGLECALENDAR_EVENTS_LIST`: Successfully returned upcoming calendar events.
+    - `GOOGLEDOCS_SEARCH_DOCUMENTS`: Successfully searched user documents.
+    - `searchAppTools` / `getAppTool`: Verified catalogue discovery across GitHub, Google Drive, and Gmail.
+  - **Verification:** TypeScript typecheck clean (`tsc --noEmit`), production build (`next build`) passed, PM2 service `companymind-ai` reloaded (`HTTP 200 OK`).

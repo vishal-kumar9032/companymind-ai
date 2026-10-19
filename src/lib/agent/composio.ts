@@ -238,14 +238,18 @@ export async function connectToolkit(
   }
 }
 
-/** Invalidate cached OpenAI tool definitions for a user (or all). */
+const userAccountCache = new Map<string, { at: number; items: any[] }>();
+
+/** Invalidate cached OpenAI tool definitions and account caches for a user (or all). */
 export function invalidateToolCache(userId?: string) {
   if (userId) {
     for (const key of toolCache.keys()) {
       if (key.startsWith(`${userId}:`)) toolCache.delete(key);
     }
+    userAccountCache.delete(userId);
   } else {
     toolCache.clear();
+    userAccountCache.clear();
   }
 }
 
@@ -655,6 +659,65 @@ async function enrichDownloadedContent(resultData: any): Promise<any> {
   return resultData;
 }
 
+async function getActiveAccountsForUser(c: Composio, userId: string): Promise<any[]> {
+  const hit = userAccountCache.get(userId);
+  if (hit && Date.now() - hit.at < 60_000) return hit.items;
+  try {
+    const list = await c.connectedAccounts.list({ userIds: [userId] });
+    const items = (list.items || []).filter((a: any) => a.status === "ACTIVE");
+    userAccountCache.set(userId, { at: Date.now(), items });
+    return items;
+  } catch (err: any) {
+    console.warn("[Composio] Account listing notice:", err?.message || err);
+    return [];
+  }
+}
+
+async function resolveConnectedAccountId(c: Composio, userId: string, slug: string): Promise<string | undefined> {
+  try {
+    const upper = slug.toUpperCase();
+    const isGoogle = upper.startsWith("GMAIL_") || upper.startsWith("GOOGLE");
+    const targetToolkit = isGoogle
+      ? "googlesuper"
+      : upper.startsWith("GITHUB_")
+      ? "github"
+      : "";
+
+    const items = await getActiveAccountsForUser(c, userId);
+    if (items.length === 0) return undefined;
+
+    if (isGoogle) {
+      const superAcc = items.find((a: any) => a.toolkit?.slug === "googlesuper");
+      if (superAcc) return superAcc.id;
+
+      if (upper.startsWith("GMAIL_")) {
+        const acc = items.find((a: any) => a.toolkit?.slug === "gmail");
+        if (acc) return acc.id;
+      }
+      if (upper.startsWith("GOOGLEDRIVE_")) {
+        const acc = items.find((a: any) => a.toolkit?.slug === "googledrive");
+        if (acc) return acc.id;
+      }
+      if (upper.startsWith("GOOGLECALENDAR_")) {
+        const acc = items.find((a: any) => a.toolkit?.slug === "googlecalendar");
+        if (acc) return acc.id;
+      }
+      if (upper.startsWith("GOOGLEDOCS_")) {
+        const acc = items.find((a: any) => a.toolkit?.slug === "googledocs");
+        if (acc) return acc.id;
+      }
+      if (upper.startsWith("GOOGLESHEETS_")) {
+        const acc = items.find((a: any) => a.toolkit?.slug === "googlesheets");
+        if (acc) return acc.id;
+      }
+    } else if (targetToolkit) {
+      const match = items.find((a: any) => a.toolkit?.slug === targetToolkit);
+      if (match) return match.id;
+    }
+  } catch {}
+  return undefined;
+}
+
 export async function executeComposioTool(
   userId: string,
   slug: string,
@@ -664,11 +727,17 @@ export async function executeComposioTool(
   if (!composio) return { ok: false, error: "Composio is not configured" };
 
   const doExecute = async (c: Composio) => {
-    const res: any = await c.tools.execute(slug, {
+    const connectedAccountId = await resolveConnectedAccountId(c, userId, slug);
+    const execParams: any = {
       userId,
       arguments: args,
       dangerouslySkipVersionCheck: true,
-    } as any);
+    };
+    if (connectedAccountId) {
+      execParams.connectedAccountId = connectedAccountId;
+    }
+
+    const res: any = await c.tools.execute(slug, execParams);
     if (res?.successful === false) {
       return { ok: false, error: String(res.error || "tool failed").slice(0, 500) };
     }
@@ -691,6 +760,7 @@ export async function executeComposioTool(
     return { ok: false, error: formatComposioError(err) };
   }
 }
+
 
 
 export interface AppToolInfo {
